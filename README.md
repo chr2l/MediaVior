@@ -107,4 +107,4 @@ Si MediaVior te rend service, mets-lui une ⭐ en haut de cette page : ça aide 
 le trouver. Les retours et les propositions sont les bienvenus dans les
 [issues](https://github.com/chr2l/MediaVior/issues) et les pull requests.
 
-Licence : [MIT](LICENSE).
+Licence : [AGPL-3.0](LICENSE). Tu peux utiliser, modifier et partager MediaVior librement ; si tu publies ou mets en ligne une version modifiée, son code doit rester ouvert sous la même licence.
