@@ -25,4 +25,4 @@ Quelques règles du projet :
 - Rien qui envoie des données à un tiers sans que l'utilisateur le sache.
 - Ne fige pas yt-dlp.
 
-En contribuant, tu acceptes que ton code soit publié sous la [licence MIT](LICENSE) du projet.
+En contribuant, tu acceptes que ton code soit publié sous la [licence AGPL-3.0](LICENSE) du projet.
