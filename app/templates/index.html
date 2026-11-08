@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MediaVior</title>
+<meta name="theme-color" content="#121821">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ v }}">
+</head>
+<body class="shell">
+<div class="app">
+
+  <!-- Barre latérale (ordinateur) / barre d'onglets en bas (téléphone) -->
+  <aside class="sidebar">
+    <a class="brand" href="#telecharger">
+      <svg class="brand__mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="8" y="14" width="48" height="40" rx="2" stroke="currentColor" stroke-width="3"/>
+        <path d="M8 26h48" stroke="currentColor" stroke-width="3"/>
+        <circle cx="32" cy="40" r="7" stroke="currentColor" stroke-width="3"/>
+        <path d="M32 36v4l3 2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <path d="M20 14V10a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4" stroke="currentColor" stroke-width="3"/>
+      </svg>
+      <span class="brand__name">MediaVior</span>
+    </a>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" href="#telecharger" data-view="telecharger">
+        <span class="tab__icon" data-icon="download"></span>
+        <span class="tab__label">Télécharger</span>
+        <span class="tab__badge hidden"></span>
+      </a>
+      <a class="tab" href="#sons" data-view="sons">
+        <span class="tab__icon" data-icon="music"></span>
+        <span class="tab__label">Liste de sons</span>
+        <span class="tab__badge tab__badge--muted hidden"></span>
+      </a>
+      <a class="tab" href="#bibliotheque" data-view="bibliotheque">
+        <span class="tab__icon" data-icon="library"></span>
+        <span class="tab__label">Bibliothèque</span>
+        <span class="tab__badge hidden"></span>
+      </a>
+    </nav>
+    {% if local %}
+    <div class="sidebar__local">
+      <button type="button" class="btn btn--ghost btn--sm" id="openFolderBtn" title="{{ folder }}">Ouvrir le dossier</button>
+      <button type="button" class="btn-link" id="quitBtn">Quitter MediaVior</button>
+    </div>
+    {% endif %}
+    <p class="sidebar__foot">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg</p>
+  </aside>
+
+  <main class="main">
+
+    <!-- ===== Télécharger ===== -->
+    <section class="view" data-view="telecharger" aria-labelledby="viewTelecharger">
+      <header class="view-head">
+        <div>
+          <h1 class="view-head__title" id="viewTelecharger">Télécharger</h1>
+          <p class="view-head__sub">Un lien, une copie qui reste. Colle une adresse pour mettre un média à l'abri.</p>
+        </div>
+      </header>
+
+      <section class="panel" id="intake">
+        <label class="field-label" for="url">Adresse du média</label>
+        <div class="intake-row">
+          <textarea id="url" rows="1" inputmode="url" spellcheck="false" autocomplete="off"
+            placeholder="youtube.com/..., soundcloud.com/..., bandcamp.com/..."></textarea>
+          <button id="analyzeBtn" class="btn btn--ghost">Analyser</button>
+        </div>
+        <p class="hint">Colle un lien : l'analyse démarre toute seule. Plusieurs liens (un par ligne) partent dans la file d'attente.</p>
+        <p id="error" class="error hidden" role="alert"></p>
+      </section>
+
+      <!-- Un seul lien : aperçu et choix précis de la qualité -->
+      <section class="panel hidden" id="result">
+        <div class="media-summary">
+          <img id="thumb" alt="" class="media-summary__thumb hidden">
+          <div class="media-summary__text">
+            <h2 id="title"></h2>
+            <div class="media-summary__meta">
+              <span id="source" class="tag"></span>
+              <span id="duration" class="tag tag--muted"></span>
+            </div>
+          </div>
+        </div>
+        <div class="js-options"></div>
+        <button id="downloadBtn" class="btn btn--solid">Télécharger</button>
+      </section>
+
+      <!-- Plusieurs liens : options communes -->
+      <section class="panel hidden" id="batch">
+        <div class="panel__head">
+          <h2 class="panel__title" id="batchTitle">Plusieurs liens</h2>
+          <button type="button" class="btn-link" id="batchClear">Effacer</button>
+        </div>
+        <ul class="batch-list" id="batchList"></ul>
+        <div class="js-options"></div>
+        <p class="hint">La qualité choisie est un maximum : chaque média prend la meilleure version disponible en dessous.</p>
+        <button id="batchBtn" class="btn btn--solid">Tout ajouter à la file</button>
+      </section>
+
+      <section class="panel hidden" id="queue">
+        <div class="panel__head">
+          <h2 class="panel__title">En cours</h2>
+        </div>
+        <ul class="job-list" id="queueList"></ul>
+      </section>
+
+    </section>
+
+    <!-- ===== Liste de sons ===== -->
+    <section class="view hidden" data-view="sons" aria-labelledby="viewSons">
+      <header class="view-head">
+        <div>
+          <h1 class="view-head__title" id="viewSons">Liste de sons</h1>
+          <p class="view-head__sub">Écris des titres ou ajoute des captures d'écran : chaque son est retrouvé et rangé dans un zip.</p>
+        </div>
+        <button type="button" class="btn-link hidden" id="sonsClear">Vider la liste</button>
+      </header>
+
+      <section class="panel" id="sons">
+        <div class="intake-row">
+          <textarea id="sonsInput" rows="1" spellcheck="false" autocomplete="off"
+            placeholder="Artiste - Titre (un par ligne)"></textarea>
+          <button id="sonsAddBtn" class="btn btn--ghost">Ajouter</button>
+        </div>
+        <div class="sons-drop" id="sonsDrop">
+          <input type="file" id="sonsFiles" accept="image/*" multiple class="visually-hidden">
+          <label for="sonsFiles" class="btn btn--ghost btn--sm" id="sonsFilesBtn">Ajouter des captures</label>
+          <span class="hint">ou glisse / colle des captures d'écran : les titres y sont lus automatiquement.</span>
+        </div>
+        <p id="sonsInfo" class="hint hidden"></p>
+        <ul class="sons-list" id="sonsList"></ul>
+        <div class="sons-actions hidden" id="sonsActions">
+          <label class="field">
+            <span class="field-label">Format</span>
+            <select id="sonsFormat">
+              <option value="mp3:0">MP3 · meilleure qualité</option>
+              <option value="mp3:320">MP3 · 320 kbps</option>
+              <option value="mp3:192">MP3 · 192 kbps</option>
+              <option value="wav:">WAV (sans perte)</option>
+            </select>
+          </label>
+          <button id="sonsFetchBtn" class="btn btn--solid">Chercher et télécharger</button>
+        </div>
+        <div class="sons-progress hidden" id="sonsProgress">
+          <div class="progress progress--slim"><div class="progress__track"><div class="progress__fill" id="sonsProgressFill"></div></div></div>
+          <p class="hint" id="sonsProgressText"></p>
+        </div>
+        <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube puis téléchargé. Les sons trouvés partent dans un zip (dans la bibliothèque) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre YouTube pour choisir la bonne vidéo à la main (la loupe le fait aussi pour n'importe quel titre).</p>
+        <p id="sonsZip" class="sons-zip hidden"></p>
+      </section>
+
+    </section>
+
+    <!-- ===== Bibliothèque ===== -->
+    <section class="view hidden" data-view="bibliotheque" aria-labelledby="viewBibliotheque">
+      <header class="view-head">
+        <div>
+          <h1 class="view-head__title" id="viewBibliotheque">Bibliothèque</h1>
+          <p class="view-head__sub" id="libraryStats"></p>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
+      </header>
+
+      <section class="panel panel--list" id="library">
+        <input type="search" id="libraryFilter" class="library-filter hidden" placeholder="Rechercher un titre…" aria-label="Rechercher dans la bibliothèque">
+        <ul class="item-list" id="libraryList"></ul>
+        <p class="empty hidden" id="libraryEmpty"></p>
+      </section>
+
+      <!-- Sélection multiple : actions sur les fichiers cochés -->
+      <div class="selbar hidden" id="selbar" role="toolbar" aria-label="Fichiers sélectionnés">
+        <button type="button" class="btn-link" id="selAll"></button>
+        <span class="selbar__count" id="selCount" aria-live="polite"></span>
+        <button type="button" class="btn btn--ghost btn--sm" id="selDownload"></button>
+        <button type="button" class="btn btn--danger btn--sm" id="selDelete"></button>
+      </div>
+    </section>
+
+    <footer class="app-foot">
+      {% if local %}
+      <a href="{{ github }}" target="_blank" rel="noopener">Tu aimes MediaVior ? Mets une étoile ⭐ sur GitHub</a>
+      {% else %}
+      <button type="button" class="btn-link" id="promptOpen">Avoir MediaVior sur ton PC</button>
+      {% endif %}
+      <a href="/legal">Mentions légales</a>
+      <a href="{{ github }}" target="_blank" rel="noopener">Code source</a>
+    </footer>
+
+    <p class="updated" id="updated" data-ts="{{ updated }}"></p>
+  </main>
+</div>
+
+<div class="toast hidden" id="toast" role="status" aria-live="polite">
+  <span class="toast__text" id="toastText"></span>
+  <button type="button" class="toast__action hidden" id="toastAction"></button>
+</div>
+
+<template id="optionsTpl">
+  <div class="mode-toggle" role="group" aria-label="Type de média">
+    <button type="button" class="mode-toggle__btn is-active" data-mode="video">Vidéo</button>
+    <button type="button" class="mode-toggle__btn" data-mode="audio">Audio</button>
+  </div>
+  <div class="options-grid js-video">
+    <label class="field">
+      <span class="field-label">Qualité</span>
+      <select class="js-quality"></select>
+    </label>
+    <label class="field">
+      <span class="field-label">Format</span>
+      <select class="js-container">
+        <option value="original">Original · meilleure qualité</option>
+        <option value="mp4">MP4 · lisible partout</option>
+        <option value="mov">MOV · Apple et montage</option>
+      </select>
+    </label>
+  </div>
+  <p class="hint option-hint js-video js-video-hint"></p>
+  <div class="options-grid js-audio hidden">
+    <label class="field">
+      <span class="field-label">Format</span>
+      <select class="js-audio-container">
+        <option value="original" data-label="Original · meilleure qualité">Original · meilleure qualité</option>
+        <option value="mp3" data-label="MP3 · le plus compatible">MP3 · le plus compatible</option>
+        <option value="flac" data-label="FLAC · sans perte" data-kbps="900">FLAC · sans perte</option>
+        <option value="wav" data-label="WAV · non compressé" data-kbps="1536">WAV · non compressé</option>
+      </select>
+    </label>
+    <label class="field">
+      <span class="field-label">Débit MP3</span>
+      <select class="js-audio-quality">
+        <option value="320">320 kb/s</option>
+        <option value="192">192 kb/s</option>
+        <option value="128">128 kb/s</option>
+      </select>
+    </label>
+  </div>
+  <p class="hint option-hint js-audio js-audio-hint hidden"></p>
+</template>
+
+<!-- Choix à la main d'une vidéo YouTube pour un son introuvable -->
+<dialog class="yt-dialog" id="ytDialog" aria-labelledby="ytTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="ytTitle">Retrouver le son</h2>
+      <p class="hint" id="ytFor"></p>
+    </div>
+    <button type="button" class="icon-btn" id="ytClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <form class="yt-dialog__search" id="ytForm">
+    <input type="search" id="ytQuery" spellcheck="false" autocomplete="off" aria-label="Recherche YouTube">
+    <button type="submit" class="btn btn--ghost btn--sm">Chercher</button>
+  </form>
+  <div class="yt-dialog__player hidden" id="ytPlayer"></div>
+  <p class="hint hidden" id="ytInfo"></p>
+  <ul class="yt-results" id="ytResults"></ul>
+  <div class="yt-dialog__foot">
+    <span class="hint" id="ytRemaining"></span>
+    <button type="button" class="btn-link" id="ytSkip">Passer</button>
+  </div>
+</dialog>
+
+<!-- Installer MediaVior sur son propre PC, en un prompt -->
+<dialog class="yt-dialog prompt-dialog" id="promptDialog" aria-labelledby="promptTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="promptTitle">Ton propre MediaVior, en un prompt</h2>
+      <p class="hint">Copie ce texte et colle-le dans une IA qui peut agir sur ton ordinateur
+        (Claude Desktop, ChatGPT Codex, Cursor…). Elle installe MediaVior et crée l'icône sur ton bureau.
+        Ensuite : double-clic sur l'icône, colle ton lien, clique sur Télécharger.</p>
+    </div>
+    <button type="button" class="icon-btn" id="promptClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <textarea class="prompt-dialog__text" id="promptText" readonly rows="10" aria-label="Prompt d'installation"></textarea>
+  <div class="yt-dialog__foot">
+    <a class="hint" href="{{ github }}#installer-sur-ton-pc" target="_blank" rel="noopener">Autres façons d'installer (Pinokio, à la main)</a>
+    <button type="button" class="btn btn--ghost btn--sm" id="promptCopy">Copier le prompt</button>
+  </div>
+</dialog>
+
+<script src="/static/common.js?v={{ v }}"></script>
+<script src="/static/shell.js?v={{ v }}"></script>
+<script src="/static/app.js?v={{ v }}"></script>
+<script src="/static/sons.js?v={{ v }}"></script>
+<script src="/static/local.js?v={{ v }}"></script>
+</body>
+</html>

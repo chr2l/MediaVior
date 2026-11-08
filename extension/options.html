@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>MediaVior · réglages</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="options">
+  <header class="head">
+    <img src="icons/icon-48.png" alt="" width="32" height="32">
+    <span class="brand">MediaVior · réglages</span>
+  </header>
+
+  <section class="card">
+    <label class="field">
+      <span class="field-label">Adresse de MediaVior</span>
+      <input type="text" class="js-server" spellcheck="false" placeholder="http://127.0.0.1:8010">
+    </label>
+    <p class="hint">L'adresse que tu ouvres dans le navigateur pour aller sur MediaVior.
+      À l'enregistrement, Brave te demande l'autorisation d'accéder à cette adresse : accepte-la.</p>
+    <div class="row">
+      <button type="button" class="btn js-save">Enregistrer et tester</button>
+    </div>
+    <p class="status js-status"></p>
+  </section>
+
+  <section class="card">
+    <h2>Astuces</h2>
+    <ul class="hint">
+      <li>Clique sur l'icône de MediaVior dans la barre d'outils pour envoyer la page en cours.</li>
+      <li>Clic droit sur une page ou un lien → « Envoyer à MediaVior… ».</li>
+      <li>Raccourci clavier : Alt+Maj+C (modifiable dans brave://extensions/shortcuts).</li>
+      <li>Tes derniers choix de format sont retenus pour la fois suivante.</li>
+    </ul>
+  </section>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

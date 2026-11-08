@@ -1,0 +1,15 @@
+# MediaVior, version serveur :
+#   docker compose up -d --build
+# Puis ouvre http://ADRESSE-DU-SERVEUR:8010 (voir docs/SERVEUR.md).
+
+services:
+  mediavior:
+    build: .
+    image: mediavior
+    container_name: mediavior
+    restart: unless-stopped  # nécessaire à la mise à jour automatique de yt-dlp
+    ports:
+      # Pas d'authentification : réseau local / VPN uniquement.
+      - "8010:8000"
+    volumes:
+      - ./telechargements:/downloads

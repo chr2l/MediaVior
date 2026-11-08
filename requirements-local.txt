@@ -1,0 +1,2 @@
+static-ffmpeg>=2.7
+deno>=2.5

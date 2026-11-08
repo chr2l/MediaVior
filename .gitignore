@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets / config locale
+.env
+.env.*
+*.pem
+*.key
+
+# Données et téléchargements
+downloads/
+telechargements/
+env/
+*.mp3
+*.mp4
+*.mov
+*.wav
+*.part
+*.log
+
+# OS / éditeur
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+
+# --- Infos sensibles (filet de sécurité, même en dépôt privé) ---
+# Variables d environnement et secrets
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+secrets.*
+*secret*.json
+*secret*.txt
+*credentials*
+*.local.json
+.npmrc
+.pypirc
+.netrc
+# Clés et certificats
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+*.ppk
+id_rsa*
+id_ed25519*
+*.kdbx
+# Bases, sauvegardes et exports de données
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+*.backup*
+*.bak
+# Journaux
+*.log

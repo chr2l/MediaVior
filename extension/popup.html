@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>MediaVior</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="popup">
+  <header class="head">
+    <img src="icons/icon-32.png" alt="" width="22" height="22">
+    <span class="brand">MediaVior</span>
+    <a href="#" class="head-link js-open-coffre" title="Ouvrir MediaVior">Ouvrir ↗</a>
+    <a href="#" class="head-link js-options" title="Réglages">⚙</a>
+  </header>
+
+  <section class="card">
+    <label class="field">
+      <span class="field-label">Lien</span>
+      <input type="url" class="js-url" spellcheck="false" placeholder="https://…">
+    </label>
+    <div class="media js-media hidden">
+      <img class="media-thumb js-thumb hidden" alt="">
+      <div class="media-text">
+        <div class="media-title js-title"></div>
+        <div class="media-sub js-sub"></div>
+      </div>
+    </div>
+    <p class="status js-analyze-status"></p>
+  </section>
+
+  <section class="card">
+    <div class="mode-toggle" role="group" aria-label="Type de média">
+      <button type="button" class="mode-btn" data-mode="video">Vidéo</button>
+      <button type="button" class="mode-btn" data-mode="audio">Audio</button>
+    </div>
+
+    <div class="grid js-video">
+      <label class="field">
+        <span class="field-label">Qualité</span>
+        <select class="js-quality"></select>
+      </label>
+      <label class="field">
+        <span class="field-label">Format</span>
+        <select class="js-video-container">
+          <option value="original">Original · meilleure qualité</option>
+          <option value="mp4">MP4 · lisible partout</option>
+          <option value="mov">MOV · Apple et montage</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grid js-audio hidden">
+      <label class="field">
+        <span class="field-label">Format</span>
+        <select class="js-audio-container">
+          <option value="original">Original · meilleure qualité</option>
+          <option value="mp3">MP3 · le plus compatible</option>
+          <option value="flac">FLAC · sans perte</option>
+          <option value="wav">WAV · non compressé</option>
+        </select>
+      </label>
+      <label class="field js-mp3-field">
+        <span class="field-label">Débit MP3</span>
+        <select class="js-audio-quality">
+          <option value="320">320 kb/s</option>
+          <option value="192">192 kb/s</option>
+          <option value="128">128 kb/s</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <button type="button" class="btn js-send" disabled>Envoyer à MediaVior</button>
+  <p class="status js-send-status"></p>
+  <div class="progress js-progress hidden"><div class="progress-bar js-progress-bar"></div></div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

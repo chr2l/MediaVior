@@ -1,0 +1,27 @@
+name: Auto-merge Claude PRs
+# Fusionne automatiquement dans dev les PR ouvertes depuis une branche claude/* de CE dépôt.
+# Seules les personnes qui ont le droit d'écrire ici peuvent créer ces branches : une PR venant
+# d'un fork (n'importe qui) n'est jamais fusionnée automatiquement et reste à relire à la main.
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    if: >-
+      startsWith(github.head_ref, 'claude/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # Les PR de Claude sont ouvertes en brouillon, qui ne peut pas être fusionné.
+      - if: github.event.pull_request.draft
+        run: gh pr ready "$PR_URL"
+      - run: gh pr merge --merge "$PR_URL"

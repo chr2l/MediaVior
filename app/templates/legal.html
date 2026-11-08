@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mentions légales · MediaVior</title>
+<meta name="theme-color" content="#121821">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ v }}">
+<link rel="stylesheet" href="/static/legal.css?v={{ v }}">
+</head>
+<body class="legal">
+
+<header class="legal-top">
+  <a class="legal-top__back" href="/">← Retour à MediaVior</a>
+</header>
+
+<div class="legal-layout">
+  <!-- Sommaire : reste visible sur le côté, un clic descend à la partie voulue -->
+  <nav class="legal-toc" aria-label="Sommaire">
+    <p class="legal-toc__title">Sommaire</p>
+    <ol id="toc">
+      <li><a href="#presentation">Présentation</a></li>
+      <li><a href="#editeur">Éditeur et contact</a></li>
+      <li><a href="#hebergement">Hébergement</a></li>
+      <li><a href="#licence">Licence et code source</a></li>
+      <li><a href="#donnees">Données personnelles</a></li>
+      <li><a href="#cookies">Cookies et stockage local</a></li>
+      <li><a href="#tiers">Services tiers</a></li>
+      <li><a href="#usage">Usage responsable et droit d'auteur</a></li>
+      <li><a href="#responsabilite">Responsabilité</a></li>
+      <li><a href="#signaler">Signaler un problème</a></li>
+      <li><a href="#credits">Logiciels utilisés</a></li>
+      <li><a href="#modifications">Modifications</a></li>
+    </ol>
+  </nav>
+
+  <main class="legal-doc">
+    <h1>Mentions légales</h1>
+    <p class="legal-doc__lead">MediaVior est un logiciel libre que chacun installe et fait tourner chez soi.
+      Cette page explique qui fait quoi, ce que l'appli fait de tes données (rien) et les règles d'usage.</p>
+
+    <section id="presentation">
+      <h2>Présentation</h2>
+      <p>MediaVior (pour <em>Media Savior</em>) sert à garder une copie personnelle de médias
+        (vidéos, musiques) avant qu'ils ne disparaissent d'Internet. Il s'appuie sur
+        <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a> et
+        <a href="https://ffmpeg.org" target="_blank" rel="noopener">FFmpeg</a>.</p>
+      <p>Il n'y a pas de « service MediaVior » central : chaque copie de l'appli tourne sur l'ordinateur
+        ou le serveur de la personne qui l'a installée, et c'est elle qui l'utilise et en est responsable.</p>
+    </section>
+
+    <section id="editeur">
+      <h2>Éditeur et contact</h2>
+      <p>Le logiciel est publié par les contributeurs du projet open source MediaVior, à titre non
+        professionnel et sans but lucratif.</p>
+      <p>Contact : ouvre un ticket (« issue ») sur
+        <a href="{{ github }}/issues" target="_blank" rel="noopener">la page GitHub du projet</a>.
+        C'est le moyen le plus rapide d'avoir une réponse.</p>
+      <p>Si tu utilises une copie de MediaVior installée par quelqu'un d'autre (un ami, une association…),
+        c'est cette personne qui l'exploite : adresse-toi d'abord à elle.</p>
+    </section>
+
+    <section id="hebergement">
+      <h2>Hébergement</h2>
+      <p>Le code source est hébergé par GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco,
+        CA 94107, États-Unis (<a href="https://github.com" target="_blank" rel="noopener">github.com</a>).</p>
+      <p>L'appli elle-même n'est hébergée nulle part par le projet : elle tourne sur la machine de la
+        personne qui l'a installée (son PC, ou son propre serveur).</p>
+    </section>
+
+    <section id="licence">
+      <h2>Licence et code source</h2>
+      <p>Le code est ouvert : tu peux le lire, le relire et proposer des améliorations sur
+        <a href="{{ github }}" target="_blank" rel="noopener">GitHub</a>. Les conditions de
+        réutilisation sont dans le fichier <code>LICENSE</code> du dépôt.</p>
+    </section>
+
+    <section id="donnees">
+      <h2>Données personnelles</h2>
+      <p>MediaVior ne collecte rien : pas de compte, pas de statistiques de visite, pas de publicité,
+        pas de mesure d'audience. Le projet ne reçoit aucune donnée sur ce que tu télécharges.</p>
+      <p>Tout reste sur la machine où l'appli est installée :</p>
+      <ul>
+        <li>les fichiers téléchargés et leurs informations (titre, miniature, lien d'origine) ;</li>
+        <li>ta liste de sons et les captures d'écran envoyées pour la lire (les captures sont effacées
+          juste après la lecture) ;</li>
+        <li>en version PC, quelques réglages (dossier, port) dans <code>~/.mediavior/</code>.</li>
+      </ul>
+      <p>Pour tout effacer : supprime les fichiers depuis la bibliothèque, ou désinstalle l'appli et son
+        dossier de téléchargements. Comme le projet ne détient aucune donnée te concernant, il n'y a
+        rien à lui demander au titre du RGPD ; si une autre personne fait tourner l'appli pour toi,
+        c'est à elle qu'il faut t'adresser.</p>
+    </section>
+
+    <section id="cookies">
+      <h2>Cookies et stockage local</h2>
+      <p>MediaVior ne dépose pas de cookie de suivi. Le navigateur garde seulement une copie de
+        l'interface (pour qu'elle s'affiche même si le réseau coupe) et, éventuellement, tes derniers
+        choix d'options. Rien de tout ça ne quitte ton appareil.</p>
+    </section>
+
+    <section id="tiers">
+      <h2>Services tiers</h2>
+      <p>Pour fonctionner, l'appli contacte d'autres sites. Ils reçoivent alors ton adresse IP, comme
+        lors d'une visite normale :</p>
+      <ul>
+        <li>le site du média que tu télécharges (YouTube, SoundCloud, Bandcamp…) ;</li>
+        <li>YouTube, pour la recherche de la liste de sons et l'aperçu des vidéos (lecteur
+          <code>youtube-nocookie.com</code>) ;</li>
+        <li>Google Fonts, pour les polices de l'interface ;</li>
+        <li>PyPI et GitHub, pour les mises à jour automatiques de l'appli et de yt-dlp.</li>
+      </ul>
+      <p>Leurs propres règles de confidentialité s'appliquent.</p>
+    </section>
+
+    <section id="usage">
+      <h2>Usage responsable et droit d'auteur</h2>
+      <p>MediaVior est fait pour un usage personnel : garder tes propres contenus, des médias que tu
+        as le droit de conserver, ou des choses menacées de disparition.</p>
+      <ul>
+        <li>Respecte le droit d'auteur et les conditions d'utilisation de chaque site.</li>
+        <li>Ne redistribue pas des contenus dont tu n'as pas les droits.</li>
+        <li>En France, la copie privée est encadrée par le Code de la propriété intellectuelle :
+          elle suppose notamment une source licite et un usage strictement personnel.</li>
+      </ul>
+      <p>Le projet ne fournit, n'héberge et ne référence aucun contenu : l'appli ne fait que ce que
+        son utilisateur lui demande.</p>
+    </section>
+
+    <section id="responsabilite">
+      <h2>Responsabilité</h2>
+      <p>Le logiciel est fourni « tel quel », sans garantie. Les sites changent souvent leur
+        fonctionnement : un téléchargement peut échouer du jour au lendemain, en attendant une mise à
+        jour de yt-dlp.</p>
+      <p>Chaque personne qui installe MediaVior est responsable de son usage et de la machine qui le
+        fait tourner. L'appli n'a pas de mot de passe : ne l'expose pas sur Internet sans protection
+        devant (Tailscale, reverse proxy avec authentification…).</p>
+    </section>
+
+    <section id="signaler">
+      <h2>Signaler un problème</h2>
+      <p>Un bug, une faille de sécurité, une question de droit ? Ouvre un ticket sur
+        <a href="{{ github }}/issues" target="_blank" rel="noopener">GitHub</a>. Pour une faille
+        de sécurité, utilise plutôt « Report a vulnerability » dans l'onglet <em>Security</em> du
+        dépôt, pour qu'elle ne soit pas publique avant d'être corrigée.</p>
+    </section>
+
+    <section id="credits">
+      <h2>Logiciels utilisés</h2>
+      <ul>
+        <li><a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a> (Unlicense) : récupération des médias ;</li>
+        <li><a href="https://ffmpeg.org" target="_blank" rel="noopener">FFmpeg</a> (LGPL/GPL) : conversion et montage ;</li>
+        <li><a href="https://github.com/tesseract-ocr/tesseract" target="_blank" rel="noopener">Tesseract</a> (Apache 2.0) : lecture des captures d'écran ;</li>
+        <li><a href="https://fastapi.tiangolo.com" target="_blank" rel="noopener">FastAPI</a> (MIT) et <a href="https://www.uvicorn.org" target="_blank" rel="noopener">Uvicorn</a> (BSD) : le serveur de l'appli ;</li>
+        <li><a href="https://deno.com" target="_blank" rel="noopener">Deno</a> (MIT) : utilisé par yt-dlp pour YouTube ;</li>
+        <li>polices Fraunces et Inter (SIL Open Font License).</li>
+      </ul>
+    </section>
+
+    <section id="modifications">
+      <h2>Modifications</h2>
+      <p>Cette page peut évoluer avec l'appli. La version à jour est toujours celle du dépôt GitHub,
+        avec l'historique de chaque changement.</p>
+      <p class="legal-doc__date">Dernière mise à jour : 8 novembre 2026.</p>
+    </section>
+  </main>
+</div>
+
+<script src="/static/legal.js?v={{ v }}"></script>
+</body>
+</html>

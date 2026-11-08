@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Éditeur · MediaVior</title>
+<meta name="theme-color" content="#121821">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v={{ v }}">
+</head>
+<body data-item-id="{{ item_id }}">
+<div class="page page--wide">
+
+  <a href="/#bibliotheque" class="back-link" id="backLink"></a>
+
+  <header class="editor-head">
+    <h1 id="edTitle">Chargement…</h1>
+    <div class="media-summary__meta" id="edMeta"></div>
+  </header>
+
+  <p id="error" class="error hidden" role="alert"></p>
+
+  <main id="editor" class="hidden">
+    <section class="panel">
+      <div class="stage hidden" id="stage">
+        <div class="stage__fade" id="fadeOverlay"></div>
+      </div>
+
+      <div class="timeline" id="timeline">
+        <img class="timeline__wave" id="wave" alt="">
+        <div class="timeline__shade timeline__shade--left" id="shadeLeft"></div>
+        <div class="timeline__shade timeline__shade--right" id="shadeRight"></div>
+        <div class="timeline__sel" id="selection">
+          <div class="timeline__fade timeline__fade--in" id="fadeInZone"></div>
+          <div class="timeline__fade timeline__fade--out" id="fadeOutZone"></div>
+        </div>
+        <div class="timeline__handle timeline__handle--start" id="handleStart" data-edge="start"
+          role="slider" tabindex="0" aria-label="Début de la sélection"></div>
+        <div class="timeline__handle timeline__handle--end" id="handleEnd" data-edge="end"
+          role="slider" tabindex="0" aria-label="Fin de la sélection"></div>
+        <div class="timeline__playhead" id="playhead"></div>
+      </div>
+      <div class="timeline-scale"><span>0:00</span><span id="totalTime"></span></div>
+
+      <div class="transport">
+        <button type="button" class="icon-btn icon-btn--lg" id="playBtn" aria-label="Lecture"></button>
+        <button type="button" class="btn btn--ghost btn--sm" id="playSelBtn">Écouter la sélection</button>
+        <span class="transport__time" id="curTime">0:00.0</span>
+        <span class="transport__spacer"></span>
+        <button type="button" class="btn btn--ghost btn--sm" id="markStart" title="Placer le début à la position de lecture">[ Début ici</button>
+        <button type="button" class="btn btn--ghost btn--sm" id="markEnd" title="Placer la fin à la position de lecture">Fin ici ]</button>
+      </div>
+      <p class="hint">Glisse les poignées dorées, ou utilise les flèches du clavier dessus (Maj pour aller plus vite).</p>
+    </section>
+
+    <section class="panel">
+      <div class="options-grid options-grid--3">
+        <label class="field">
+          <span class="field-label">Début</span>
+          <input type="text" id="startInput" class="time-input" inputmode="decimal" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="field-label">Fin</span>
+          <input type="text" id="endInput" class="time-input" inputmode="decimal" spellcheck="false">
+        </label>
+        <div class="field">
+          <span class="field-label">Durée</span>
+          <div class="readout" id="selDuration"></div>
+        </div>
+      </div>
+
+      <div class="sliders">
+        <label class="slider js-effect">
+          <span class="slider__head"><span class="field-label">Fondu d'entrée</span><output id="fadeInValue">0 s</output></span>
+          <input type="range" id="fadeIn" min="0" max="10" step="0.1" value="0">
+        </label>
+        <label class="slider js-effect">
+          <span class="slider__head"><span class="field-label">Fondu de sortie</span><output id="fadeOutValue">0 s</output></span>
+          <input type="range" id="fadeOut" min="0" max="10" step="0.1" value="0">
+        </label>
+        <label class="slider js-effect">
+          <span class="slider__head"><span class="field-label">Volume</span><output id="gainValue">0 dB</output></span>
+          <input type="range" id="gain" min="-12" max="12" step="0.5" value="0">
+        </label>
+      </div>
+
+      <div class="checks">
+        <label class="check js-effect">
+          <input type="checkbox" id="normalize">
+          <span>Normaliser le volume <small>Niveau sonore homogène, comme sur les plateformes de streaming.</small></span>
+        </label>
+        <label class="check" id="muteRow">
+          <input type="checkbox" id="mute">
+          <span>Supprimer le son</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="fast">
+          <span>Coupe rapide, sans réencodage <small>Instantané et sans perte de qualité, mais la coupe se cale sur l'image clé la plus proche. Pas de fondus ni de réglage du volume.</small></span>
+        </label>
+      </div>
+
+      <label class="field field--format">
+        <span class="field-label">Format de sortie</span>
+        <select id="format"></select>
+      </label>
+
+      <button type="button" class="btn btn--solid" id="renderBtn">Créer la version éditée</button>
+
+      <div class="progress hidden" id="renderProgress">
+        <div class="progress__track"><div class="progress__fill" id="renderFill"></div></div>
+        <span class="progress__text" id="renderText"></span>
+        <button type="button" class="btn-link" id="cancelBtn">Annuler</button>
+      </div>
+
+      <div class="render-actions hidden" id="renderActions">
+        <a class="btn btn--solid btn--success" id="resultLink" href="#" download>Récupérer le fichier</a>
+        <div class="render-actions__secondary">
+          <a class="btn-link" id="resultEdit" href="#">Éditer cette version</a>
+          <a class="btn-link" href="/#bibliotheque">Retour à la bibliothèque</a>
+        </div>
+      </div>
+
+      <p class="hint">L'original n'est jamais modifié : le résultat est ajouté à la bibliothèque comme un nouveau fichier.</p>
+    </section>
+  </main>
+</div>
+
+<script src="/static/common.js?v={{ v }}"></script>
+<script src="/static/editor.js?v={{ v }}"></script>
+</body>
+</html>
