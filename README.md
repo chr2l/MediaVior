@@ -5,7 +5,7 @@
 <h1 align="center">MediaVior</h1>
 
 <p align="center"><strong>Media Savior</strong> : sauvegarde une vidéo ou une musique avant qu'elle ne disparaisse.<br>
-Tu colles un lien, tu cliques sur Télécharger. Ça tourne sur ton PC, pas chez quelqu'un d'autre.</p>
+Tu colles un lien, tu cliques sur « Mettre au coffre ». Ça tourne sur ton PC, pas chez quelqu'un d'autre.</p>
 
 <p align="center">
   <a href="#installer-sur-ton-pc">Installer</a> ·

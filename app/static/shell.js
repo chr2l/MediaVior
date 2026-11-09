@@ -81,8 +81,8 @@ function announceNewFiles(jobs) {
   libraryUnseen += jobs.length;
   setBadge("bibliotheque", libraryUnseen);
   const text = jobs.length === 1 && jobs[0].title
-    ? `« ${jobs[0].title} » est dans la bibliothèque.`
-    : `${jobs.length} nouveaux fichiers dans la bibliothèque.`;
+    ? `« ${jobs[0].title} » est dans le coffre.`
+    : `${jobs.length} nouveaux fichiers dans le coffre.`;
   showToast(text, "Voir", () => showView("bibliotheque"));
 }
 

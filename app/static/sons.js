@@ -35,7 +35,7 @@ function renderSons() {
   sonsFetchBtn.disabled = sonsJobActive;
   sonsFetchBtn.textContent = sonsJobActive
     ? "Recherche en cours…"
-    : `Chercher et télécharger ${n > 1 ? `les ${n} sons` : "le son"}`;
+    : `Chercher et mettre au coffre ${n > 1 ? `les ${n} sons` : "le son"}`;
 
   sonsList.replaceChildren(
     ...sons.map((son) => {

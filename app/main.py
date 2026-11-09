@@ -556,7 +556,7 @@ def _make_waveform(media: Path, png: Path) -> bool:
     tmp = png.with_name(".waveform-tmp.png")
     result = subprocess.run(
         [FFMPEG, "-v", "error", "-nostdin", "-y", "-i", str(media),
-         "-filter_complex", "aformat=channel_layouts=mono,showwavespic=s=1600x200:scale=sqrt:colors=0xC89B4C",
+         "-filter_complex", "aformat=channel_layouts=mono,showwavespic=s=1600x200:scale=sqrt:colors=0x3B8CC2",
          "-frames:v", "1", str(tmp)],
         capture_output=True, timeout=600,
     )

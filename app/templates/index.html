@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MediaVior</title>
-<meta name="theme-color" content="#121821">
+<meta name="theme-color" content="#15120F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7F1E6" media="(prefers-color-scheme: light)">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
@@ -23,18 +24,12 @@
     <!-- En-tête : nom de l'appli et boutons de la version PC -->
     <header class="topbar">
       <a class="brand" href="#telecharger">
-        <svg class="brand__mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="8" y="14" width="48" height="40" rx="2" stroke="currentColor" stroke-width="3"/>
-          <path d="M8 26h48" stroke="currentColor" stroke-width="3"/>
-          <circle cx="32" cy="40" r="7" stroke="currentColor" stroke-width="3"/>
-          <path d="M32 36v4l3 2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-          <path d="M20 14V10a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4" stroke="currentColor" stroke-width="3"/>
-        </svg>
+        <span class="brand__mark" data-icon="safe"></span>
         <span class="brand__name">MediaVior</span>
       </a>
       {% if local %}
       <div class="topbar__local">
-        <button type="button" class="btn btn--ghost btn--sm" id="openFolderBtn" title="{{ folder }}">Ouvrir le dossier</button>
+        <button type="button" class="btn btn--quiet btn--sm" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Ouvrir le dossier</button>
         <button type="button" class="btn-link" id="quitBtn">Quitter</button>
       </div>
       {% endif %}
@@ -42,24 +37,30 @@
 
     <!-- ===== Télécharger : trois façons ===== -->
     <section class="view" data-view="telecharger" aria-labelledby="viewTelecharger">
-      <header class="view-head">
+      <header class="hero">
+        <svg class="hero__safe" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="6" y="8" width="52" height="44" rx="7"/><rect x="13" y="15" width="38" height="30" rx="4" opacity=".55"/>
+          <circle cx="32" cy="30" r="8"/><circle cx="32" cy="30" r="2.2" fill="currentColor"/>
+          <path d="M32 22v-2.5M40 30h2.5M32 38v2.5M24 30h-2.5"/><path d="M45 25v10" stroke-width="3.2"/><path d="M14 52v4M50 52v4"/>
+        </svg>
         <div>
-          <h1 class="view-head__title" id="viewTelecharger">Télécharger</h1>
-          <p class="view-head__sub">Mets un média à l'abri : un lien, plusieurs liens d'un coup, ou une liste de titres à retrouver.</p>
+          <h1 class="hero__title" id="viewTelecharger">Mon coffre</h1>
+          <p class="hero__hello" id="heroHello">Colle un lien pour mettre un média à l'abri.</p>
         </div>
       </header>
+      <div class="stats" id="stats" aria-label="Ce qu'il y a dans ton coffre"></div>
 
       <div class="ways" role="tablist" aria-label="Façon de télécharger">
         <button type="button" class="ways__btn is-active" role="tab" data-way="lien" aria-selected="true">
-          <span class="ways__icon" data-icon="link"></span>
+          <span class="ways__icon tint tint--accent" data-icon="link"></span>
           <span class="ways__text"><strong>Un lien</strong><small>Choix précis de la qualité</small></span>
         </button>
         <button type="button" class="ways__btn" role="tab" data-way="liens" aria-selected="false">
-          <span class="ways__icon" data-icon="stack"></span>
+          <span class="ways__icon tint tint--zip" data-icon="box"></span>
           <span class="ways__text"><strong>Plusieurs liens</strong><small>Un format, un seul zip</small></span>
         </button>
         <button type="button" class="ways__btn" role="tab" data-way="titres" aria-selected="false">
-          <span class="ways__icon" data-icon="music"></span>
+          <span class="ways__icon tint tint--son" data-icon="list"></span>
           <span class="ways__text"><strong>Liste de titres</strong><small>Retrouvés tout seuls <span class="ways__count tab__badge tab__badge--muted hidden" data-badge="sons"></span></small></span>
         </button>
       </div>
@@ -70,10 +71,10 @@
           <label class="field-label" for="url">Adresse du média</label>
           <div class="intake-row">
             <textarea id="url" rows="1" inputmode="url" spellcheck="false" autocomplete="off"
-              placeholder="Colle un lien YouTube, SoundCloud, Bandcamp…"></textarea>
+              placeholder="Colle un lien ici…"></textarea>
             <button id="analyzeBtn" class="btn btn--ghost">Analyser</button>
           </div>
-          <p class="hint">Colle un lien : l'analyse démarre toute seule.</p>
+          <p class="hint sites"><span>YouTube</span><span>SoundCloud</span><span>Bandcamp</span><span>Vimeo</span><span>et plus de 1 000 autres sites</span></p>
           <p id="error" class="error hidden" role="alert"></p>
         </section>
 
@@ -89,7 +90,7 @@
             </div>
           </div>
           <div class="js-options"></div>
-          <button id="downloadBtn" class="btn btn--solid">Télécharger</button>
+          <button id="downloadBtn" class="btn btn--solid">Mettre au coffre</button>
         </section>
       </div>
 
@@ -103,7 +104,7 @@
           <div class="js-options"></div>
           <p class="hint">La qualité choisie est un maximum : chaque média prend la meilleure version disponible en dessous.</p>
           <p id="batchError" class="error hidden" role="alert"></p>
-          <button id="batchBtn" class="btn btn--solid" disabled>Télécharger en zip</button>
+          <button id="batchBtn" class="btn btn--solid" disabled>Mettre au coffre en zip</button>
         </section>
       </div>
 
@@ -142,7 +143,7 @@
             <div class="progress progress--slim"><div class="progress__track"><div class="progress__fill" id="sonsProgressFill"></div></div></div>
             <p class="hint" id="sonsProgressText"></p>
           </div>
-          <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube puis téléchargé. Les sons trouvés partent dans un zip (dans la bibliothèque) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre YouTube pour choisir la bonne vidéo à la main (la loupe le fait aussi pour n'importe quel titre).</p>
+          <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube puis téléchargé. Les sons trouvés partent dans un zip (dans le coffre) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre YouTube pour choisir la bonne vidéo à la main (la loupe le fait aussi pour n'importe quel titre).</p>
           <p id="sonsZip" class="sons-zip hidden"></p>
         </section>
       </div>
@@ -164,26 +165,28 @@
   <aside class="side" aria-label="Tes téléchargements">
     <nav class="side__tabs" role="tablist" aria-label="Tes téléchargements">
       <a class="tab" href="#encours" data-view="encours" role="tab">
+        <span class="tab__icon" data-icon="clock"></span>
         <span class="tab__label">En cours</span>
         <span class="tab__badge hidden"></span>
       </a>
       <a class="tab" href="#bibliotheque" data-view="bibliotheque" role="tab">
-        <span class="tab__label">Bibliothèque</span>
+        <span class="tab__icon" data-icon="safe"></span>
+        <span class="tab__label">Dans le coffre</span>
         <span class="tab__badge hidden"></span>
       </a>
     </nav>
 
     <section class="pane hidden" data-pane="encours" aria-label="En cours">
       <ul class="job-list" id="queueList"></ul>
-      <p class="empty" id="queueEmpty">Rien en cours. Ce que tu lances apparaît ici, puis file dans la bibliothèque.</p>
+      <p class="empty" id="queueEmpty">Rien en cours. Ce que tu lances apparaît ici, puis file dans le coffre.</p>
     </section>
 
-    <section class="pane hidden" data-pane="bibliotheque" aria-label="Bibliothèque" id="library">
+    <section class="pane hidden" data-pane="bibliotheque" aria-label="Dans le coffre" id="library">
       <div class="pane__head">
         <p class="pane__stats" id="libraryStats"></p>
         <button type="button" class="btn-link hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
       </div>
-      <input type="search" id="libraryFilter" class="library-filter hidden" placeholder="Rechercher un titre…" aria-label="Rechercher dans la bibliothèque">
+      <input type="search" id="libraryFilter" class="library-filter hidden" placeholder="Rechercher un titre…" aria-label="Rechercher dans le coffre">
       <ul class="item-list" id="libraryList"></ul>
       <p class="empty hidden" id="libraryEmpty"></p>
 
@@ -209,8 +212,8 @@
       <span class="tab__badge hidden"></span>
     </a>
     <a class="tab" href="#bibliotheque" data-view="bibliotheque">
-      <span class="tab__icon" data-icon="library"></span>
-      <span class="tab__label">Bibliothèque</span>
+      <span class="tab__icon" data-icon="safe"></span>
+      <span class="tab__label">Coffre</span>
       <span class="tab__badge hidden"></span>
     </a>
   </nav>
@@ -292,7 +295,7 @@
       <h2 class="panel__title" id="promptTitle">Ton propre MediaVior, en un prompt</h2>
       <p class="hint">Copie ce texte et colle-le dans une IA qui peut agir sur ton ordinateur
         (Claude Desktop, ChatGPT Codex, Cursor…). Elle installe MediaVior et crée l'icône sur ton bureau.
-        Ensuite : double-clic sur l'icône, colle ton lien, clique sur Télécharger.</p>
+        Ensuite : double-clic sur l'icône, colle ton lien, clique sur Mettre au coffre.</p>
     </div>
     <button type="button" class="icon-btn" id="promptClose" aria-label="Fermer" title="Fermer"></button>
   </div>

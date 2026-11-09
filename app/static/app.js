@@ -263,7 +263,7 @@ function renderResult(data) {
   singleOptions.setMedia(data.duration, data.audio_size);
 
   downloadBtn.disabled = false;
-  downloadBtn.textContent = "Télécharger";
+  downloadBtn.textContent = "Mettre au coffre";
   resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -281,13 +281,13 @@ downloadBtn.addEventListener("click", async () => {
         ...singleOptions.values(),
       },
     });
-    downloadBtn.textContent = "Ajouté à la file ✓";
+    downloadBtn.textContent = "En route vers le coffre ✓";
     urlInput.value = "";
     autoGrow();
     startPolling();
     revealQueue();
     setTimeout(() => {
-      downloadBtn.textContent = "Télécharger";
+      downloadBtn.textContent = "Mettre au coffre";
       downloadBtn.disabled = false;
     }, 1500);
   } catch (e) {
@@ -312,7 +312,7 @@ function renderBatch() {
     ? `${n} lien${n > 1 ? "s" : ""} trouvé${n > 1 ? "s" : ""}.`
     : "Colle autant de liens que tu veux (jusqu'à 100).";
   batchBtn.disabled = n < 1 || n > 100;
-  batchBtn.textContent = n > 1 ? `Télécharger les ${n} liens en zip` : "Télécharger en zip";
+  batchBtn.textContent = n > 1 ? `Mettre les ${n} liens au coffre (zip)` : "Mettre au coffre en zip";
 }
 
 batchInput.addEventListener("input", renderBatch);
@@ -328,7 +328,7 @@ batchBtn.addEventListener("click", async () => {
     batchInput.value = "";
     startPolling();
     revealQueue();
-    showToast(`${urls.length} lien${urls.length > 1 ? "s" : ""} en route : le zip arrivera dans la bibliothèque.`);
+    showToast(`${urls.length} lien${urls.length > 1 ? "s" : ""} en route : le zip arrivera dans le coffre.`);
   } catch (e) {
     batchError.textContent = e.message;
     batchError.classList.remove("hidden");
@@ -523,13 +523,14 @@ function renderLibrary(highlightIds = []) {
 
   const total = libraryItems.reduce((sum, i) => sum + i.size, 0);
   const n = libraryItems.length;
-  libraryStats.textContent = n ? `${n} fichier${n > 1 ? "s" : ""} · ${formatBytes(total)}` : "";
+  libraryStats.textContent = n ? `${n} média${n > 1 ? "s" : ""} · ${formatBytes(total)}` : "";
+  renderStats();
   libraryFilter.classList.toggle("hidden", n < 6 && !filter);
 
   libraryEmpty.classList.toggle("hidden", items.length > 0);
   libraryEmpty.textContent = n
     ? "Aucun titre ne correspond à ce filtre."
-    : "Rien dans la bibliothèque pour l'instant. Les fichiers téléchargés apparaîtront ici.";
+    : "Ton coffre est vide pour l’instant. Ce que tu mets au coffre apparaîtra ici.";
 
   // Rangés par jour, du plus récent au plus ancien
   const rows = [];
@@ -544,6 +545,54 @@ function renderLibrary(highlightIds = []) {
   });
   libraryList.replaceChildren(...rows);
   renderSelection();
+}
+
+// ---------------------------------------------------------------------------
+// En-tête « Mon coffre » : petit mot et pastilles de stats
+// ---------------------------------------------------------------------------
+
+const statsEl = document.getElementById("stats");
+const heroHello = document.getElementById("heroHello");
+
+function sinceText(timestamp) {
+  const minutes = Math.max(0, Math.round((Date.now() / 1000 - timestamp) / 60));
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} minute${minutes > 1 ? "s" : ""}`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `il y a ${hours} heure${hours > 1 ? "s" : ""}`;
+  const days = Math.round(hours / 24);
+  return `il y a ${days} jour${days > 1 ? "s" : ""}`;
+}
+
+function listenText(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  if (hours >= 1) return `${hours} h de son et d'image`;
+  return `${Math.max(1, Math.round(seconds / 60))} min de son et d'image`;
+}
+
+function renderStats() {
+  const items = libraryItems;
+  if (!items.length) {
+    heroHello.textContent = "Ton coffre est vide : colle un lien pour y mettre ton premier média.";
+    statsEl.replaceChildren();
+    return;
+  }
+  heroHello.textContent = `Bonjour ! Dernier média rangé ${sinceText(items[0].created)}.`;
+  const count = (mode) => items.filter((i) => i.mode === mode).length;
+  const size = items.reduce((sum, i) => sum + i.size, 0);
+  const seconds = items.reduce((sum, i) => sum + (i.duration || 0), 0);
+  const n = items.length;
+  const chip = (kind, iconName, strong, text) =>
+    h("span", { class: `stat tint tint--${kind}` }, icon(iconName), h("b", {}, strong), ` ${text}`);
+  const chips = [chip("accent", "lock", `${n} média${n > 1 ? "s" : ""}`, "à l'abri")];
+  const sons = count("audio");
+  const videos = count("video");
+  const zips = count("archive");
+  if (sons) chips.push(chip("son", "music", sons, `son${sons > 1 ? "s" : ""}`));
+  if (videos) chips.push(chip("video", "film", videos, `vidéo${videos > 1 ? "s" : ""}`));
+  if (zips) chips.push(chip("zip", "box", zips, `zip${zips > 1 ? "s" : ""}`));
+  chips.push(chip("neutral", "disk", formatBytes(size), seconds ? `· ${listenText(seconds)}` : ""));
+  statsEl.replaceChildren(...chips);
 }
 
 function dayLabel(timestamp) {
@@ -563,7 +612,8 @@ function dayLabel(timestamp) {
 }
 
 function libraryRow(item, isNew) {
-  const fallback = () => icon({ audio: "music", archive: "archive" }[item.mode] || "film");
+  const fallback = () => icon({ audio: "music", archive: "box" }[item.mode] || "film");
+  const kind = { audio: "son", archive: "zip" }[item.mode] || "video";
   const thumb = item.thumbnail
     ? h("img", {
         src: item.thumbnail,
@@ -599,19 +649,20 @@ function libraryRow(item, isNew) {
       },
     },
       h("span", { class: "item__check", "aria-hidden": "true" }, icon("check")),
-      h("div", { class: "item__thumb" }, thumb),
+      h("div", { class: `item__thumb tint tint--${kind}` }, thumb),
       h("div", { class: "item__body" },
         h("div", { class: "item__title", title: item.title }, item.title),
         h("div", { class: "item__meta" }, meta)));
   }
 
   return h("li", { class: `item${isNew ? " is-new" : ""}` },
-    h("div", { class: "item__thumb" }, thumb),
+    h("div", { class: `item__thumb tint tint--${kind}` }, thumb),
     h("div", { class: "item__body" },
       h("div", { class: "item__title", title: item.title }, item.title),
       h("div", { class: "item__meta" },
         item.edited ? h("span", { class: "tag tag--small" }, "édité") : null,
-        meta)),
+        meta,
+        isNew ? h("span", { class: "item__stored" }, icon("lock"), "rangé") : null)),
     h("div", { class: "item__actions" },
       h("a", {
         class: "icon-btn",
@@ -629,14 +680,14 @@ function libraryRow(item, isNew) {
       h("button", {
         type: "button",
         class: "icon-btn icon-btn--danger",
-        title: "Enlever de la bibliothèque",
-        "aria-label": "Enlever de la bibliothèque",
+        title: "Enlever du coffre",
+        "aria-label": "Enlever du coffre",
         onclick: () => deleteItem(item),
       }, icon("trash"))));
 }
 
 async function deleteItem(item) {
-  if (!confirm(`Enlever « ${item.title} » de la bibliothèque ?\nLe fichier sera définitivement effacé.`)) return;
+  if (!confirm(`Enlever « ${item.title} » du coffre ?\nLe fichier sera définitivement effacé.`)) return;
   try {
     await api(`/api/library/${item.id}`, { method: "DELETE" });
     libraryItems = libraryItems.filter((i) => i.id !== item.id);
@@ -733,7 +784,7 @@ selDelete.addEventListener("click", async () => {
   if (!items.length) return;
   const n = items.length;
   const what = n === 1 ? `« ${items[0].title} »` : `ces ${n} fichiers`;
-  if (!confirm(`Enlever ${what} de la bibliothèque ?\nCette action est définitive.`)) return;
+  if (!confirm(`Enlever ${what} du coffre ?\nCette action est définitive.`)) return;
   selDelete.disabled = true;
   selDelete.classList.add("is-loading");
   const failures = [];
