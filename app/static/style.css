@@ -1,20 +1,19 @@
 :root {
-  /* Fond chaud, bleu MediaVior pour l'action, une couleur par type de média.
+  /* Fond bleu nuit, bleu MediaVior pour l'action, une couleur par type de média.
      (Les noms --brass… datent de l'ancien thème doré : --brass = couleur d'accent.) */
   color-scheme: dark;
-  --ink: #15120F;
-  --surface: #1E1A16;
-  --surface-raised: #26211C;
-  --hairline: #3D352C;
-  --hairline-soft: #2D2721;
+  --ink: #121821;
+  --surface: #1B232E;
+  --surface-raised: #212B38;
+  --hairline: #3A4453;
+  --hairline-soft: #2A3442;
   --brass: #3B8CC2;
   --brass-bright: #58A3D6;
   --brass-dim: #2C6690;
   --on-accent: #FFFFFF;
-  --paper: #F2EBE0;
-  --paper-dim: #AB9F8E;
-  --muted: #6F6458;
-  --warm: #E8A04A;
+  --paper: #E9ECF1;
+  --paper-dim: #9BA3B0;
+  --muted: #5D6676;
   --teal: #57A98F;
   --danger: #E0674F;
   --c-son: #E8B54A;
@@ -29,18 +28,17 @@
 @media (prefers-color-scheme: light) {
   :root {
     color-scheme: light;
-    --ink: #F7F1E6;
-    --surface: #FFFAF2;
-    --surface-raised: #FFFDF8;
-    --hairline: #DDCFBA;
-    --hairline-soft: #EBE1CF;
+    --ink: #F3F5F8;
+    --surface: #FFFFFF;
+    --surface-raised: #FFFFFF;
+    --hairline: #D5DBE3;
+    --hairline-soft: #E6EAF0;
     --brass: #2F7CAC;
     --brass-bright: #256A95;
     --brass-dim: #8DB4CF;
-    --paper: #2A2118;
-    --paper-dim: #76695A;
-    --muted: #A39684;
-    --warm: #D08A2E;
+    --paper: #17202B;
+    --paper-dim: #5E6876;
+    --muted: #98A2AF;
     --teal: #2F8F73;
     --danger: #C4533A;
     --c-son: #C98A12;
@@ -66,7 +64,7 @@ body {
   padding: 72px 24px 96px;
   padding-top: max(72px, env(safe-area-inset-top));
   background:
-    radial-gradient(ellipse 60% 40% at 50% -5%, color-mix(in srgb, var(--warm) 12%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% -5%, color-mix(in srgb, var(--brass) 12%, transparent), transparent 70%),
     var(--ink);
   background-attachment: fixed;
 }
@@ -1603,7 +1601,7 @@ input[type="range"] {
   align-items: center;
   gap: 20px;
 }
-.hero__safe { width: 72px; height: 72px; flex: none; color: var(--warm); }
+.hero__safe { width: 72px; height: 72px; flex: none; color: var(--brass); }
 .hero__title {
   font-family: 'Fraunces', serif;
   font-size: 2.5rem;
@@ -1658,7 +1656,7 @@ input[type="range"] {
 .item__stored .icon { width: 11px; height: 11px; }
 .item.is-new { animation: stored 3s var(--ease) both; }
 @keyframes stored {
-  0%, 50% { background: color-mix(in srgb, var(--warm) 14%, transparent); }
+  0%, 50% { background: color-mix(in srgb, var(--brass) 14%, transparent); }
   100% { background: transparent; }
 }
 

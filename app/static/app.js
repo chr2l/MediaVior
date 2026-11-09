@@ -577,14 +577,14 @@ function renderStats() {
     statsEl.replaceChildren();
     return;
   }
-  heroHello.textContent = `Bonjour ! Dernier média rangé ${sinceText(items[0].created)}.`;
+  heroHello.textContent = `Dernier média rangé ${sinceText(items[0].created)}.`;
   const count = (mode) => items.filter((i) => i.mode === mode).length;
   const size = items.reduce((sum, i) => sum + i.size, 0);
   const seconds = items.reduce((sum, i) => sum + (i.duration || 0), 0);
   const n = items.length;
   const chip = (kind, iconName, strong, text) =>
     h("div", { class: `stat tint tint--${kind}` }, icon(iconName), h("b", {}, strong), h("span", { class: "stat__label" }, text));
-  const chips = [chip("accent", "lock", n, `média${n > 1 ? "s" : ""} à l'abri`)];
+  const chips = [chip("neutral", "lock", n, `média${n > 1 ? "s" : ""} à l'abri`)];
   const sons = count("audio");
   const videos = count("video");
   const zips = count("archive");
