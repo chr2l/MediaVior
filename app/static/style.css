@@ -1715,44 +1715,50 @@ input[type="range"] {
   .stat b { font-size: 1.1rem; }
 }
 
-/* ---------- Le coffre (sous la zone de téléchargement) : le dessin de l'icône,
-   avec l'inventaire à la place de la porte ---------- */
+/* ---------- Le coffre, en haut du panneau « Dans le coffre » : le dessin de l'icône,
+   avec l'inventaire dedans. Reste visible quand on fait défiler la liste. ---------- */
 
+.vault-dock {
+  position: sticky;
+  z-index: 3;
+  top: -16px;
+  margin: -16px -20px 14px;
+  padding: 16px 20px 14px;
+  background: var(--ink);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.vault-dock .vault:has(.stats:empty) { display: none; }
+.vault-dock:has(.stats:empty):has(.library-filter.hidden) { display: none; }
+.vault-dock .library-filter { position: static; margin: 0; }
+.vault-dock .vault + .library-filter { margin-top: 18px; }
 .vault {
   position: relative;
-  margin: 40px 0 22px;
-  padding: 10px;
-  border: 3px solid var(--brass);
-  border-radius: 22px;
+  padding: 6px;
+  border: 2.5px solid var(--brass);
+  border-radius: 16px;
 }
 /* Pieds du coffre, comme sur l'icône */
 .vault::before, .vault::after {
   content: "";
   position: absolute;
-  bottom: -13px;
-  width: 4px;
-  height: 10px;
-  border-radius: 0 0 3px 3px;
+  bottom: -10px;
+  width: 3px;
+  height: 8px;
+  border-radius: 0 0 2px 2px;
   background: var(--brass);
 }
-.vault::before { left: 18%; }
-.vault::after { right: 18%; }
+.vault::before { left: 22%; }
+.vault::after { right: 22%; }
 .vault__body {
   border: 2px solid var(--brass);
-  border-radius: 12px;
-  padding: 16px 22px 10px;
+  border-radius: 9px;
+  padding: 4px 14px;
   background: var(--surface);
 }
-.vault__title {
-  margin: 0 0 6px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--paper-dim);
-}
 .vault .stats {
-  display: block;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 22px;
   margin: 0;
   border: 0;
   background: none;
@@ -1761,29 +1767,23 @@ input[type="range"] {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
-  padding: 9px 0;
+  gap: 10px;
+  padding: 7px 0;
   border: 0;
   border-bottom: 1px dashed var(--hairline);
   border-radius: 0;
   background: none;
+  font-size: 0.86rem;
 }
 .vault .stat + .stat { border-left: 0; }
+.vault .stat:nth-last-child(-n+2):nth-child(odd),
 .vault .stat:last-child { border-bottom: 0; }
+.vault .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .vault .stat .icon { display: none; }
-.vault .stat b { order: 2; font-size: 1rem; font-weight: 600; white-space: nowrap; }
+.vault .stat b { order: 2; font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
 .vault .stat__label { order: 1; color: var(--paper); font-weight: 400; }
-.vault .stats:empty::before {
-  content: "Vide pour l'instant : ce que tu mets au coffre est compté ici.";
-  display: block;
-  padding: 10px 0 8px;
-  font-size: 0.86rem;
-  color: var(--paper-dim);
-}
 .hero { margin-bottom: 24px; }
 
-@media (max-width: 600px) {
-  .vault { padding: 7px; border-radius: 18px; }
-  .vault__body { padding: 14px 16px 6px; }
-  .vault .stat { padding: 8px 0; }
+@media (max-width: 960px) {
+  .vault-dock { top: 0; margin: 0 0 14px; padding: 12px 0 18px; }
 }

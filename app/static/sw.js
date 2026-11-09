@@ -1,6 +1,6 @@
 // Service worker minimal : rend l'appli installable et garde l'interface dispo si le réseau
 // coupe. Les appels /api/ et les fichiers ne sont jamais mis en cache.
-const CACHE = "mediavior-v12";
+const CACHE = "mediavior-v13";
 const SHELL = ["/", "/static/style.css", "/static/common.js", "/static/shell.js", "/static/app.js", "/static/sons.js", "/static/local.js", "/static/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
