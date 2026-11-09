@@ -12,7 +12,8 @@ Tu colles un lien, tu cliques sur « Mettre au coffre ». Ça tourne sur ton PC,
   <a href="docs/UTILISATION.md">Mode d'emploi</a> ·
   <a href="docs/SERVEUR.md">Sur un serveur</a> ·
   <a href="docs/DEVELOPPEMENT.md">Lire le code</a> ·
-  <a href="CONTRIBUTING.md">Contribuer</a>
+  <a href="CONTRIBUTING.md">Contribuer</a> ·
+  <a href="CODE_SIGNING.md">Code signing policy</a>
 </p>
 
 ---
@@ -112,6 +113,7 @@ voir [docs/SERVEUR.md](docs/SERVEUR.md).
 - L'appli n'a pas de mot de passe : sur un serveur, ne l'expose jamais sur Internet sans protection
   devant (voir [docs/SERVEUR.md](docs/SERVEUR.md)).
 - Une faille ? Voir [SECURITY.md](SECURITY.md).
+- Signature de l'appli Windows : voir la [politique de signature](CODE_SIGNING.md) (code signing policy).
 
 MediaVior est fait pour un **usage personnel** : sauvegarder tes propres contenus, des médias que
 tu as le droit de conserver, ou des choses menacées de disparition. Respecte le droit d'auteur et
