@@ -39,6 +39,27 @@ a = Analysis(
     excludes=["tkinter", "matplotlib", "numpy.tests"],
 )
 pyz = PYZ(a.pure)
+
+# Fiche « Propriétés > Détails » de MediaVior.exe (nom, version, éditeur) : un programme
+# sans cette fiche paraît plus suspect aux antivirus.
+version_file = None
+if IS_WIN:
+    v = json.loads((BUILD / "build.json").read_text())["version"]
+    nums = tuple((list(int(x) for x in v.split(".") if x.isdigit()) + [0, 0, 0, 0])[:4])
+    (BUILD / "version.txt").write_text(f'''VSVersionInfo(
+  ffi=FixedFileInfo(filevers={nums}, prodvers={nums}),
+  kids=[StringFileInfo([StringTable('040C04B0', [
+    StringStruct('CompanyName', 'MediaVior (projet libre)'),
+    StringStruct('FileDescription', 'MediaVior'),
+    StringStruct('FileVersion', '{v}'),
+    StringStruct('InternalName', 'MediaVior'),
+    StringStruct('LegalCopyright', 'Licence AGPL-3.0'),
+    StringStruct('OriginalFilename', 'MediaVior.exe'),
+    StringStruct('ProductName', 'MediaVior'),
+    StringStruct('ProductVersion', '{v}')])]),
+    VarFileInfo([VarStruct('Translation', [0x040C, 1200])])])
+''', encoding="utf-8")
+    version_file = str(BUILD / "version.txt")
 icon = str(ICONS / ("mediavior.ico" if IS_WIN else "icon-512.png"))
 exe = EXE(
     pyz,
@@ -48,8 +69,10 @@ exe = EXE(
     name="MediaVior",
     console=False,  # pas de fenêtre noire : l'appli s'ouvre dans le navigateur
     icon=icon,
+    version=version_file,
+    upx=False,  # fichiers compressés par UPX = souvent pris pour des virus
 )
-coll = COLLECT(exe, a.binaries, a.datas, name="MediaVior")
+coll = COLLECT(exe, a.binaries, a.datas, upx=False, name="MediaVior")
 if IS_MAC:
     app = BUNDLE(
         coll,

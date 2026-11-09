@@ -374,6 +374,9 @@ async function pollJobs() {
       announceNewFiles(newlyDone);
     }
     if (jobs.some((j) => ACTIVE.has(j.status))) next = 1000;
+    // Rien en cours : on regarde quand même de temps en temps, pour voir les
+    // téléchargements lancés ailleurs (téléphone, autre onglet)
+    else if (document.visibilityState === "visible") next = 4000;
   } catch (e) {
     next = 3000; // serveur momentanément injoignable : on réessaie
   }
@@ -548,7 +551,7 @@ function renderLibrary(highlightIds = []) {
 }
 
 // ---------------------------------------------------------------------------
-// En-tête « Mon coffre » : petit mot et pastilles de stats
+// En-tête « MediaVior » : petit mot et pastilles de stats
 // ---------------------------------------------------------------------------
 
 const statsEl = document.getElementById("stats");
@@ -573,7 +576,7 @@ function listenText(seconds) {
 function renderStats() {
   const items = libraryItems;
   if (!items.length) {
-    heroHello.textContent = "Ton coffre est vide : colle un lien pour y mettre ton premier média.";
+    heroHello.textContent = "Colle un lien pour mettre ton premier média à l'abri.";
     statsEl.replaceChildren();
     return;
   }
@@ -835,10 +838,10 @@ async function init() {
     const jobs = await api("/api/jobs");
     jobs.filter((j) => j.status === "done").forEach((j) => seenDone.add(j.id));
     renderQueue(jobs);
-    if (jobs.some((j) => ACTIVE.has(j.status))) startPolling();
   } catch (e) {
-    /* le prochain ajout relancera le suivi */
+    /* le suivi ci-dessous réessaiera */
   }
+  startPolling();
   consumeSharedLink();
 }
 
