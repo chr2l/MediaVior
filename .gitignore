@@ -67,3 +67,10 @@ id_ed25519*
 *.bak
 # Journaux
 *.log
+
+# Construction de l appli prête à installer (packaging/)
+build/
+dist/
+# Relais Cloudflare
+relais/node_modules/
+relais/.wrangler/

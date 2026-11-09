@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="300" viewBox="0 0 760 300" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Étape 1 -->
+  <rect x="10" y="10" width="360" height="280" rx="6" fill="#0F5BA7"/>
+  <text x="30" y="52" fill="#fff" font-size="17" font-weight="600">Windows a protégé votre ordinateur</text>
+  <text x="30" y="84" fill="#DCE8F5" font-size="13">Microsoft Defender SmartScreen a empêché le</text>
+  <text x="30" y="102" fill="#DCE8F5" font-size="13">démarrage d'une application non reconnue…</text>
+  <rect x="24" y="118" width="200" height="26" rx="3" fill="none" stroke="#FFD43B" stroke-width="3"/>
+  <text x="30" y="136" fill="#fff" font-size="13" text-decoration="underline">Informations complémentaires</text>
+  <rect x="234" y="236" width="122" height="34" fill="#fff" opacity="0.9"/>
+  <text x="246" y="258" fill="#333" font-size="13">Ne pas exécuter</text>
+  <circle cx="240" cy="131" r="14" fill="#FFD43B"/>
+  <text x="235" y="137" font-size="15" font-weight="700" fill="#222">1</text>
+  <!-- Étape 2 -->
+  <rect x="390" y="10" width="360" height="280" rx="6" fill="#0F5BA7"/>
+  <text x="410" y="52" fill="#fff" font-size="17" font-weight="600">Windows a protégé votre ordinateur</text>
+  <text x="410" y="84" fill="#DCE8F5" font-size="13">Application : MediaVior-Windows.exe</text>
+  <text x="410" y="102" fill="#DCE8F5" font-size="13">Éditeur : Éditeur inconnu</text>
+  <rect x="408" y="236" width="160" height="34" fill="#fff"/>
+  <rect x="405" y="233" width="166" height="40" fill="none" stroke="#FFD43B" stroke-width="3"/>
+  <text x="418" y="258" fill="#222" font-size="13" font-weight="600">Exécuter quand même</text>
+  <rect x="614" y="236" width="122" height="34" fill="#fff" opacity="0.9"/>
+  <text x="626" y="258" fill="#333" font-size="13">Ne pas exécuter</text>
+  <circle cx="590" cy="253" r="14" fill="#FFD43B"/>
+  <text x="585" y="259" font-size="15" font-weight="700" fill="#222">2</text>
+</svg>

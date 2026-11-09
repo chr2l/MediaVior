@@ -29,6 +29,7 @@
       </a>
       {% if local %}
       <div class="topbar__local">
+        <button type="button" class="btn btn--quiet btn--sm" id="phoneBtn" title="Envoyer des liens depuis ton téléphone"><span data-icon="phone"></span>Téléphone</button>
         <button type="button" class="btn btn--quiet btn--sm" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Ouvrir le dossier</button>
         <button type="button" class="btn-link" id="quitBtn">Quitter</button>
       </div>
@@ -300,19 +301,60 @@
 <dialog class="yt-dialog prompt-dialog" id="promptDialog" aria-labelledby="promptTitle">
   <div class="yt-dialog__head">
     <div class="yt-dialog__heading">
-      <h2 class="panel__title" id="promptTitle">Ton propre MediaVior, en un prompt</h2>
-      <p class="hint">Copie ce texte et colle-le dans une IA qui peut agir sur ton ordinateur
-        (Claude Desktop, ChatGPT Codex, Cursor…). Elle installe MediaVior et crée l'icône sur ton bureau.
-        Ensuite : double-clic sur l'icône, colle ton lien, clique sur Mettre au coffre.</p>
+      <h2 class="panel__title" id="promptTitle">Ton propre MediaVior, sur ton PC</h2>
+      <p class="hint">Télécharge l'appli, double-clique dessus, c'est tout : tout est inclus, et elle
+        se met à jour toute seule. Gratuit, sans compte.</p>
     </div>
     <button type="button" class="icon-btn" id="promptClose" aria-label="Fermer" title="Fermer"></button>
   </div>
+  <div class="dl-buttons" id="dlButtons">
+    <a class="btn btn--ghost btn--sm" data-os="win" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe">Windows</a>
+    <a class="btn btn--ghost btn--sm" data-os="mac" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg">Mac (puce Apple)</a>
+    <a class="btn btn--ghost btn--sm" data-os="linux" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage">Linux</a>
+  </div>
+  <p class="hint">Au premier lancement, Windows ou le Mac affichent un avertissement (l'appli n'a pas de
+    signature payante). <a href="{{ github }}/blob/main/docs/INSTALLER.md" target="_blank" rel="noopener">Comment l'ouvrir quand même, en images</a>.</p>
+  <h3 class="prompt-dialog__alt">Ou avec une IA</h3>
+  <p class="hint">Copie ce texte et colle-le dans une IA qui peut agir sur ton ordinateur
+    (Claude Desktop, ChatGPT Codex, Cursor…). Elle installe MediaVior et crée l'icône sur ton bureau.</p>
   <textarea class="prompt-dialog__text" id="promptText" readonly rows="10" aria-label="Prompt d'installation"></textarea>
   <div class="yt-dialog__foot">
     <a class="hint" href="{{ github }}#installer-sur-ton-pc" target="_blank" rel="noopener">Autres façons d'installer (Pinokio, à la main)</a>
     <button type="button" class="btn btn--ghost btn--sm" id="promptCopy">Copier le prompt</button>
   </div>
 </dialog>
+
+{% if local %}
+<!-- Relier un téléphone (comme WhatsApp Web) -->
+<dialog class="yt-dialog phone-dialog" id="phoneDialog" aria-labelledby="phoneTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="phoneTitle">Ton téléphone, relié à ce PC</h2>
+      <p class="hint">Envoie un lien depuis ton téléphone, même en 4G : ce PC le télécharge, puis tu
+        récupères le fichier sur le téléphone. Pas de compte, à faire une seule fois.</p>
+    </div>
+    <button type="button" class="icon-btn" id="phoneClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <div class="phone-dialog__body">
+    <div class="phone-dialog__qr" id="phoneQr"><span class="hint">Préparation du QR code…</span></div>
+    <div class="phone-dialog__steps">
+      <ol>
+        <li>Ouvre l'appareil photo de ton téléphone et vise ce QR code.</li>
+        <li>Touche le lien qui apparaît : la page MediaVior s'ouvre, déjà reliée.</li>
+        <li>Ajoute-la à ton écran d'accueil quand elle te le propose. Sur Android, MediaVior
+          apparaît alors dans « Partager » depuis YouTube.</li>
+      </ol>
+      <p class="phone-dialog__status" id="phoneStatus" role="status"></p>
+    </div>
+  </div>
+  <div class="yt-dialog__foot">
+    <button type="button" class="btn-link" id="phoneForget" hidden>Oublier les téléphones reliés</button>
+    <button type="button" class="btn btn--ghost btn--sm" id="phoneNewQr">Nouveau QR code</button>
+  </div>
+  <p class="hint">Ce PC doit rester allumé avec MediaVior ouvert. Les messages sont chiffrés de bout
+    en bout, et les fichiers vont directement du PC au téléphone.</p>
+</dialog>
+{% endif %}
 
 <script src="/static/common.js?v={{ v }}"></script>
 <script src="/static/shell.js?v={{ v }}"></script>

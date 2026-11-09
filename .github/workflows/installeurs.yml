@@ -1,0 +1,112 @@
+name: Installeurs (Windows, Mac, Linux)
+# Construit l'appli prête à installer : Python, yt-dlp, ffmpeg et deno sont inclus.
+# - À chaque mise en ligne (push sur main) : publie une version dans « Releases », avec
+#   MediaVior-Windows.exe, MediaVior-Mac.dmg et MediaVior-Linux.AppImage. Les appli installées
+#   la voient et proposent la mise à jour.
+# - Lancé à la main (onglet Actions → Run workflow) : construit seulement, pour essayer.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "relais/**", "*.md", "extension/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installeurs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      v: ${{ steps.v.outputs.v }}
+    steps:
+      # Version = date + numéro de construction (ex. 2026.11.9.12), toujours croissante
+      - id: v
+        run: echo "v=$(date -u +%Y.%-m.%-d).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: MediaVior-Windows.exe
+          - os: macos-14  # puces Apple (M1 et suivantes)
+            asset: MediaVior-Mac.dmg
+          - os: ubuntu-22.04  # ancienne base = compatible avec plus de Linux
+            asset: MediaVior-Linux.AppImage
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.version.outputs.v }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-local.txt pyinstaller pillow
+      - name: ffmpeg, deno et numéro de version
+        run: python packaging/prepare.py ${{ env.VERSION }}
+      - name: Construction
+        run: pyinstaller --noconfirm packaging/mediavior.spec
+
+      - name: Installeur Windows
+        if: runner.os == 'Windows'
+        run: |
+          iscc /DVersion=${{ env.VERSION }} packaging\windows.iss
+          $p = Start-Process -FilePath dist\MediaVior\MediaVior.exe -ArgumentList "--verifier" -Wait -PassThru
+          Get-Content "$env:USERPROFILE\.mediavior\mediavior.log" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { exit 1 }
+
+      - name: Image disque Mac
+        if: runner.os == 'macOS'
+        run: |
+          dist/MediaVior.app/Contents/MacOS/MediaVior --verifier
+          mkdir dmg && cp -R dist/MediaVior.app dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname MediaVior -srcfolder dmg -ov -format UDZO dist/MediaVior-Mac.dmg
+
+      - name: AppImage Linux
+        if: runner.os == 'Linux'
+        run: |
+          dist/MediaVior/MediaVior --verifier
+          mkdir -p AppDir/usr/lib
+          cp -R dist/MediaVior AppDir/usr/lib/mediavior
+          cp packaging/linux-apprun.sh AppDir/AppRun
+          cp app/static/icons/icon-512.png AppDir/mediavior.png
+          printf '[Desktop Entry]\nType=Application\nName=MediaVior\nComment=Sauvegarde tes médias\nExec=MediaVior\nIcon=mediavior\nCategories=AudioVideo;Network;\nTerminal=false\n' > AppDir/mediavior.desktop
+          curl -fsSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 ./appimagetool AppDir dist/MediaVior-Linux.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push'
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Publier la version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.version.outputs.v }}
+        run: |
+          ls -la out
+          gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "MediaVior $TAG" \
+            --notes "Télécharge le fichier de ton système, puis double-clique dessus. Aide : https://github.com/chr2l/MediaVior/blob/main/docs/INSTALLER.md"

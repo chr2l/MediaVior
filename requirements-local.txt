@@ -1,2 +1,5 @@
 static-ffmpeg>=2.7
 deno>=2.5
+# Téléphone relié (QR code, connexion directe) : voir app/jumelage.py
+aiortc>=1.9
+segno>=1.6

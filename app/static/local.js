@@ -44,6 +44,19 @@ async function loadPrompt() {
   return promptText.value;
 }
 
+// Met en avant le bouton de téléchargement du système de la personne
+const dlButtons = document.getElementById("dlButtons");
+if (dlButtons) {
+  const ua = navigator.userAgent;
+  const os = /Windows/.test(ua) ? "win" : /Macintosh|Mac OS X/.test(ua) ? "mac" : /Linux/.test(ua) && !/Android/.test(ua) ? "linux" : "";
+  const mine = os && dlButtons.querySelector(`[data-os="${os}"]`);
+  if (mine) {
+    mine.classList.add("is-mine");
+    mine.textContent = "Télécharger pour " + mine.textContent;
+    dlButtons.prepend(mine);
+  }
+}
+
 if (promptOpen) {
   promptOpen.addEventListener("click", async () => {
     promptDialog.showModal();
@@ -71,3 +84,111 @@ promptCopy.addEventListener("click", async () => {
     showToast(e.message);
   }
 });
+
+// ---------------------------------------------------------------------------
+// Téléphone relié (QR code) : voir app/jumelage.py
+// ---------------------------------------------------------------------------
+
+const phoneDialog = document.getElementById("phoneDialog");
+if (phoneDialog) {
+  const qrBox = document.getElementById("phoneQr");
+  const status = document.getElementById("phoneStatus");
+  const forgetBtn = document.getElementById("phoneForget");
+  let poll = null;
+  let shownAt = 0;
+
+  const setStatus = (text, kind = "") => {
+    status.textContent = text;
+    status.className = "phone-dialog__status" + (kind ? " is-" + kind : "");
+  };
+
+  const showStatus = (s) => {
+    forgetBtn.hidden = !s.jumeles;
+    if (!s.dispo) return setStatus(s.raison || "Indisponible pour l'instant.", "error");
+    if (s.nouveau > shownAt) return setStatus("Téléphone relié ✓ Tu peux fermer cette fenêtre.", "ok");
+    if (s.erreur && !s.connecte) return setStatus(s.erreur, "error");
+    if (!s.connecte) return setStatus("Connexion au relais…");
+    const n = s.jumeles;
+    setStatus(n ? `${n} téléphone${n > 1 ? "s" : ""} relié${n > 1 ? "s" : ""}${s.en_ligne ? `, ${s.en_ligne} connecté${s.en_ligne > 1 ? "s" : ""} en ce moment` : ""}.`
+      : "En attente du téléphone…");
+  };
+
+  const newQr = async () => {
+    qrBox.replaceChildren(h("span", { class: "hint" }, "Préparation du QR code…"));
+    try {
+      const s = await api("/api/local/telephone/qr", { method: "POST" });
+      shownAt = Date.now() / 1000;
+      qrBox.replaceChildren(h("img", { src: s.qr, alt: "QR code à scanner avec le téléphone" }));
+      showStatus(s);
+    } catch (e) {
+      qrBox.replaceChildren(h("span", { class: "hint" }, e.message));
+    }
+  };
+
+  const refresh = async () => {
+    try {
+      showStatus(await api("/api/local/telephone"));
+    } catch (e) {
+      /* fenêtre en cours de fermeture */
+    }
+  };
+
+  document.getElementById("phoneClose").append(icon("close"));
+  document.getElementById("phoneClose").addEventListener("click", () => phoneDialog.close());
+  phoneDialog.addEventListener("click", (e) => e.target === phoneDialog && phoneDialog.close());
+  phoneDialog.addEventListener("close", () => clearInterval(poll));
+  document.getElementById("phoneNewQr").addEventListener("click", newQr);
+  forgetBtn.addEventListener("click", async () => {
+    if (!confirm("Oublier tous les téléphones reliés ? Il faudra rescanner un QR code.")) return;
+    try {
+      await api("/api/local/telephone/oublier", { method: "POST" });
+      await newQr();
+    } catch (e) {
+      showToast(e.message);
+    }
+  });
+  document.getElementById("phoneBtn").addEventListener("click", () => {
+    phoneDialog.showModal();
+    newQr();
+    clearInterval(poll);
+    poll = setInterval(refresh, 2000);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Nouvelle version de l'appli prête à installer (.exe, .dmg, AppImage)
+// ---------------------------------------------------------------------------
+
+const localBar = document.querySelector(".topbar__local");
+if (localBar) {
+  const checkUpdate = async () => {
+    let rel;
+    try {
+      rel = await api("/api/local/maj");
+    } catch (e) {
+      return;
+    }
+    if (!rel.version || document.getElementById("updateBtn")) return;
+    const btn = h("button", { type: "button", class: "btn btn--ghost btn--sm", id: "updateBtn" },
+      `Mettre à jour (${rel.version})`);
+    btn.addEventListener("click", async () => {
+      const msg = rel.auto
+        ? "Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés)."
+        : "Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.";
+      if (!confirm(msg)) return;
+      btn.disabled = true;
+      btn.textContent = "Mise à jour…";
+      try {
+        await api("/api/local/maj", { method: "POST" });
+        if (rel.auto) showToast("Installation en cours : MediaVior va se rouvrir.");
+      } catch (e) {
+        showToast(e.message);
+      }
+      btn.disabled = false;
+      btn.textContent = `Mettre à jour (${rel.version})`;
+    });
+    localBar.prepend(btn);
+  };
+  setTimeout(checkUpdate, 8000);
+  setInterval(checkUpdate, 30 * 60 * 1000);
+}
