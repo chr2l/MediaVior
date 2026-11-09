@@ -39,9 +39,9 @@
     <section class="view" data-view="telecharger" aria-labelledby="viewTelecharger">
       <header class="hero">
         <svg class="hero__safe" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="6" y="8" width="52" height="44" rx="7"/><rect x="13" y="15" width="38" height="30" rx="4" opacity=".55"/>
-          <circle cx="32" cy="30" r="8"/><circle cx="32" cy="30" r="2.2" fill="currentColor"/>
-          <path d="M32 22v-2.5M40 30h2.5M32 38v2.5M24 30h-2.5"/><path d="M45 25v10" stroke-width="3.2"/><path d="M14 52v4M50 52v4"/>
+          <rect x="6" y="7" width="52" height="42" rx="8"/><rect x="14" y="15" width="36" height="26" rx="4"/>
+          <circle cx="32" cy="28" r="6"/><circle cx="32" cy="28" r="2" fill="currentColor"/>
+          <path d="M17 49v6M47 49v6"/>
         </svg>
         <div>
           <h1 class="hero__title" id="viewTelecharger">Mon coffre</h1>
@@ -147,13 +147,6 @@
         </section>
       </div>
 
-      <!-- Le coffre (même dessin que l'icône), avec l'inventaire à la place de la porte -->
-      <section class="vault" aria-labelledby="vaultTitle">
-        <div class="vault__body">
-          <h2 class="vault__title" id="vaultTitle">Dans ton coffre</h2>
-          <div class="stats" id="stats"></div>
-        </div>
-      </section>
     </section>
 
     <footer class="app-foot">
@@ -189,11 +182,19 @@
     </section>
 
     <section class="pane hidden" data-pane="bibliotheque" aria-label="Dans le coffre" id="library">
+      <!-- Le coffre (même dessin que l'icône) avec l'inventaire dedans ; reste visible quand on fait défiler -->
+      <div class="vault-dock">
+        <section class="vault" aria-label="Ce qu'il y a dans ton coffre">
+          <div class="vault__body">
+            <div class="stats" id="stats"></div>
+          </div>
+        </section>
+        <input type="search" id="libraryFilter" class="library-filter hidden" placeholder="Rechercher un titre…" aria-label="Rechercher dans le coffre">
+      </div>
       <div class="pane__head">
         <p class="pane__stats" id="libraryStats"></p>
         <button type="button" class="btn-link hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
       </div>
-      <input type="search" id="libraryFilter" class="library-filter hidden" placeholder="Rechercher un titre…" aria-label="Rechercher dans le coffre">
       <ul class="item-list" id="libraryList"></ul>
       <p class="empty hidden" id="libraryEmpty"></p>
 
