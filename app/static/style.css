@@ -1601,7 +1601,9 @@ input[type="range"] {
   align-items: center;
   gap: 20px;
 }
-.hero__logo { width: 72px; height: 72px; flex: none; border-radius: 16px; }
+.hero__logo { width: 72px; height: 72px; flex: none; color: var(--brass); }
+.hero__logo .icon, .hero__logo svg { width: 100%; height: 100%; display: block; }
+.hero__logo svg { stroke-width: 1.25; }
 .hero__title {
   font-family: 'Fraunces', serif;
   font-size: 2.5rem;
@@ -1665,7 +1667,7 @@ input[type="range"] {
 
 @media (max-width: 600px) {
   .hero { gap: 14px; }
-  .hero__logo { width: 52px; height: 52px; border-radius: 12px; }
+  .hero__logo { width: 52px; height: 52px; }
   .hero__title { font-size: 1.9rem; }
   .stats { gap: 6px; margin: 16px 0 20px; }
   .stat { padding: 5px 10px 5px 8px; font-size: 0.78rem; }
