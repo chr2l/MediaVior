@@ -18,6 +18,7 @@ datas = [
     (str(APP / "templates"), "templates"),  # main.py les cherche à côté de lui
     (str(APP / "static"), "static"),
     (str(ROOT / "PROMPT.md"), "."),
+    (str(ROOT / "PROMPT.en.md"), "."),
     (str(BUILD / "build.json"), "."),
 ]
 datas += collect_data_files("certifi") + collect_data_files("yt_dlp_ejs")

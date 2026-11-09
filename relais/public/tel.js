@@ -6,6 +6,8 @@
 // Fichiers : envoyés directement par le PC (WebRTC), sans passer par le relais.
 "use strict";
 
+translatePage(); // voir i18n.js
+
 const STORE = "mediavior-jumelage";
 const DISMISS = "mediavior-installer-plus-tard";
 const $ = (id) => document.getElementById(id);
@@ -29,11 +31,11 @@ function h(tag, attrs = {}, ...kids) {
 }
 
 function toast(text, ms = 3200) {
-  const t = $("toast");
-  t.textContent = text;
-  t.hidden = false;
+  const el = $("toast");
+  el.textContent = t(text);
+  el.hidden = false;
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => (t.hidden = true), ms);
+  toast.timer = setTimeout(() => (el.hidden = true), ms);
 }
 
 function b64(bytes) {
@@ -70,13 +72,14 @@ function store(key, value) {
 
 function formatSize(n) {
   if (!n) return "";
-  const units = ["o", "Ko", "Mo", "Go"];
+  const units = LANG === "fr" ? ["o", "Ko", "Mo", "Go"] : ["B", "KB", "MB", "GB"];
   let i = 0;
   while (n >= 1024 && i < units.length - 1) {
     n /= 1024;
     i++;
   }
-  return `${n.toFixed(i > 1 ? 1 : 0).replace(".", ",")} ${units[i]}`;
+  const value = n.toFixed(i > 1 ? 1 : 0);
+  return `${LANG === "fr" ? value.replace(".", ",") : value} ${units[i]}`;
 }
 
 const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -214,7 +217,7 @@ async function onRelay(raw) {
 }
 
 async function send(obj) {
-  if (!ws || ws.readyState !== 1) throw new Error("Pas de connexion au PC.");
+  if (!ws || ws.readyState !== 1) throw new Error(t("Pas de connexion au PC."));
   ws.send(JSON.stringify({ t: "m", d: await seal(obj) }));
 }
 
@@ -231,7 +234,7 @@ function forget(reason) {
 function showPairError(text) {
   render();
   const el = $("erreurJumelage");
-  el.textContent = text;
+  el.textContent = t(text);
   el.hidden = false;
 }
 
@@ -271,11 +274,11 @@ function setOnline(on, unknown = false) {
   const pill = $("statut");
   pill.hidden = !pairing;
   pill.classList.toggle("is-on", on);
-  pill.textContent = on ? "PC connecté" : unknown ? "Connexion…" : "PC éteint";
+  pill.textContent = t(on ? "PC connecté" : unknown ? "Connexion…" : "PC éteint");
   $("envoyer").disabled = !on;
-  $("envoiInfo").textContent = on
+  $("envoiInfo").textContent = t(on
     ? "Le PC télécharge le fichier. Tu pourras ensuite le récupérer ici."
-    : "Allume le PC et ouvre MediaVior : le bouton se réactive tout seul.";
+    : "Allume le PC et ouvre MediaVior : le bouton se réactive tout seul.");
 }
 
 function render() {
@@ -301,9 +304,9 @@ function renderLists() {
   $("taches").replaceChildren(...jobs.map((j) => h("li", { class: "item" },
     h("span", { class: `item__dot item__dot--${j.mode || "video"}` }),
     h("div", { class: "item__body" },
-      h("div", { class: "item__title" }, j.title || "Lien"),
+      h("div", { class: "item__title" }, t(j.title || "Lien")),
       h("div", { class: "item__meta" + (j.status === "error" ? " is-error" : "") },
-        j.status === "error" ? j.error || STATUS.error : `${STATUS[j.status] || j.status} · ${Math.round(j.progress || 0)} %`),
+        j.status === "error" ? t(j.error || STATUS.error) : `${t(STATUS[j.status] || j.status)} · ${Math.round(j.progress || 0)} %`),
       j.status === "error" ? null : h("div", { class: "bar" }, h("i", { style: `width:${j.progress || 0}%` }))),
   )));
   $("fichiers").replaceChildren(...state.fichiers.map(fileRow));
@@ -323,7 +326,7 @@ function fileRow(f) {
   rows.set(f.id, { row, meta, actions, f });
   if (prev && prev.done) showSaved(f.id, prev.done);
   else if (transfer && transfer.id === f.id) actions.append(h("span", { class: "item__meta" }, "…"));
-  else actions.append(h("button", { type: "button", class: "btn btn--ghost btn--sm", onclick: () => requestFile(f) }, "Récupérer"));
+  else actions.append(h("button", { type: "button", class: "btn btn--ghost btn--sm", onclick: () => requestFile(f) }, t("Récupérer")));
   return row;
 }
 
@@ -374,7 +377,7 @@ let transfer = null;
 
 function setMeta(id, text) {
   const r = rows.get(id);
-  if (r) r.meta.textContent = text;
+  if (r) r.meta.textContent = t(text);
 }
 
 async function requestFile(f) {
@@ -404,7 +407,7 @@ function failTransfer(tid, text) {
   const r = rows.get(id);
   if (r) {
     r.meta.textContent = reason;
-    r.actions.replaceChildren(h("button", { type: "button", class: "btn btn--ghost btn--sm", onclick: () => requestFile(r.f) }, "Réessayer"));
+    r.actions.replaceChildren(h("button", { type: "button", class: "btn btn--ghost btn--sm", onclick: () => requestFile(r.f) }, t("Réessayer")));
   }
 }
 
@@ -459,7 +462,7 @@ function receive(channel, tr) {
     if (now - last > 250) {
       last = now;
       const pct = tr.size ? Math.floor((tr.received / tr.size) * 100) : 0;
-      setMeta(tr.id, `Réception · ${pct} % · ${formatSize(tr.received)}`);
+      setMeta(tr.id, `${t("Réception")} · ${pct} % · ${formatSize(tr.received)}`);
     }
   };
   channel.onclose = () => transfer === tr && !tr.finished && failTransfer(tr.tid);
@@ -483,14 +486,14 @@ function showSaved(id, done) {
   const r = rows.get(id);
   if (!r) return;
   r.done = done;
-  r.meta.textContent = `Reçu · ${formatSize(done.file.size)}`;
-  const buttons = [h("a", { class: "btn btn--ghost btn--sm", href: done.url, download: done.file.name }, "Enregistrer")];
+  r.meta.textContent = `${t("Reçu")} · ${formatSize(done.file.size)}`;
+  const buttons = [h("a", { class: "btn btn--ghost btn--sm", href: done.url, download: done.file.name }, t("Enregistrer"))];
   if (navigator.canShare && navigator.canShare({ files: [done.file] })) {
     buttons.push(h("button", {
       type: "button",
       class: "btn btn--ghost btn--sm",
       onclick: () => navigator.share({ files: [done.file], title: done.file.name }).catch(() => {}),
-    }, "Partager"));
+    }, t("Partager")));
   }
   r.actions.replaceChildren(...buttons);
 }
@@ -546,12 +549,12 @@ if (IS_IOS && STANDALONE) {
     } catch (e) {
       toast("Impossible de lire le presse-papiers.");
     }
-  } }, "Coller le jumelage copié dans Safari");
-  $("vueJumeler").append(h("p", { class: "hint" }, "Tu as déjà scanné le QR code dans Safari ? Là-bas, touche « Copier pour l'écran d'accueil », puis reviens ici :"), btn);
+  } }, t("Coller le jumelage copié dans Safari"));
+  $("vueJumeler").append(h("p", { class: "hint" }, t("Tu as déjà scanné le QR code dans Safari ? Là-bas, touche « Copier pour l'écran d'accueil », puis reviens ici :")), btn);
 }
 if (IS_IOS && !STANDALONE) {
   $("vueAppli").append(h("p", { class: "hint" },
-    "Ajouté à l'écran d'accueil, MediaVior s'ouvre déjà relié. Sinon : ",
+    t("Ajouté à l'écran d'accueil, MediaVior s'ouvre déjà relié. Sinon : "),
     h("button", { type: "button", class: "btn-link", onclick: async () => {
       try {
         await navigator.clipboard.writeText(pairingLink(pairing));
@@ -559,7 +562,7 @@ if (IS_IOS && !STANDALONE) {
       } catch (e) {
         toast("Copie impossible.");
       }
-    } }, "Copier pour l'écran d'accueil")));
+    } }, t("Copier pour l'écran d'accueil"))));
 }
 
 // ---------------------------------------------------------------------------

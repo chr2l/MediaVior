@@ -1,5 +1,8 @@
 // Outils partagés entre la page principale et l'éditeur.
 
+// Traduction de la page (voir i18n.js), avant que les autres scripts y touchent
+translatePage();
+
 async function api(path, options = {}) {
   const init = { ...options };
   if (init.body && typeof init.body !== "string") {
@@ -20,7 +23,7 @@ async function api(path, options = {}) {
       if (dialog && !dialog.open) document.getElementById("showcasePrompt")?.click();
     }
     const detail = data && data.detail;
-    throw new Error(typeof detail === "string" ? detail : "Le serveur a renvoyé une erreur.");
+    throw new Error(typeof detail === "string" ? t(detail) : t("Le serveur a renvoyé une erreur."));
   }
   return data;
 }
@@ -104,7 +107,7 @@ function parseTime(text) {
 
 function formatBytes(bytes) {
   if (!bytes) return "";
-  const units = ["o", "Ko", "Mo", "Go", "To"];
+  const units = LANG === "fr" ? ["o", "Ko", "Mo", "Go", "To"] : ["B", "KB", "MB", "GB", "TB"];
   let value = bytes;
   let i = 0;
   while (value >= 1000 && i < units.length - 1) {
@@ -112,18 +115,18 @@ function formatBytes(bytes) {
     i++;
   }
   const digits = value < 10 && i > 0 ? 1 : 0;
-  return `${value.toLocaleString("fr-FR", { maximumFractionDigits: digits })} ${units[i]}`;
+  return `${value.toLocaleString(LOCALE, { maximumFractionDigits: digits })} ${units[i]}`;
 }
 
 function formatDate(timestamp) {
   const date = new Date(timestamp * 1000);
   const now = new Date();
-  const time = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  if (date.toDateString() === now.toDateString()) return `aujourd'hui, ${time}`;
+  const time = date.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+  if (date.toDateString() === now.toDateString()) return t("aujourd'hui, {time}", { time });
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return `hier, ${time}`;
-  return date.toLocaleDateString("fr-FR", {
+  if (date.toDateString() === yesterday.toDateString()) return t("hier, {time}", { time });
+  return date.toLocaleDateString(LOCALE, {
     day: "numeric",
     month: "short",
     year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",

@@ -6,7 +6,7 @@ const MENU_ID = "lecoffre-send";
 chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
     id: MENU_ID,
-    title: "Envoyer à MediaVior…",
+    title: chrome.i18n.getMessage("menuSend"),
     contexts: ["page", "link", "video", "audio"],
   });
   if (details.reason === "install") chrome.runtime.openOptionsPage();

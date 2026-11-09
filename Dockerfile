@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ .
 COPY entrypoint.sh /entrypoint.sh
 # Servi par le bouton « Avoir MediaVior sur ton PC »
-COPY PROMPT.md ./
+COPY PROMPT.md PROMPT.en.md ./
 
 # yt-dlp mis à jour au démarrage et dès qu'une nouvelle version sort (voir entrypoint.sh)
 ENV LECOFFRE_AUTO_UPDATE=1
