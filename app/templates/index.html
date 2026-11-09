@@ -48,7 +48,6 @@
           <p class="hero__hello" id="heroHello">Colle un lien pour mettre un média à l'abri.</p>
         </div>
       </header>
-      <div class="stats" id="stats" aria-label="Ce qu'il y a dans ton coffre"></div>
 
       <div class="ways" role="tablist" aria-label="Façon de télécharger">
         <button type="button" class="ways__btn is-active" role="tab" data-way="lien" aria-selected="true">
@@ -147,6 +146,18 @@
           <p id="sonsZip" class="sons-zip hidden"></p>
         </section>
       </div>
+
+      <!-- Le coffre ouvert, avec les stats rangées dedans -->
+      <section class="vault" aria-labelledby="vaultTitle">
+        <div class="vault__door" aria-hidden="true">
+          <span class="vault__dial"></span>
+          <span class="vault__handle"></span>
+        </div>
+        <div class="vault__body">
+          <h2 class="vault__title" id="vaultTitle">Dans ton coffre</h2>
+          <div class="stats" id="stats"></div>
+        </div>
+      </section>
     </section>
 
     <footer class="app-foot">
