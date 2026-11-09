@@ -83,7 +83,7 @@ uv pip install -r requirements.txt -r requirements-local.txt
 ```
 
 ffmpeg est téléchargé automatiquement s'il n'est pas déjà installé. Tesseract (lecture des
-captures d'écran) est facultatif. Les fichiers vont dans `Téléchargements/MediaVior` ; pour en
+captures d'écran) est facultatif. Les fichiers vont dans `Téléchargements/MediaChest` ; pour en
 changer : `mediavior.py --dossier "D:\Mes médias"`.
 
 ### Sur un serveur

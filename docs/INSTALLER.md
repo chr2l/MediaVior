@@ -63,4 +63,4 @@ suffit.
   [le mode d'emploi](UTILISATION.md#sur-téléphone).
 - **Désinstaller** : Windows → Paramètres → Applications → MediaVior → Désinstaller. Mac →
   glisse MediaVior à la corbeille. Linux → supprime le fichier AppImage. Tes fichiers restent dans
-  `Téléchargements/MediaVior`.
+  `Téléchargements/MediaChest`.
