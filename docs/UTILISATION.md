@@ -15,11 +15,16 @@ Ce guide vaut pour la version PC comme pour la version serveur.
 3. Clique sur **Télécharger** : le média part dans la file **En cours** (progression, vitesse,
    temps restant, bouton **Annuler**), puis arrive dans la **Bibliothèque**.
 
-**Plusieurs liens d'un coup** : colle-les dans le champ (un par ligne, ou même noyés dans du texte).
-Ils apparaissent dans une liste, tu choisis des options communes (la qualité est alors un maximum),
-et tout part dans la file, traité un par un.
+La page **Télécharger** propose trois façons, au choix en haut : **Un lien**, **Plusieurs liens**
+et **Liste de titres**. Sur ordinateur, le panneau de droite montre en permanence ce qui est
+**En cours** et la **Bibliothèque** ; sur téléphone, ce sont les onglets du bas.
 
-**Liste de sons** : écris des titres (« Artiste - Titre », un par ligne) ou ajoute des captures
+**Plusieurs liens** : colle-les dans le champ (un par ligne, ou même noyés dans du texte ; coller
+plusieurs liens dans « Un lien » y bascule tout seul). Choisis un format commun (la qualité est alors
+un maximum) : les liens sont téléchargés un par un et rangés dans **un seul zip**, dans la
+bibliothèque. Un lien qui échoue n'arrête pas les autres.
+
+**Liste de titres** : écris des titres (« Artiste - Titre », un par ligne) ou ajoute des captures
 d'écran de playlists (bouton, glisser-déposer ou Ctrl+V) : les titres y sont lus avec Tesseract et
 ajoutés à la liste, que tu peux corriger. **Chercher et télécharger** cherche chaque titre sur
 YouTube, le télécharge en MP3/WAV et met le tout dans un zip (dans la bibliothèque), avec une
@@ -28,8 +33,8 @@ y sont signalés, avec la raison, et s'ouvrent dans une fenêtre de recherche Yo
 écouter les résultats et choisir la bonne vidéo (la loupe de chaque titre fait pareil). Une vidéo
 choisie est téléchargée telle quelle à la recherche suivante.
 
-**Bibliothèque** : tout ce qui est dans le dossier des téléchargements. Pour chaque fichier :
-récupérer, éditer ou supprimer. En version PC, le bouton **Ouvrir le dossier** l'ouvre dans
+**Bibliothèque** : tout ce qui est dans le dossier des téléchargements, rangé par jour. Sous chaque
+titre : le format et la durée. Pour chaque fichier : retélécharger, éditer ou enlever. En version PC, le bouton **Ouvrir le dossier** l'ouvre dans
 l'explorateur.
 
 **Éditeur** (icône ciseaux) : couper (poignées sur la forme d'onde, boutons « Début ici / Fin ici »,

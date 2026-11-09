@@ -215,7 +215,8 @@ document.addEventListener("paste", (e) => {
   const files = [...(e.clipboardData ? e.clipboardData.files : [])].filter((f) => f.type.startsWith("image/"));
   if (!files.length) return;
   e.preventDefault();
-  showView("sons");
+  showView("telecharger");
+  setWay("titres");
   readScreens(files);
 });
 

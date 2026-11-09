@@ -16,7 +16,7 @@ import uuid
 import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Dict, Literal, Optional
+from typing import Dict, List, Literal, Optional
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -139,6 +139,15 @@ class DownloadRequest(BaseModel):
     audio_quality: Optional[str] = None  # MP3 uniquement : "320", "192", "128" ("0" = VBR V0)
     title: Optional[str] = None
     thumbnail: Optional[str] = None
+
+
+class LinksRequest(BaseModel):
+    """Plusieurs liens, un même format : tout finit dans un seul zip."""
+    urls: list[str] = Field(min_length=1, max_length=100)
+    mode: Literal["video", "audio"]
+    quality: Optional[str] = None
+    container: Literal["original", "mp4", "mov", "mp3", "flac", "wav"]
+    audio_quality: Optional[str] = None
 
 
 class SonsAddRequest(BaseModel):
@@ -418,6 +427,7 @@ def _item_view(d: Path) -> Optional[dict]:
         "mode": "archive" if media.suffix.lower() == ".zip"
         else "audio" if media.suffix.lower() in AUDIO_EXTS else "video",
         "edited": bool(meta.get("parent")),
+        "count": meta.get("count"),  # nombre de fichiers dans un zip
     }
 
 
@@ -686,7 +696,8 @@ async def _worker() -> None:
         job = JOBS.get(job_id)
         if not job or job["status"] != "queued":  # annulé pendant l'attente
             continue
-        runner = {"download": _download_sync, "edit": _edit_sync, "sons": _sons_sync}[job["kind"]]
+        runner = {"download": _download_sync, "edit": _edit_sync, "sons": _sons_sync,
+                  "links": _links_sync}[job["kind"]]
         try:
             await loop.run_in_executor(None, runner, job)
             if job["_cancel"]:
@@ -932,12 +943,7 @@ def _run_ffmpeg(job: dict, cmd: list, total: Optional[float], log_path: Path, fa
 @app.post("/api/download")
 async def start_download(payload: DownloadRequest):
     url = await _safe_url(payload.url)
-    if payload.container not in (VIDEO_CONTAINERS if payload.mode == "video" else AUDIO_CONTAINERS):
-        raise HTTPException(status_code=400, detail="Format incompatible avec le type de média.")
-    if payload.quality and not payload.quality.isdigit():
-        raise HTTPException(status_code=400, detail="Qualité invalide.")
-    if payload.audio_quality not in (None, "0", "320", "192", "128"):
-        raise HTTPException(status_code=400, detail="Qualité audio invalide.")
+    _check_format(payload.mode, payload.container, payload.quality, payload.audio_quality)
 
     data = payload.model_dump()
     data["url"] = url
@@ -952,18 +958,18 @@ async def start_download(payload: DownloadRequest):
     return {"job_id": job["id"]}
 
 
-def _download_sync(job: dict) -> None:
-    p = job["_payload"]
-    job_dir = DOWNLOAD_DIR / job["id"]
+def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, count: int = 1) -> dict:
+    """Télécharge un média dans job_dir avec les options p. index/count : place dans un lot de liens."""
     outtmpl = str(job_dir / "%(title).150s.%(ext)s")
     parts_done = 0
+    single = count == 1
 
     def progress_hook(d: dict) -> None:
         nonlocal parts_done
         if job["_cancel"]:
             raise JobCancelled()
         info = d.get("info_dict") or {}
-        if job["title"] == p["url"] and info.get("title"):
+        if single and job["title"] == url and info.get("title"):
             job["title"] = info["title"]
             job["thumbnail"] = job["thumbnail"] or info.get("thumbnail")
         # Vidéo + audio séparés = deux fichiers téléchargés à la suite : une seule barre pour les deux
@@ -971,17 +977,18 @@ def _download_sync(job: dict) -> None:
         if d["status"] == "downloading":
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             fraction = (d.get("downloaded_bytes") or 0) / total if total else 0
-            job["progress"] = round(min(100, (parts_done + fraction) / parts * 100), 1)
-            job.update(status="downloading", speed=d.get("speed"), eta=d.get("eta"))
+            done = (parts_done + fraction) / parts
+            job["progress"] = round(min(100, (index + done) / count * 100), 1)
+            job.update(status="downloading", speed=d.get("speed"), eta=d.get("eta") if single else None)
         elif d["status"] == "finished":
             parts_done += 1
-            if parts_done >= parts:
+            if single and parts_done >= parts:
                 job.update(status="converting", speed=None, eta=None)
 
     def postprocessor_hook(d: dict) -> None:
         if job["_cancel"]:
             raise JobCancelled()
-        if d["status"] == "started":
+        if single and d["status"] == "started":
             job.update(status="converting", speed=None, eta=None)
 
     ydl_opts = {
@@ -1031,7 +1038,7 @@ def _download_sync(job: dict) -> None:
         ydl.add_post_processor(_FileTags(ydl, music=p["mode"] == "audio"), when="pre_process")
         if ydl_opts.get("writethumbnail") and not converted:
             ydl.add_post_processor(_CoverArt(ydl), when="post_process")
-        info = ydl.extract_info(p["url"], download=True) or {}
+        info = ydl.extract_info(url, download=True) or {}
 
     if job["_cancel"]:
         raise JobCancelled()
@@ -1050,7 +1057,13 @@ def _download_sync(job: dict) -> None:
     for leftover in job_dir.iterdir():  # pochettes non intégrées
         if leftover.suffix.lower() in IMAGE_EXTS:
             leftover.unlink(missing_ok=True)
+    return info
 
+
+def _download_sync(job: dict) -> None:
+    p = job["_payload"]
+    job_dir = DOWNLOAD_DIR / job["id"]
+    info = _fetch_media(job, p, p["url"], job_dir)
     result_file = _media_file(job_dir)
     if not result_file:
         raise RuntimeError("Aucun fichier n'a été produit.")
@@ -1065,6 +1078,105 @@ def _download_sync(job: dict) -> None:
         "thumbnail": info.get("thumbnail") or job["thumbnail"],
         "duration": info.get("duration"),
         "source": info.get("extractor_key") or info.get("extractor"),
+        "created": job["created"],
+    })
+
+
+def _check_format(mode: str, container: str, quality: Optional[str], audio_quality: Optional[str]) -> None:
+    if container not in (VIDEO_CONTAINERS if mode == "video" else AUDIO_CONTAINERS):
+        raise HTTPException(status_code=400, detail="Format incompatible avec le type de média.")
+    if quality and not quality.isdigit():
+        raise HTTPException(status_code=400, detail="Qualité invalide.")
+    if audio_quality not in (None, "0", "320", "192", "128"):
+        raise HTTPException(status_code=400, detail="Qualité audio invalide.")
+
+
+@app.post("/api/links")
+async def start_links(payload: LinksRequest):
+    _check_format(payload.mode, payload.container, payload.quality, payload.audio_quality)
+    urls = []
+    for raw in dict.fromkeys(u.strip() for u in payload.urls if u.strip()):
+        try:
+            urls.append(await _safe_url(raw))
+        except HTTPException as exc:
+            raise HTTPException(status_code=400, detail=f"{raw} : {exc.detail}")
+    if not urls:
+        raise HTTPException(status_code=400, detail="Aucun lien.")
+    n = len(urls)
+    title = f"Plusieurs liens · {n} lien{'s' if n > 1 else ''}"
+    data = {**payload.model_dump(), "urls": urls}
+    job = _new_job("links", title, None, data)
+    job.update(step=None, found=0, missing=0)
+    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir.mkdir(parents=True)
+    _write_meta(job_dir, {"status": "queued", "kind": "links", "title": title, "created": job["created"]})
+    await QUEUE.put(job["id"])
+    return {"job_id": job["id"]}
+
+
+def _links_sync(job: dict) -> None:
+    """Télécharge chaque lien dans son sous-dossier, puis range tout dans un zip."""
+    p = job["_payload"]
+    job_dir = DOWNLOAD_DIR / job["id"]
+    work = job_dir / ".pistes"
+    work.mkdir(exist_ok=True)
+    urls = p["urls"]
+    total = len(urls)
+    found: List[Path] = []
+    errors: List[str] = []
+
+    for index, url in enumerate(urls):
+        if job["_cancel"]:
+            raise JobCancelled()
+        job.update(status="downloading", step=f"{index + 1}/{total}", speed=None, eta=None,
+                   encoding=False, progress=round(index / total * 100, 1))
+        target = work / f"{index:03d}"
+        target.mkdir(exist_ok=True)
+        try:
+            _fetch_media(job, p, url, target, index, total)
+            media = _media_file(target)
+            if media:
+                found.append(media)
+            else:
+                errors.append(url)
+        except JobCancelled:
+            raise
+        except Exception:
+            if job["_cancel"]:
+                raise JobCancelled()
+            errors.append(url)
+        job.update(found=len(found), missing=len(errors))
+
+    if job["_cancel"]:
+        raise JobCancelled()
+    if not found:
+        raise RuntimeError("Aucun des liens n'a pu être téléchargé.")
+
+    job.update(status="converting", step=None, speed=None, encoding=False)
+    stamp = time.strftime("%Y-%m-%d %Hh%M", time.localtime(job["created"]))
+    zip_path = job_dir / f"{APP_NAME} {stamp}.zip"
+    used = set()
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED, allowZip64=True) as zf:
+        for media in found:
+            name, n = media.name, 2
+            while name.casefold() in used:
+                name = f"{media.stem} ({n}){media.suffix}"
+                n += 1
+            used.add(name.casefold())
+            zf.write(media, name)
+    shutil.rmtree(work, ignore_errors=True)
+
+    count = len(found)
+    job["title"] = f"Plusieurs liens · {count} fichier{'s' if count > 1 else ''}"
+    if errors:
+        job["title"] += f" ({len(errors)} raté{'s' if len(errors) > 1 else ''})"
+    job["filename"] = zip_path.name
+    _write_meta(job_dir, {
+        "status": "done",
+        "kind": "links",
+        "title": job["title"],
+        "count": count,
+        "failed": errors,
         "created": job["created"],
     })
 
@@ -1617,5 +1729,6 @@ def _sons_sync(job: dict) -> None:
         "status": "done",
         "kind": "sons",
         "title": job["title"],
+        "count": count,
         "created": job["created"],
     })

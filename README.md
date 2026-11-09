@@ -23,10 +23,11 @@ charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp), dans la qualité et le fo
 
 - **Vidéo** : meilleure qualité d'origine, MP4 lisible partout, ou MOV pour le montage.
 - **Audio** : piste d'origine, MP3 (320/192/128 kb/s), FLAC ou WAV, avec titre, artiste et pochette.
-- **Plusieurs liens d'un coup**, qui partent dans une file d'attente.
+- **Plusieurs liens d'un coup**, dans un même format, rangés dans un seul zip.
 - **Liste de sons** : écris des titres ou ajoute des captures d'écran de playlists ; chaque son est
   retrouvé sur YouTube et rangé dans un zip.
-- **Bibliothèque** avec recherche, sélection multiple et un **éditeur** (coupe, fondus, volume,
+- **Panneau à droite** : ce qui est **En cours**, et la **Bibliothèque** de tout ce que tu as
+  téléchargé (format, durée, retélécharger, enlever), avec recherche, sélection multiple et un **éditeur** (coupe, fondus, volume,
   extraction de l'audio).
 - **Extension Brave/Chrome** pour envoyer la page en cours d'un clic.
 

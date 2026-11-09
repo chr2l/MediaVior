@@ -18,170 +18,133 @@
 <body class="shell">
 <div class="app">
 
-  <!-- Barre latérale (ordinateur) / barre d'onglets en bas (téléphone) -->
-  <aside class="sidebar">
-    <a class="brand" href="#telecharger">
-      <svg class="brand__mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="8" y="14" width="48" height="40" rx="2" stroke="currentColor" stroke-width="3"/>
-        <path d="M8 26h48" stroke="currentColor" stroke-width="3"/>
-        <circle cx="32" cy="40" r="7" stroke="currentColor" stroke-width="3"/>
-        <path d="M32 36v4l3 2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-        <path d="M20 14V10a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4" stroke="currentColor" stroke-width="3"/>
-      </svg>
-      <span class="brand__name">MediaVior</span>
-    </a>
-    <nav class="tabs" aria-label="Sections">
-      <a class="tab" href="#telecharger" data-view="telecharger">
-        <span class="tab__icon" data-icon="download"></span>
-        <span class="tab__label">Télécharger</span>
-        <span class="tab__badge hidden"></span>
-      </a>
-      <a class="tab" href="#sons" data-view="sons">
-        <span class="tab__icon" data-icon="music"></span>
-        <span class="tab__label">Liste de sons</span>
-        <span class="tab__badge tab__badge--muted hidden"></span>
-      </a>
-      <a class="tab" href="#bibliotheque" data-view="bibliotheque">
-        <span class="tab__icon" data-icon="library"></span>
-        <span class="tab__label">Bibliothèque</span>
-        <span class="tab__badge hidden"></span>
-      </a>
-    </nav>
-    {% if local %}
-    <div class="sidebar__local">
-      <button type="button" class="btn btn--ghost btn--sm" id="openFolderBtn" title="{{ folder }}">Ouvrir le dossier</button>
-      <button type="button" class="btn-link" id="quitBtn">Quitter MediaVior</button>
-    </div>
-    {% endif %}
-    <p class="sidebar__foot">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg</p>
-  </aside>
-
   <main class="main">
 
-    <!-- ===== Télécharger ===== -->
+    <!-- En-tête : nom de l'appli et boutons de la version PC -->
+    <header class="topbar">
+      <a class="brand" href="#telecharger">
+        <svg class="brand__mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="8" y="14" width="48" height="40" rx="2" stroke="currentColor" stroke-width="3"/>
+          <path d="M8 26h48" stroke="currentColor" stroke-width="3"/>
+          <circle cx="32" cy="40" r="7" stroke="currentColor" stroke-width="3"/>
+          <path d="M32 36v4l3 2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          <path d="M20 14V10a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4" stroke="currentColor" stroke-width="3"/>
+        </svg>
+        <span class="brand__name">MediaVior</span>
+      </a>
+      {% if local %}
+      <div class="topbar__local">
+        <button type="button" class="btn btn--ghost btn--sm" id="openFolderBtn" title="{{ folder }}">Ouvrir le dossier</button>
+        <button type="button" class="btn-link" id="quitBtn">Quitter</button>
+      </div>
+      {% endif %}
+    </header>
+
+    <!-- ===== Télécharger : trois façons ===== -->
     <section class="view" data-view="telecharger" aria-labelledby="viewTelecharger">
       <header class="view-head">
         <div>
           <h1 class="view-head__title" id="viewTelecharger">Télécharger</h1>
-          <p class="view-head__sub">Un lien, une copie qui reste. Colle une adresse pour mettre un média à l'abri.</p>
+          <p class="view-head__sub">Mets un média à l'abri : un lien, plusieurs liens d'un coup, ou une liste de titres à retrouver.</p>
         </div>
       </header>
 
-      <section class="panel" id="intake">
-        <label class="field-label" for="url">Adresse du média</label>
-        <div class="intake-row">
-          <textarea id="url" rows="1" inputmode="url" spellcheck="false" autocomplete="off"
-            placeholder="youtube.com/..., soundcloud.com/..., bandcamp.com/..."></textarea>
-          <button id="analyzeBtn" class="btn btn--ghost">Analyser</button>
-        </div>
-        <p class="hint">Colle un lien : l'analyse démarre toute seule. Plusieurs liens (un par ligne) partent dans la file d'attente.</p>
-        <p id="error" class="error hidden" role="alert"></p>
-      </section>
+      <div class="ways" role="tablist" aria-label="Façon de télécharger">
+        <button type="button" class="ways__btn is-active" role="tab" data-way="lien" aria-selected="true">
+          <span class="ways__icon" data-icon="link"></span>
+          <span class="ways__text"><strong>Un lien</strong><small>Choix précis de la qualité</small></span>
+        </button>
+        <button type="button" class="ways__btn" role="tab" data-way="liens" aria-selected="false">
+          <span class="ways__icon" data-icon="stack"></span>
+          <span class="ways__text"><strong>Plusieurs liens</strong><small>Un format, un seul zip</small></span>
+        </button>
+        <button type="button" class="ways__btn" role="tab" data-way="titres" aria-selected="false">
+          <span class="ways__icon" data-icon="music"></span>
+          <span class="ways__text"><strong>Liste de titres</strong><small>Retrouvés tout seuls <span class="ways__count tab__badge tab__badge--muted hidden" data-badge="sons"></span></small></span>
+        </button>
+      </div>
 
-      <!-- Un seul lien : aperçu et choix précis de la qualité -->
-      <section class="panel hidden" id="result">
-        <div class="media-summary">
-          <img id="thumb" alt="" class="media-summary__thumb hidden">
-          <div class="media-summary__text">
-            <h2 id="title"></h2>
-            <div class="media-summary__meta">
-              <span id="source" class="tag"></span>
-              <span id="duration" class="tag tag--muted"></span>
+      <!-- 1. Un lien : aperçu et choix précis de la qualité -->
+      <div class="way" data-way="lien">
+        <section class="panel" id="intake">
+          <label class="field-label" for="url">Adresse du média</label>
+          <div class="intake-row">
+            <textarea id="url" rows="1" inputmode="url" spellcheck="false" autocomplete="off"
+              placeholder="Colle un lien YouTube, SoundCloud, Bandcamp…"></textarea>
+            <button id="analyzeBtn" class="btn btn--ghost">Analyser</button>
+          </div>
+          <p class="hint">Colle un lien : l'analyse démarre toute seule.</p>
+          <p id="error" class="error hidden" role="alert"></p>
+        </section>
+
+        <section class="panel hidden" id="result">
+          <div class="media-summary">
+            <img id="thumb" alt="" class="media-summary__thumb hidden">
+            <div class="media-summary__text">
+              <h2 id="title"></h2>
+              <div class="media-summary__meta">
+                <span id="source" class="tag"></span>
+                <span id="duration" class="tag tag--muted"></span>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="js-options"></div>
-        <button id="downloadBtn" class="btn btn--solid">Télécharger</button>
-      </section>
+          <div class="js-options"></div>
+          <button id="downloadBtn" class="btn btn--solid">Télécharger</button>
+        </section>
+      </div>
 
-      <!-- Plusieurs liens : options communes -->
-      <section class="panel hidden" id="batch">
-        <div class="panel__head">
-          <h2 class="panel__title" id="batchTitle">Plusieurs liens</h2>
-          <button type="button" class="btn-link" id="batchClear">Effacer</button>
-        </div>
-        <ul class="batch-list" id="batchList"></ul>
-        <div class="js-options"></div>
-        <p class="hint">La qualité choisie est un maximum : chaque média prend la meilleure version disponible en dessous.</p>
-        <button id="batchBtn" class="btn btn--solid">Tout ajouter à la file</button>
-      </section>
+      <!-- 2. Plusieurs liens : un même format, tout dans un zip -->
+      <div class="way hidden" data-way="liens">
+        <section class="panel" id="batch">
+          <label class="field-label" for="batchInput">Les liens, un par ligne</label>
+          <textarea id="batchInput" rows="5" spellcheck="false" autocomplete="off"
+            placeholder="https://www.youtube.com/watch?v=…&#10;https://soundcloud.com/…&#10;https://…"></textarea>
+          <p class="hint" id="batchCount">Colle autant de liens que tu veux (jusqu'à 100).</p>
+          <div class="js-options"></div>
+          <p class="hint">La qualité choisie est un maximum : chaque média prend la meilleure version disponible en dessous.</p>
+          <p id="batchError" class="error hidden" role="alert"></p>
+          <button id="batchBtn" class="btn btn--solid" disabled>Télécharger en zip</button>
+        </section>
+      </div>
 
-      <section class="panel hidden" id="queue">
-        <div class="panel__head">
-          <h2 class="panel__title">En cours</h2>
-        </div>
-        <ul class="job-list" id="queueList"></ul>
-      </section>
-
-    </section>
-
-    <!-- ===== Liste de sons ===== -->
-    <section class="view hidden" data-view="sons" aria-labelledby="viewSons">
-      <header class="view-head">
-        <div>
-          <h1 class="view-head__title" id="viewSons">Liste de sons</h1>
-          <p class="view-head__sub">Écris des titres ou ajoute des captures d'écran : chaque son est retrouvé et rangé dans un zip.</p>
-        </div>
-        <button type="button" class="btn-link hidden" id="sonsClear">Vider la liste</button>
-      </header>
-
-      <section class="panel" id="sons">
-        <div class="intake-row">
-          <textarea id="sonsInput" rows="1" spellcheck="false" autocomplete="off"
-            placeholder="Artiste - Titre (un par ligne)"></textarea>
-          <button id="sonsAddBtn" class="btn btn--ghost">Ajouter</button>
-        </div>
-        <div class="sons-drop" id="sonsDrop">
-          <input type="file" id="sonsFiles" accept="image/*" multiple class="visually-hidden">
-          <label for="sonsFiles" class="btn btn--ghost btn--sm" id="sonsFilesBtn">Ajouter des captures</label>
-          <span class="hint">ou glisse / colle des captures d'écran : les titres y sont lus automatiquement.</span>
-        </div>
-        <p id="sonsInfo" class="hint hidden"></p>
-        <ul class="sons-list" id="sonsList"></ul>
-        <div class="sons-actions hidden" id="sonsActions">
-          <label class="field">
-            <span class="field-label">Format</span>
-            <select id="sonsFormat">
-              <option value="mp3:0">MP3 · meilleure qualité</option>
-              <option value="mp3:320">MP3 · 320 kbps</option>
-              <option value="mp3:192">MP3 · 192 kbps</option>
-              <option value="wav:">WAV (sans perte)</option>
-            </select>
-          </label>
-          <button id="sonsFetchBtn" class="btn btn--solid">Chercher et télécharger</button>
-        </div>
-        <div class="sons-progress hidden" id="sonsProgress">
-          <div class="progress progress--slim"><div class="progress__track"><div class="progress__fill" id="sonsProgressFill"></div></div></div>
-          <p class="hint" id="sonsProgressText"></p>
-        </div>
-        <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube puis téléchargé. Les sons trouvés partent dans un zip (dans la bibliothèque) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre YouTube pour choisir la bonne vidéo à la main (la loupe le fait aussi pour n'importe quel titre).</p>
-        <p id="sonsZip" class="sons-zip hidden"></p>
-      </section>
-
-    </section>
-
-    <!-- ===== Bibliothèque ===== -->
-    <section class="view hidden" data-view="bibliotheque" aria-labelledby="viewBibliotheque">
-      <header class="view-head">
-        <div>
-          <h1 class="view-head__title" id="viewBibliotheque">Bibliothèque</h1>
-          <p class="view-head__sub" id="libraryStats"></p>
-        </div>
-        <button type="button" class="btn btn--ghost btn--sm hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
-      </header>
-
-      <section class="panel panel--list" id="library">
-        <input type="search" id="libraryFilter" class="library-filter hidden" placeholder="Rechercher un titre…" aria-label="Rechercher dans la bibliothèque">
-        <ul class="item-list" id="libraryList"></ul>
-        <p class="empty hidden" id="libraryEmpty"></p>
-      </section>
-
-      <!-- Sélection multiple : actions sur les fichiers cochés -->
-      <div class="selbar hidden" id="selbar" role="toolbar" aria-label="Fichiers sélectionnés">
-        <button type="button" class="btn-link" id="selAll"></button>
-        <span class="selbar__count" id="selCount" aria-live="polite"></span>
-        <button type="button" class="btn btn--ghost btn--sm" id="selDownload"></button>
-        <button type="button" class="btn btn--danger btn--sm" id="selDelete"></button>
+      <!-- 3. Liste de titres : chaque son est cherché puis rangé dans un zip -->
+      <div class="way hidden" data-way="titres">
+        <section class="panel" id="sons">
+          <div class="panel__head">
+            <label class="field-label" for="sonsInput">Artiste - Titre, un par ligne</label>
+            <button type="button" class="btn-link hidden" id="sonsClear">Vider la liste</button>
+          </div>
+          <div class="intake-row">
+            <textarea id="sonsInput" rows="1" spellcheck="false" autocomplete="off"
+              placeholder="Nina Simone - Feeling Good"></textarea>
+            <button id="sonsAddBtn" class="btn btn--ghost">Ajouter</button>
+          </div>
+          <div class="sons-drop" id="sonsDrop">
+            <input type="file" id="sonsFiles" accept="image/*" multiple class="visually-hidden">
+            <label for="sonsFiles" class="btn btn--ghost btn--sm" id="sonsFilesBtn">Ajouter des captures</label>
+            <span class="hint">ou glisse / colle des captures d'écran : les titres y sont lus automatiquement.</span>
+          </div>
+          <p id="sonsInfo" class="hint hidden"></p>
+          <ul class="sons-list" id="sonsList"></ul>
+          <div class="sons-actions hidden" id="sonsActions">
+            <label class="field">
+              <span class="field-label">Format</span>
+              <select id="sonsFormat">
+                <option value="mp3:0">MP3 · meilleure qualité</option>
+                <option value="mp3:320">MP3 · 320 kbps</option>
+                <option value="mp3:192">MP3 · 192 kbps</option>
+                <option value="wav:">WAV (sans perte)</option>
+              </select>
+            </label>
+            <button id="sonsFetchBtn" class="btn btn--solid">Chercher et télécharger</button>
+          </div>
+          <div class="sons-progress hidden" id="sonsProgress">
+            <div class="progress progress--slim"><div class="progress__track"><div class="progress__fill" id="sonsProgressFill"></div></div></div>
+            <p class="hint" id="sonsProgressText"></p>
+          </div>
+          <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube puis téléchargé. Les sons trouvés partent dans un zip (dans la bibliothèque) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre YouTube pour choisir la bonne vidéo à la main (la loupe le fait aussi pour n'importe quel titre).</p>
+          <p id="sonsZip" class="sons-zip hidden"></p>
+        </section>
       </div>
     </section>
 
@@ -194,9 +157,63 @@
       <a href="/legal">Mentions légales</a>
       <a href="{{ github }}" target="_blank" rel="noopener">Code source</a>
     </footer>
-
-    <p class="updated" id="updated" data-ts="{{ updated }}"></p>
+    <p class="app-foot app-foot--small">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg · <span id="updated" data-ts="{{ updated }}"></span></p>
   </main>
+
+  <!-- ===== Panneau fixe à droite : En cours / Bibliothèque ===== -->
+  <aside class="side" aria-label="Tes téléchargements">
+    <nav class="side__tabs" role="tablist" aria-label="Tes téléchargements">
+      <a class="tab" href="#encours" data-view="encours" role="tab">
+        <span class="tab__label">En cours</span>
+        <span class="tab__badge hidden"></span>
+      </a>
+      <a class="tab" href="#bibliotheque" data-view="bibliotheque" role="tab">
+        <span class="tab__label">Bibliothèque</span>
+        <span class="tab__badge hidden"></span>
+      </a>
+    </nav>
+
+    <section class="pane hidden" data-pane="encours" aria-label="En cours">
+      <ul class="job-list" id="queueList"></ul>
+      <p class="empty" id="queueEmpty">Rien en cours. Ce que tu lances apparaît ici, puis file dans la bibliothèque.</p>
+    </section>
+
+    <section class="pane hidden" data-pane="bibliotheque" aria-label="Bibliothèque" id="library">
+      <div class="pane__head">
+        <p class="pane__stats" id="libraryStats"></p>
+        <button type="button" class="btn-link hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
+      </div>
+      <input type="search" id="libraryFilter" class="library-filter hidden" placeholder="Rechercher un titre…" aria-label="Rechercher dans la bibliothèque">
+      <ul class="item-list" id="libraryList"></ul>
+      <p class="empty hidden" id="libraryEmpty"></p>
+
+      <!-- Sélection multiple : actions sur les fichiers cochés -->
+      <div class="selbar hidden" id="selbar" role="toolbar" aria-label="Fichiers sélectionnés">
+        <button type="button" class="btn-link" id="selAll"></button>
+        <span class="selbar__count" id="selCount" aria-live="polite"></span>
+        <button type="button" class="btn btn--ghost btn--sm" id="selDownload"></button>
+        <button type="button" class="btn btn--danger btn--sm" id="selDelete"></button>
+      </div>
+    </section>
+  </aside>
+
+  <!-- Téléphone : onglets en bas -->
+  <nav class="tabbar" aria-label="Sections">
+    <a class="tab" href="#telecharger" data-view="telecharger">
+      <span class="tab__icon" data-icon="download"></span>
+      <span class="tab__label">Télécharger</span>
+    </a>
+    <a class="tab" href="#encours" data-view="encours">
+      <span class="tab__icon" data-icon="clock"></span>
+      <span class="tab__label">En cours</span>
+      <span class="tab__badge hidden"></span>
+    </a>
+    <a class="tab" href="#bibliotheque" data-view="bibliotheque">
+      <span class="tab__icon" data-icon="library"></span>
+      <span class="tab__label">Bibliothèque</span>
+      <span class="tab__badge hidden"></span>
+    </a>
+  </nav>
 </div>
 
 <div class="toast hidden" id="toast" role="status" aria-live="polite">
