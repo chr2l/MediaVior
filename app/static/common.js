@@ -54,7 +54,8 @@ const ICONS = {
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   box: '<path d="M3.5 8l8.5-4 8.5 4v8.5L12 20.5 3.5 16.5z"/><path d="M3.5 8L12 12l8.5-4M12 12v8.5"/>',
   list: '<path d="M9 6h11M9 12h11M9 18h7"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
-  safe: '<rect x="3" y="3.5" width="18" height="14.5" rx="3"/><rect x="6" y="6.5" width="12" height="8.5" rx="1.5"/><circle cx="12" cy="10.75" r="2"/><path d="M7.5 18v2.5M16.5 18v2.5"/>',
+  // Logo de MediaVior (dessin ASCII du coffre d'elie.place, en lisse) : cadre, hublot, deux réglages
+  safe: '<rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><rect x="5.5" y="7.5" width="7.5" height="9" rx="1.5"/><circle cx="9.25" cy="11" r="1.6"/><path d="M16 10h2.5M16 14h2.5"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
   disk: '<ellipse cx="12" cy="6" rx="7.5" ry="2.5"/><path d="M4.5 6v12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5V6M4.5 12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5"/>',
   phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',

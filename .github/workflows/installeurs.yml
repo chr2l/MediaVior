@@ -116,4 +116,4 @@ jobs:
           ls -la out
           gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "MediaVior $TAG" \
-            --notes "Télécharge le fichier de ton système, puis double-clique dessus. Aide : https://github.com/chr2l/MediaVior/blob/main/docs/INSTALLER.md"
+            --notes "Télécharge le fichier de ton système, puis double-clique dessus. Aide : https://github.com/chr2l/MediaVior/blob/main/docs/INSTALLER.md — Code signing policy : https://github.com/chr2l/MediaVior/blob/main/CODE_SIGNING.md"

@@ -152,6 +152,8 @@ function setupOptions(root) {
 
 const singleOptions = setupOptions(resultEl.querySelector(".js-options"));
 const batchOptions = setupOptions(batchEl.querySelector(".js-options"));
+// Plusieurs liens : la qualité choisie est un plafond (chaque média prend le meilleur en dessous)
+batchOptions.quality.closest(".field").querySelector(".field-label").textContent = "Qualité maximale";
 
 [
   ["", "Meilleure disponible"],
@@ -310,7 +312,7 @@ function renderBatch() {
   const n = batchUrls().length;
   batchCount.textContent = n
     ? `${n} lien${n > 1 ? "s" : ""} trouvé${n > 1 ? "s" : ""}.`
-    : "Colle autant de liens que tu veux (jusqu'à 100).";
+    : "Jusqu'à 100 liens.";
   batchBtn.disabled = n < 1 || n > 100;
   batchBtn.textContent = n > 1 ? `Mettre les ${n} liens au coffre (zip)` : "Mettre au coffre en zip";
 }

@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css?v={{ v }}">
 </head>
 <body class="shell">
@@ -35,12 +35,40 @@
     <!-- ===== Télécharger : trois façons ===== -->
     <section class="view" data-view="telecharger" aria-labelledby="viewTelecharger">
       <header class="hero">
-        <img class="hero__logo" src="/static/icons/icon.svg?v={{ v }}" alt="" width="64" height="64">
+        <pre class="hero__ascii" aria-hidden="true"> _________ 
+|  ___    |
+| | O |  =|
+| |___|  =|
+|_________|</pre>
         <div>
           <h1 class="hero__title" id="viewTelecharger">MediaVior</h1>
           <p class="hero__hello" id="heroHello">Colle un lien pour mettre un média à l'abri.</p>
         </div>
       </header>
+
+      {% if not local %}
+      <!-- Vitrine : ce qu'est MediaVior et comment l'avoir chez soi (page web seulement) -->
+      <section class="showcase" aria-label="Présentation de MediaVior">
+        <p class="showcase__lead">Mets à l'abri les vidéos et les sons que tu aimes, avant qu'ils
+          disparaissent. Une appli <strong>gratuite et libre</strong>, qui tourne sur ton ordinateur.</p>
+        <div class="dl-buttons showcase__dl" id="showcaseDl">
+          <a class="btn btn--ghost" data-os="win" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe"><span data-icon="download"></span>Windows</a>
+          <a class="btn btn--ghost" data-os="mac" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg"><span data-icon="download"></span>Mac (puce Apple)</a>
+          <a class="btn btn--ghost" data-os="linux" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage"><span data-icon="download"></span>Linux</a>
+        </div>
+        <p class="showcase__more">
+          <button type="button" class="btn-link" id="showcasePrompt">Autres façons d'installer (avec une IA, Pinokio)</button>
+          · <a href="{{ github }}/blob/main/docs/INSTALLER.md" target="_blank" rel="noopener">Aide à l'installation</a>
+        </p>
+        <ul class="showcase__grid">
+          <li><span class="tint tint--accent" data-icon="link"></span><strong>Plus de 1 000 sites</strong><small>YouTube, SoundCloud, Bandcamp, Vimeo… en MP3, MP4 ou meilleure qualité.</small></li>
+          <li><span class="tint tint--zip" data-icon="box"></span><strong>Par lots</strong><small>Plusieurs liens ou une liste de titres, rangés dans un seul zip.</small></li>
+          <li><span class="tint tint--son" data-icon="phone"></span><strong>Depuis ton téléphone</strong><small>Partage un lien, ton PC le télécharge, le fichier revient sur le téléphone.</small></li>
+          <li><span class="tint tint--video" data-icon="lock"></span><strong>Chez toi, sans compte</strong><small>Rien ne passe par un serveur. Mises à jour automatiques. Code ouvert.</small></li>
+        </ul>
+        <h2 class="showcase__try">Ou directement ici</h2>
+      </section>
+      {% endif %}
 
       <div class="ways" role="tablist" aria-label="Façon de télécharger">
         <button type="button" class="ways__btn is-active" role="tab" data-way="lien" aria-selected="true">
@@ -89,12 +117,13 @@
       <!-- 2. Plusieurs liens : un même format, tout dans un zip -->
       <div class="way hidden" data-way="liens">
         <section class="panel" id="batch">
-          <label class="field-label" for="batchInput">Les liens, un par ligne</label>
-          <textarea id="batchInput" rows="5" spellcheck="false" autocomplete="off"
+          <div class="field-head">
+            <label class="field-label" for="batchInput">Les liens, un par ligne</label>
+            <span class="hint" id="batchCount">Jusqu'à 100 liens.</span>
+          </div>
+          <textarea id="batchInput" rows="3" spellcheck="false" autocomplete="off"
             placeholder="https://www.youtube.com/watch?v=…&#10;https://soundcloud.com/…&#10;https://…"></textarea>
-          <p class="hint" id="batchCount">Colle autant de liens que tu veux (jusqu'à 100).</p>
           <div class="js-options"></div>
-          <p class="hint">La qualité choisie est un maximum : chaque média prend la meilleure version disponible en dessous.</p>
           <p id="batchError" class="error hidden" role="alert"></p>
           <button id="batchBtn" class="btn btn--solid" disabled>Mettre au coffre en zip</button>
         </section>
