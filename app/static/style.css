@@ -103,7 +103,7 @@ body.shell {
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   margin-bottom: 40px;
 }
@@ -1601,7 +1601,7 @@ input[type="range"] {
   align-items: center;
   gap: 20px;
 }
-.hero__safe { width: 72px; height: 72px; flex: none; color: var(--brass); }
+.hero__logo { width: 72px; height: 72px; flex: none; border-radius: 16px; }
 .hero__title {
   font-family: 'Fraunces', serif;
   font-size: 2.5rem;
@@ -1665,7 +1665,7 @@ input[type="range"] {
 
 @media (max-width: 600px) {
   .hero { gap: 14px; }
-  .hero__safe { width: 52px; height: 52px; }
+  .hero__logo { width: 52px; height: 52px; border-radius: 12px; }
   .hero__title { font-size: 1.9rem; }
   .stats { gap: 6px; margin: 16px 0 20px; }
   .stat { padding: 5px 10px 5px 8px; font-size: 0.78rem; }
@@ -1673,7 +1673,6 @@ input[type="range"] {
 }
 
 /* Retouches du 09/11 : coffre en bleu, stats en tableau, icônes des trois façons sans fond */
-.hero__safe { color: var(--brass); }
 
 .stats {
   display: grid;
@@ -1765,7 +1764,7 @@ input[type="range"] {
 }
 .vault .stat {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: baseline;
   gap: 10px;
   padding: 7px 0;
@@ -1780,8 +1779,8 @@ input[type="range"] {
 .vault .stat:last-child { border-bottom: 0; }
 .vault .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .vault .stat .icon { display: none; }
-.vault .stat b { order: 2; font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
-.vault .stat__label { order: 1; color: var(--paper); font-weight: 400; }
+.vault .stat b { order: 1; font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+.vault .stat__label { order: 2; color: var(--paper); font-weight: 400; }
 .hero { margin-bottom: 24px; }
 
 @media (max-width: 960px) {

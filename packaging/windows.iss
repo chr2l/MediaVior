@@ -27,6 +27,11 @@ SolidCompression=yes
 WizardStyle=modern
 CloseApplications=force
 LicenseFile=..\LICENSE
+VersionInfoVersion={#Version}
+VersionInfoCompany=MediaVior (projet libre)
+VersionInfoDescription=Installeur de MediaVior
+VersionInfoProductName=MediaVior
+VersionInfoCopyright=Licence AGPL-3.0
 
 [Languages]
 Name: "fr"; MessagesFile: "compiler:Languages\French.isl"
