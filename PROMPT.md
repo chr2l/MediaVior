@@ -85,7 +85,8 @@ MediaVior s'ouvre. Vérifie qu'elle répond : `http://127.0.0.1:8010/api/ping` d
 1. Que c'est installé, et où se trouve l'icône **MediaVior** (bureau, et menu Démarrer sur Windows).
 2. Comment s'en servir : double-clic sur l'icône, colle un lien, choisis Vidéo ou Audio, clique sur
    **Mettre au coffre**. Les fichiers arrivent dans `Téléchargements/MediaChest` (bouton « Ouvrir le
-   dossier » dans l'appli).
+   dossier » dans l'appli). L'appli suit la langue de l'ordinateur ; le lien « English / Français »
+   en bas la change.
 3. Que l'appli se met à jour toute seule au lancement (une fois par jour), et qu'on la ferme avec
    le bouton « Quitter MediaVior ».
 4. Que je peux aussi relier mon téléphone : bouton **Téléphone** en haut de l'appli, puis scanner

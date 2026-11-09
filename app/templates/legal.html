@@ -11,11 +11,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css?v={{ v }}">
 <link rel="stylesheet" href="/static/legal.css?v={{ v }}">
+<script src="/static/i18n-en.js?v={{ v }}"></script>
+<script src="/static/i18n.js?v={{ v }}"></script>
 </head>
 <body class="legal">
 
 <header class="legal-top">
   <a class="legal-top__back" href="/">← Retour à MediaVior</a>
+  <button type="button" class="btn-link legal-top__lang" data-lang-switch></button>
 </header>
 
 <div class="legal-layout">
@@ -104,7 +107,7 @@
       <h2>Cookies et stockage local</h2>
       <p>MediaVior ne dépose pas de cookie de suivi. Le navigateur garde seulement une copie de
         l'interface (pour qu'elle s'affiche même si le réseau coupe) et, éventuellement, tes derniers
-        choix d'options. Rien de tout ça ne quitte ton appareil.</p>
+        choix (options, langue). Rien de tout ça ne quitte ton appareil.</p>
     </section>
 
     <section id="tiers">

@@ -275,9 +275,10 @@ async def legal(request: Request):
 # Version locale (PC) : prompt d'installation, dossier, arrêt
 # ---------------------------------------------------------------------------
 
-def _prompt_file() -> Optional[Path]:
-    # app/ en local (le dépôt entier est là), /app dans l'image Docker
-    for p in (BASE_DIR.parent / "PROMPT.md", BASE_DIR / "PROMPT.md"):
+def _prompt_file(lang: str = "fr") -> Optional[Path]:
+    # app/ en local (le dépôt entier est là), /app dans l'image Docker. PROMPT.en.md = version anglaise
+    names = ["PROMPT.en.md", "PROMPT.md"] if lang == "en" else ["PROMPT.md"]
+    for p in (folder / name for name in names for folder in (BASE_DIR.parent, BASE_DIR)):
         if p.is_file():
             return p
     return None
@@ -289,9 +290,9 @@ async def ping():
 
 
 @app.get("/api/prompt", response_class=PlainTextResponse)
-async def install_prompt():
+async def install_prompt(lang: str = "fr"):
     """Le prompt à coller dans une IA pour installer MediaVior sur son propre PC."""
-    p = _prompt_file()
+    p = _prompt_file(lang)
     if not p:
         raise HTTPException(status_code=404, detail="Prompt introuvable.")
     return p.read_text(encoding="utf-8")

@@ -61,9 +61,9 @@ wideQuery.addEventListener("change", () => showView(currentView));
 const updatedEl = document.getElementById("updated");
 const updatedAt = updatedEl ? new Date(Number(updatedEl.dataset.ts) * 1000) : NaN;
 if (!isNaN(updatedAt)) {
-  const day = updatedAt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-  const time = updatedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  updatedEl.textContent = `Mis à jour le ${day} à ${time}`;
+  const day = updatedAt.toLocaleDateString(LOCALE, { day: "numeric", month: "long", year: "numeric" });
+  const time = updatedAt.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+  updatedEl.textContent = t("Mis à jour le {day} à {time}", { day, time });
 }
 
 window.addEventListener("hashchange", () => showView(viewFromHash()));
@@ -81,9 +81,9 @@ function announceNewFiles(jobs) {
   libraryUnseen += jobs.length;
   setBadge("bibliotheque", libraryUnseen);
   const text = jobs.length === 1 && jobs[0].title
-    ? `« ${jobs[0].title} » est dans le coffre.`
-    : `${jobs.length} nouveaux fichiers dans le coffre.`;
-  showToast(text, "Voir", () => showView("bibliotheque"));
+    ? t("« {title} » est dans le coffre.", { title: jobs[0].title })
+    : t("{n} nouveaux fichiers dans le coffre.", { n: jobs.length });
+  showToast(text, t("Voir"), () => showView("bibliotheque"));
 }
 
 function showToast(text, actionLabel, onAction) {

@@ -1,11 +1,13 @@
 import { getSettings, saveSettings, normalizeServer, originPattern, api } from "./settings.js";
 
+translatePage(); // voir i18n.js
+
 const input = document.querySelector(".js-server");
 const status = document.querySelector(".js-status");
 const saveBtn = document.querySelector(".js-save");
 
 function setStatus(text, kind = "") {
-  status.textContent = text;
+  status.textContent = t(text);
   status.className = "status js-status" + (kind ? " is-" + kind : "");
 }
 

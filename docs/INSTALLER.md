@@ -1,7 +1,7 @@
 # Installer MediaVior sur ton ordinateur
 
 Télécharge le fichier de ton système, puis double-clique dessus. Tout est inclus (Python, yt-dlp,
-ffmpeg) : rien d'autre à installer. Gratuit, sans compte.
+ffmpeg) : rien d'autre à installer. Gratuit, sans compte. [English version](INSTALLER.en.md).
 
 | Système | Fichier |
 |---|---|
