@@ -22,7 +22,7 @@ from urllib.request import urlopen
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from starlette.background import BackgroundTask
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -119,6 +119,34 @@ if LOCAL_MODE:
             same = o.hostname in ("127.0.0.1", "localhost", "::1") and o.port == request.url.port
             if not same and not re.match(r"^(chrome|moz)-extension://[a-z0-9-]+$", origin):
                 return JSONResponse({"detail": "Requête refusée."}, status_code=403)
+        return await call_next(request)
+
+
+# Aperçu (page web publique) : les visiteurs voient l'interface, mais rien ne se télécharge sur ce
+# serveur et rien du coffre n'est montré. Seul l'administrateur garde l'outil complet : la porte
+# d'elie.place envoie « X-Elie-Role: admin » quand il est connecté, et efface cet en-tête s'il vient
+# du navigateur. À n'activer (MEDIAVIOR_APERCU=1) que derrière cette porte.
+APERCU = not LOCAL_MODE and os.environ.get("MEDIAVIOR_APERCU") == "1"
+APERCU_MSG = "Ceci est un aperçu : télécharge MediaVior pour l'utiliser sur ton ordinateur."
+
+
+def is_apercu(request: Request) -> bool:
+    return APERCU and request.headers.get("x-elie-role") != "admin"
+
+
+if APERCU:
+    @app.middleware("http")
+    async def _apercu_guard(request: Request, call_next):
+        path = request.url.path
+        if is_apercu(request):
+            if path in ("/api/ping", "/api/prompt"):
+                return await call_next(request)
+            if request.method == "GET" and path in ("/api/library", "/api/jobs", "/api/sons"):
+                return JSONResponse([])  # coffre vide pour les visiteurs
+            if path.startswith("/api/"):
+                return JSONResponse({"detail": APERCU_MSG, "apercu": True}, status_code=403)
+            if path.startswith("/edit/"):
+                return RedirectResponse("/", status_code=303)
         return await call_next(request)
 
 
@@ -234,6 +262,7 @@ async def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {
         "v": ASSET_VERSION, "ytdlp": yt_dlp.version.__version__, "updated": UPDATED_AT,
         "local": LOCAL_MODE, "github": GITHUB_URL, "folder": str(DOWNLOAD_DIR),
+        "apercu": is_apercu(request),
     })
 
 
@@ -246,9 +275,10 @@ async def legal(request: Request):
 # Version locale (PC) : prompt d'installation, dossier, arrêt
 # ---------------------------------------------------------------------------
 
-def _prompt_file() -> Optional[Path]:
-    # app/ en local (le dépôt entier est là), /app dans l'image Docker
-    for p in (BASE_DIR.parent / "PROMPT.md", BASE_DIR / "PROMPT.md"):
+def _prompt_file(lang: str = "fr") -> Optional[Path]:
+    # app/ en local (le dépôt entier est là), /app dans l'image Docker. PROMPT.en.md = version anglaise
+    names = ["PROMPT.en.md", "PROMPT.md"] if lang == "en" else ["PROMPT.md"]
+    for p in (folder / name for name in names for folder in (BASE_DIR.parent, BASE_DIR)):
         if p.is_file():
             return p
     return None
@@ -260,9 +290,9 @@ async def ping():
 
 
 @app.get("/api/prompt", response_class=PlainTextResponse)
-async def install_prompt():
+async def install_prompt(lang: str = "fr"):
     """Le prompt à coller dans une IA pour installer MediaVior sur son propre PC."""
-    p = _prompt_file()
+    p = _prompt_file(lang)
     if not p:
         raise HTTPException(status_code=404, detail="Prompt introuvable.")
     return p.read_text(encoding="utf-8")

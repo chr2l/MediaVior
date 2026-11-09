@@ -25,6 +25,8 @@ UninstallDisplayIcon={app}\MediaVior.exe
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+; Langue de Windows (français ou anglais), sans fenêtre de choix
+ShowLanguageDialog=no
 CloseApplications=force
 LicenseFile=..\LICENSE
 VersionInfoVersion={#Version}
@@ -37,8 +39,14 @@ VersionInfoCopyright=Licence AGPL-3.0
 Name: "fr"; MessagesFile: "compiler:Languages\French.isl"
 Name: "en"; MessagesFile: "compiler:Default.isl"
 
+[CustomMessages]
+fr.Bureau=Créer une icône sur le bureau
+en.Bureau=Create a desktop icon
+fr.Ouvrir=Ouvrir MediaVior
+en.Ouvrir=Open MediaVior
+
 [Tasks]
-Name: "bureau"; Description: "Créer une icône sur le bureau"; Flags: checkedonce
+Name: "bureau"; Description: "{cm:Bureau}"; Flags: checkedonce
 
 [Files]
 Source: "..\dist\MediaVior\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -52,4 +60,4 @@ Name: "{userprograms}\MediaVior"; Filename: "{app}\MediaVior.exe"
 Name: "{userdesktop}\MediaVior"; Filename: "{app}\MediaVior.exe"; Tasks: bureau
 
 [Run]
-Filename: "{app}\MediaVior.exe"; Description: "Ouvrir MediaVior"; Flags: nowait postinstall
+Filename: "{app}\MediaVior.exe"; Description: "{cm:Ouvrir}"; Flags: nowait postinstall

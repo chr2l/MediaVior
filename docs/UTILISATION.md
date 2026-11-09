@@ -124,4 +124,4 @@ La version de yt-dlp utilisée est affichée en bas de la barre latérale.
 - **Désinstaller** : supprime l'icône du bureau et le dossier de l'appli (`%LOCALAPPDATA%\MediaVior`
   sur Windows, `~/Library/Application Support/MediaVior` sur macOS, `~/.local/share/mediavior` sur
   Linux si elle a été installée par le prompt), puis `~/.mediavior` (réglages). Tes fichiers restent
-  dans `Téléchargements/MediaVior`.
+  dans `Téléchargements/MediaChest`.

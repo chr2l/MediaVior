@@ -15,8 +15,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css?v={{ v }}">
+<script src="/static/i18n-en.js?v={{ v }}"></script>
+<script src="/static/i18n.js?v={{ v }}"></script>
 </head>
-<body class="shell">
+<body class="shell"{% if apercu %} data-apercu{% endif %}>
 <div class="app">
 
   <main class="main">
@@ -58,7 +60,7 @@
         </div>
         <p class="showcase__more">
           <button type="button" class="btn-link" id="showcasePrompt">Autres façons d'installer (avec une IA, Pinokio)</button>
-          · <a href="{{ github }}/blob/main/docs/INSTALLER.md" target="_blank" rel="noopener">Aide à l'installation</a>
+          · <a href="{{ github }}/blob/main/docs/INSTALLER.md" data-href-en="{{ github }}/blob/main/docs/INSTALLER.en.md" target="_blank" rel="noopener">Aide à l'installation</a>
         </p>
         <ul class="showcase__grid">
           <li><span class="tint tint--accent" data-icon="link"></span><strong>Plus de 1 000 sites</strong><small>YouTube, SoundCloud, Bandcamp, Vimeo… en MP3, MP4 ou meilleure qualité.</small></li>
@@ -66,7 +68,7 @@
           <li><span class="tint tint--son" data-icon="phone"></span><strong>Depuis ton téléphone</strong><small>Partage un lien, ton PC le télécharge, le fichier revient sur le téléphone.</small></li>
           <li><span class="tint tint--video" data-icon="lock"></span><strong>Chez toi, sans compte</strong><small>Rien ne passe par un serveur. Mises à jour automatiques. Code ouvert.</small></li>
         </ul>
-        <h2 class="showcase__try">Ou directement ici</h2>
+        <h2 class="showcase__try">{% if apercu %}Aperçu de l'appli{% else %}Ou directement ici{% endif %}</h2>
       </section>
       {% endif %}
 
@@ -179,6 +181,7 @@
       {% endif %}
       <a href="/legal">Mentions légales</a>
       <a href="{{ github }}" target="_blank" rel="noopener">Code source</a>
+      <button type="button" class="btn-link" data-lang-switch></button>
     </footer>
     <p class="app-foot app-foot--small">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg · <span id="updated" data-ts="{{ updated }}"></span></p>
   </main>
@@ -334,13 +337,13 @@
     <a class="btn btn--ghost btn--sm" data-os="linux" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage">Linux</a>
   </div>
   <p class="hint">Au premier lancement, Windows ou le Mac affichent un avertissement (l'appli n'a pas de
-    signature payante). <a href="{{ github }}/blob/main/docs/INSTALLER.md" target="_blank" rel="noopener">Comment l'ouvrir quand même, en images</a>.</p>
+    signature payante). <a href="{{ github }}/blob/main/docs/INSTALLER.md" data-href-en="{{ github }}/blob/main/docs/INSTALLER.en.md" target="_blank" rel="noopener">Comment l'ouvrir quand même, en images</a>.</p>
   <h3 class="prompt-dialog__alt">Ou avec une IA</h3>
   <p class="hint">Copie ce texte et colle-le dans une IA qui peut agir sur ton ordinateur
     (Claude Desktop, ChatGPT Codex, Cursor…). Elle installe MediaVior et crée l'icône sur ton bureau.</p>
   <textarea class="prompt-dialog__text" id="promptText" readonly rows="10" aria-label="Prompt d'installation"></textarea>
   <div class="yt-dialog__foot">
-    <a class="hint" href="{{ github }}#installer-sur-ton-pc" target="_blank" rel="noopener">Autres façons d'installer (Pinokio, à la main)</a>
+    <a class="hint" href="{{ github }}#installer-sur-ton-pc" data-href-en="{{ github }}/blob/main/README.en.md#install-on-your-pc" target="_blank" rel="noopener">Autres façons d'installer (Pinokio, à la main)</a>
     <button type="button" class="btn btn--ghost btn--sm" id="promptCopy">Copier le prompt</button>
   </div>
 </dialog>

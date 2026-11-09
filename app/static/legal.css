@@ -9,7 +9,12 @@ body.legal {
   max-width: 1040px;
   margin: 0 auto;
   padding: max(24px, env(safe-area-inset-top)) 0 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
 }
+.legal-top__lang { font-size: 0.88rem; }
 .legal-top__back { color: var(--paper-dim); font-size: 0.88rem; text-decoration: none; }
 .legal-top__back:hover { color: var(--paper); }
 

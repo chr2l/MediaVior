@@ -11,7 +11,7 @@ const quitBtn = document.getElementById("quitBtn");
 if (quitBtn) {
   quitBtn.addEventListener("click", async () => {
     const busy = document.querySelector("#queueList li");
-    if (busy && !confirm("Des téléchargements sont en cours. Quitter quand même ?")) return;
+    if (busy && !confirm(t("Des téléchargements sont en cours. Quitter quand même ?"))) return;
     try {
       await api("/api/local/quit", { method: "POST" });
     } catch (e) {
@@ -19,8 +19,8 @@ if (quitBtn) {
     }
     document.body.replaceChildren(
       h("div", { class: "quit-screen" },
-        h("p", {}, "MediaVior est fermé. Tu peux fermer cette fenêtre."),
-        h("p", { class: "hint" }, "Pour le rouvrir : double-clic sur l'icône MediaVior du bureau.")),
+        h("p", {}, t("MediaVior est fermé. Tu peux fermer cette fenêtre.")),
+        h("p", { class: "hint" }, t("Pour le rouvrir : double-clic sur l'icône MediaVior du bureau."))),
     );
     setTimeout(() => window.close(), 400);
   });
@@ -38,8 +38,8 @@ promptDialog.addEventListener("click", (e) => {
 
 async function loadPrompt() {
   if (promptText.value) return promptText.value;
-  const res = await fetch("/api/prompt");
-  if (!res.ok) throw new Error("Prompt introuvable.");
+  const res = await fetch(`/api/prompt?lang=${LANG}`);
+  if (!res.ok) throw new Error(t("Prompt introuvable."));
   promptText.value = await res.text();
   return promptText.value;
 }
@@ -55,7 +55,7 @@ for (const box of document.querySelectorAll(".dl-buttons")) {
   const mine = userOs && box.querySelector(`[data-os="${userOs}"]`);
   if (!mine) continue;
   mine.classList.add("is-mine");
-  mine.lastChild.textContent = "Télécharger pour " + mine.lastChild.textContent;
+  mine.lastChild.textContent = t("Télécharger pour {os}", { os: mine.lastChild.textContent });
   box.prepend(mine);
 }
 
@@ -81,8 +81,8 @@ promptCopy.addEventListener("click", async () => {
       promptText.select();
       document.execCommand("copy");
     }
-    promptCopy.textContent = "Copié ✓";
-    setTimeout(() => (promptCopy.textContent = "Copier le prompt"), 2000);
+    promptCopy.textContent = t("Copié ✓");
+    setTimeout(() => (promptCopy.textContent = t("Copier le prompt")), 2000);
   } catch (e) {
     showToast(e.message);
   }
@@ -107,21 +107,25 @@ if (phoneDialog) {
 
   const showStatus = (s) => {
     forgetBtn.hidden = !s.jumeles;
-    if (!s.dispo) return setStatus(s.raison || "Indisponible pour l'instant.", "error");
-    if (s.nouveau > shownAt) return setStatus("Téléphone relié ✓ Tu peux fermer cette fenêtre.", "ok");
-    if (s.erreur && !s.connecte) return setStatus(s.erreur, "error");
-    if (!s.connecte) return setStatus("Connexion au relais…");
+    if (!s.dispo) return setStatus(t(s.raison || "Indisponible pour l'instant."), "error");
+    if (s.nouveau > shownAt) return setStatus(t("Téléphone relié ✓ Tu peux fermer cette fenêtre."), "ok");
+    if (s.erreur && !s.connecte) return setStatus(t(s.erreur), "error");
+    if (!s.connecte) return setStatus(t("Connexion au relais…"));
     const n = s.jumeles;
-    setStatus(n ? `${n} téléphone${n > 1 ? "s" : ""} relié${n > 1 ? "s" : ""}${s.en_ligne ? `, ${s.en_ligne} connecté${s.en_ligne > 1 ? "s" : ""} en ce moment` : ""}.`
-      : "En attente du téléphone…");
+    if (!n) return setStatus(t("En attente du téléphone…"));
+    const linked = t(n > 1 ? "{n} téléphones reliés" : "{n} téléphone relié", { n });
+    const online = s.en_ligne
+      ? t(s.en_ligne > 1 ? ", {n} connectés en ce moment" : ", {n} connecté en ce moment", { n: s.en_ligne })
+      : "";
+    setStatus(`${linked}${online}.`);
   };
 
   const newQr = async () => {
-    qrBox.replaceChildren(h("span", { class: "hint" }, "Préparation du QR code…"));
+    qrBox.replaceChildren(h("span", { class: "hint" }, t("Préparation du QR code…")));
     try {
       const s = await api("/api/local/telephone/qr", { method: "POST" });
       shownAt = Date.now() / 1000;
-      qrBox.replaceChildren(h("img", { src: s.qr, alt: "QR code à scanner avec le téléphone" }));
+      qrBox.replaceChildren(h("img", { src: s.qr, alt: t("QR code à scanner avec le téléphone") }));
       showStatus(s);
     } catch (e) {
       qrBox.replaceChildren(h("span", { class: "hint" }, e.message));
@@ -142,7 +146,7 @@ if (phoneDialog) {
   phoneDialog.addEventListener("close", () => clearInterval(poll));
   document.getElementById("phoneNewQr").addEventListener("click", newQr);
   forgetBtn.addEventListener("click", async () => {
-    if (!confirm("Oublier tous les téléphones reliés ? Il faudra rescanner un QR code.")) return;
+    if (!confirm(t("Oublier tous les téléphones reliés ? Il faudra rescanner un QR code."))) return;
     try {
       await api("/api/local/telephone/oublier", { method: "POST" });
       await newQr();
@@ -173,22 +177,22 @@ if (localBar) {
     }
     if (!rel.version || document.getElementById("updateBtn")) return;
     const btn = h("button", { type: "button", class: "btn btn--ghost btn--sm", id: "updateBtn" },
-      `Mettre à jour (${rel.version})`);
+      t("Mettre à jour ({version})", { version: rel.version }));
     btn.addEventListener("click", async () => {
       const msg = rel.auto
-        ? "Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés)."
-        : "Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.";
+        ? t("Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).")
+        : t("Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.");
       if (!confirm(msg)) return;
       btn.disabled = true;
-      btn.textContent = "Mise à jour…";
+      btn.textContent = t("Mise à jour…");
       try {
         await api("/api/local/maj", { method: "POST" });
-        if (rel.auto) showToast("Installation en cours : MediaVior va se rouvrir.");
+        if (rel.auto) showToast(t("Installation en cours : MediaVior va se rouvrir."));
       } catch (e) {
         showToast(e.message);
       }
       btn.disabled = false;
-      btn.textContent = `Mettre à jour (${rel.version})`;
+      btn.textContent = t("Mettre à jour ({version})", { version: rel.version });
     });
     localBar.prepend(btn);
   };

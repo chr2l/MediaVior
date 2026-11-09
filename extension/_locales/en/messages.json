@@ -1,0 +1,14 @@
+{
+  "description": {
+    "message": "Sends the current page or video to MediaVior, choosing how to download it."
+  },
+  "actionTitle": {
+    "message": "Send to MediaVior"
+  },
+  "commandSend": {
+    "message": "Send the page to MediaVior"
+  },
+  "menuSend": {
+    "message": "Send to MediaVior…"
+  }
+}

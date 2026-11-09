@@ -1,3 +1,5 @@
+translatePage();
+
 // Sommaire : met en avant la partie en cours de lecture (et la garde visible sur téléphone).
 const links = [...document.querySelectorAll("#toc a")];
 const sections = links.map((a) => document.querySelector(a.getAttribute("href")));

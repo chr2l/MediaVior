@@ -1,5 +1,7 @@
 import { getSettings, saveSettings, api } from "./settings.js";
 
+translatePage(); // voir i18n.js
+
 const $ = (sel) => document.querySelector(sel);
 const urlInput = $(".js-url");
 const qualitySel = $(".js-quality");
@@ -34,14 +36,14 @@ let analysis = null; // réponse de /api/analyze pour le lien affiché
 let analyzeSeq = 0;
 
 function setStatus(el, text, kind = "") {
-  el.textContent = text;
+  el.textContent = t(text);
   el.classList.remove("is-error", "is-ok");
   if (kind) el.classList.add("is-" + kind);
 }
 
 function formatBytes(n) {
   if (!n) return "";
-  const units = ["o", "Ko", "Mo", "Go"];
+  const units = LANG === "fr" ? ["o", "Ko", "Mo", "Go"] : ["B", "KB", "MB", "GB"];
   let i = 0;
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
   return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
@@ -56,7 +58,7 @@ function formatDuration(s) {
 }
 
 function fillQualities(options, preferred) {
-  qualitySel.replaceChildren(...options.map(([value, label]) => new Option(label, value)));
+  qualitySel.replaceChildren(...options.map(([value, label]) => new Option(t(label), value)));
   // La qualité retenue la dernière fois, ou la plus proche en dessous
   const values = options.map(([v]) => v);
   if (values.includes(preferred)) {
@@ -146,10 +148,10 @@ async function follow(jobId) {
       return; // la fenêtre suit seulement à titre indicatif
     }
     bar.style.width = `${job.status === "done" ? 100 : job.progress || 0}%`;
-    let text = STATUS_LABELS[job.status] || job.status;
+    let text = t(STATUS_LABELS[job.status] || job.status);
     if (job.status === "queued" && job.position > 1) text += ` (position ${job.position})`;
     if (job.status === "downloading") text += ` · ${Math.round(job.progress || 0)} %`;
-    if (job.status === "error" && job.error) text += ` : ${job.error}`;
+    if (job.status === "error" && job.error) text += `${LANG === "fr" ? " : " : ": "}${t(job.error)}`;
     const kind = job.status === "done" ? "ok" : job.status === "error" ? "error" : "";
     setStatus(sendStatus, text, kind);
     if (!["queued", "downloading", "converting", "processing"].includes(job.status)) return;
@@ -181,7 +183,7 @@ async function send() {
         thumbnail: usable ? usable.thumbnail : null,
       },
     });
-    sendBtn.textContent = "Envoyé ✓";
+    sendBtn.textContent = t("Envoyé ✓");
     setStatus(sendStatus, STATUS_LABELS.queued);
     follow(job_id);
   } catch (err) {

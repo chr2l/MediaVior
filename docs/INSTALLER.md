@@ -1,7 +1,7 @@
 # Installer MediaVior sur ton ordinateur
 
 Télécharge le fichier de ton système, puis double-clique dessus. Tout est inclus (Python, yt-dlp,
-ffmpeg) : rien d'autre à installer. Gratuit, sans compte.
+ffmpeg) : rien d'autre à installer. Gratuit, sans compte. [English version](INSTALLER.en.md).
 
 | Système | Fichier |
 |---|---|
@@ -63,4 +63,4 @@ suffit.
   [le mode d'emploi](UTILISATION.md#sur-téléphone).
 - **Désinstaller** : Windows → Paramètres → Applications → MediaVior → Désinstaller. Mac →
   glisse MediaVior à la corbeille. Linux → supprime le fichier AppImage. Tes fichiers restent dans
-  `Téléchargements/MediaVior`.
+  `Téléchargements/MediaChest`.

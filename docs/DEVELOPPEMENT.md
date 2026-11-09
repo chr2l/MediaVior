@@ -23,6 +23,10 @@ Deux façons de lancer le même serveur :
   sites).
 - **Version serveur** : `Dockerfile` + `entrypoint.sh` lancent `uvicorn main:app` sur le port 8000
   du conteneur.
+  Avec `MEDIAVIOR_APERCU=1`, la page web devient une vitrine : les visiteurs voient l'interface,
+  mais les actions proposent de télécharger l'appli et le coffre paraît vide. Seule une requête
+  avec `X-Elie-Role: admin` garde l'outil complet. À n'activer que derrière la porte d'elie.place,
+  qui pose et filtre cet en-tête.
 
 ## Carte des fichiers
 
@@ -32,6 +36,7 @@ Deux façons de lancer le même serveur :
 | `app/templates/index.html` | La page principale : Télécharger (trois façons : un lien, plusieurs liens en zip, liste de titres) et le panneau de droite (En cours, Bibliothèque) |
 | `app/templates/editor.html` | L'éditeur (coupe, fondus, volume) |
 | `app/templates/legal.html` | Mentions légales, avec sommaire latéral |
+| `app/static/i18n.js`, `app/static/i18n-en.js` | Langue de l'interface (français ou anglais) et traduction anglaise : voir « Traduction » plus bas |
 | `app/static/common.js` | Outils partagés : `api()`, `h()` (création d'éléments sans `innerHTML`), icônes |
 | `app/static/shell.js` | Navigation (panneau de droite sur ordinateur, onglets du bas sur téléphone), pastilles, notifications |
 | `app/static/app.js` | Analyse, options, file d'attente, bibliothèque |
@@ -56,6 +61,27 @@ Deux façons de lancer le même serveur :
   par `h()`.
 - **Liens filtrés** : `_safe_url()` refuse les adresses locales ou internes.
 - **yt-dlp jamais figé** : il se met à jour seul (`entrypoint.sh`, vérification PyPI, lanceur PC).
+
+## Traduction (français / anglais)
+
+L'interface s'affiche en français ou en anglais : la langue du navigateur ou du système par défaut
+(français si elle commence par « fr », anglais sinon), puis le choix fait avec le lien
+« English / Français » en bas de page (gardé dans le navigateur).
+
+- Les textes restent **écrits en français** dans le HTML et le JS.
+- `app/static/i18n-en.js` contient la traduction : la clé est la phrase française exacte.
+- Dans le HTML, rien à faire de plus : `translateDom()` traduit les textes et les attributs
+  (`placeholder`, `title`, `aria-label`, `alt`) trouvés dans le dictionnaire.
+- Dans le JS, passe par `t("Phrase avec {n} fichiers", { n })`. Pour un pluriel, deux phrases :
+  `t(n > 1 ? "{n} fichiers" : "{n} fichier", { n })`.
+- Les messages d'erreur du serveur (`app/main.py`) restent en français : ils sont traduits côté
+  navigateur, avec le même dictionnaire (et `I18N_EN_PATTERNS` quand ils contiennent un nombre).
+- Un lien vers une doc qui existe en anglais : ajoute `data-href-en="…"` à côté de `href`.
+- Une phrase absente du dictionnaire reste en français : rien ne casse.
+
+Même moteur, copié, pour la page du téléphone (`relais/public/i18n*.js`) et l'extension
+(`extension/i18n*.js`, plus `extension/_locales/` pour le nom et le menu clic droit). Le prompt
+d'installation existe en deux versions : `PROMPT.md` et `PROMPT.en.md`, à garder pareilles.
 
 ## Lancer en développement
 

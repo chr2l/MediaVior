@@ -84,15 +84,16 @@ MediaVior s'ouvre. Vérifie qu'elle répond : `http://127.0.0.1:8010/api/ping` d
 
 1. Que c'est installé, et où se trouve l'icône **MediaVior** (bureau, et menu Démarrer sur Windows).
 2. Comment s'en servir : double-clic sur l'icône, colle un lien, choisis Vidéo ou Audio, clique sur
-   **Mettre au coffre**. Les fichiers arrivent dans `Téléchargements/MediaVior` (bouton « Ouvrir le
-   dossier » dans l'appli).
+   **Mettre au coffre**. Les fichiers arrivent dans `Téléchargements/MediaChest` (bouton « Ouvrir le
+   dossier » dans l'appli). L'appli suit la langue de l'ordinateur ; le lien « English / Français »
+   en bas la change.
 3. Que l'appli se met à jour toute seule au lancement (une fois par jour), et qu'on la ferme avec
    le bouton « Quitter MediaVior ».
 4. Que je peux aussi relier mon téléphone : bouton **Téléphone** en haut de l'appli, puis scanner
    le QR code avec l'appareil photo. Ensuite, j'envoie des liens depuis le téléphone (même en 4G)
    et je récupère les fichiers dessus, tant que le PC est allumé avec MediaVior ouvert.
 5. Pour désinstaller : supprimer l'icône du bureau et le dossier `DOSSIER` (les fichiers téléchargés
-   restent dans `Téléchargements/MediaVior`).
+   restent dans `Téléchargements/MediaChest`).
 6. Enfin, demande-moi si l'appli me plaît, et propose-moi de soutenir le projet en lui mettant une
    étoile sur GitHub : https://github.com/chr2l/MediaVior (bouton ⭐ **Star** en haut à droite, il
    faut un compte GitHub gratuit). Si je dis oui, ouvre ce lien dans mon navigateur.

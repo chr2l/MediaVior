@@ -34,8 +34,8 @@ function renderSons() {
   sonsHint.classList.toggle("hidden", !n);
   sonsFetchBtn.disabled = sonsJobActive;
   sonsFetchBtn.textContent = sonsJobActive
-    ? "Recherche en cours…"
-    : `Chercher et mettre au coffre ${n > 1 ? `les ${n} sons` : "le son"}`;
+    ? t("Recherche en cours…")
+    : n > 1 ? t("Chercher et mettre au coffre les {n} sons", { n }) : t("Chercher et mettre au coffre le son");
 
   sonsList.replaceChildren(
     ...sons.map((son) => {
@@ -43,7 +43,7 @@ function renderSons() {
         type: "text",
         class: "sons-list__input",
         value: son.query,
-        "aria-label": "Titre à chercher",
+        "aria-label": t("Titre à chercher"),
         spellcheck: "false",
       });
       input.addEventListener("change", () => updateSon(son, input.value));
@@ -54,27 +54,27 @@ function renderSons() {
         h("div", { class: "sons-list__body" },
           input,
           son.note
-            ? h("div", { class: "sons-list__note" }, `Introuvable : ${son.note} · `,
-                h("button", { type: "button", class: "btn-link", onclick: () => openPicker([son]) }, "chercher sur YouTube"))
+            ? h("div", { class: "sons-list__note" }, t("Introuvable : {why} · ", { why: t(son.note) }),
+                h("button", { type: "button", class: "btn-link", onclick: () => openPicker([son]) }, t("chercher sur YouTube")))
             : null,
           son.pick
-            ? h("div", { class: "sons-list__pick" }, `Vidéo choisie : ${son.pick.title} · `,
-                h("button", { type: "button", class: "btn-link", onclick: () => openPicker([son]) }, "changer"),
+            ? h("div", { class: "sons-list__pick" }, t("Vidéo choisie : {title} · ", { title: son.pick.title }),
+                h("button", { type: "button", class: "btn-link", onclick: () => openPicker([son]) }, t("changer")),
                 " · ",
-                h("button", { type: "button", class: "btn-link", onclick: () => unpickSon(son) }, "retirer"))
+                h("button", { type: "button", class: "btn-link", onclick: () => unpickSon(son) }, t("retirer")))
             : null),
         h("button", {
           type: "button",
           class: "icon-btn icon-btn--sm",
-          "aria-label": "Choisir la vidéo sur YouTube",
-          title: "Choisir la vidéo sur YouTube",
+          "aria-label": t("Choisir la vidéo sur YouTube"),
+          title: t("Choisir la vidéo sur YouTube"),
           onclick: () => openPicker([son]),
         }, icon("search")),
         h("button", {
           type: "button",
           class: "icon-btn icon-btn--sm",
-          "aria-label": "Retirer ce son",
-          title: "Retirer ce son",
+          "aria-label": t("Retirer ce son"),
+          title: t("Retirer ce son"),
           onclick: () => removeSon(son),
         }, icon("close")));
     })
@@ -136,7 +136,7 @@ async function removeSon(son) {
 }
 
 sonsClear.addEventListener("click", async () => {
-  if (!confirm("Vider toute la liste de sons ?")) return;
+  if (!confirm(t("Vider toute la liste de sons ?"))) return;
   try {
     sons = await api("/api/sons", { method: "DELETE" });
     renderSons();
@@ -168,7 +168,7 @@ async function readScreens(files) {
   let added = 0;
   const failures = [];
   for (const [i, file] of images.entries()) {
-    sonsMessage(`Lecture de la capture ${i + 1}/${images.length}…`);
+    sonsMessage(t("Lecture de la capture {i}/{n}…", { i: i + 1, n: images.length }));
     try {
       const res = await fetch("/api/sons/ocr", {
         method: "POST",
@@ -176,7 +176,7 @@ async function readScreens(files) {
         headers: { "Content-Type": file.type || "application/octet-stream" },
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok) throw new Error((data && data.detail) || "Le serveur a renvoyé une erreur.");
+      if (!res.ok) throw new Error(t((data && data.detail) || "Le serveur a renvoyé une erreur."));
       sons = data.sons;
       added += data.added;
       renderSons();
@@ -186,8 +186,8 @@ async function readScreens(files) {
   }
   sonsFilesBtn.classList.remove("is-loading");
   const summary = added
-    ? `${added} titre${added > 1 ? "s" : ""} ajouté${added > 1 ? "s" : ""}. Vérifie-les : la lecture d'image peut se tromper.`
-    : "Aucun nouveau titre trouvé sur ces captures.";
+    ? t(added > 1 ? "{n} titres ajoutés. Vérifie-les : la lecture d'image peut se tromper." : "{n} titre ajouté. Vérifie-le : la lecture d'image peut se tromper.", { n: added })
+    : t("Aucun nouveau titre trouvé sur ces captures.");
   sonsMessage([summary, ...failures].join("\n"));
 }
 
@@ -274,27 +274,27 @@ function showSonsProgress(job) {
   sonsProgressFill.style.width = busy ? "100%" : `${job.progress || 0}%`;
 
   let text;
-  if (job.status === "queued") text = "En attente dans la file…";
-  else if (job.status === "converting") text = "Création du zip…";
+  if (job.status === "queued") text = t("En attente dans la file…");
+  else if (job.status === "converting") text = t("Création du zip…");
   else {
     const parts = [`${Math.round(job.progress || 0)} %`];
     if (job.step) parts.push(job.step);
     text = parts.join(" · ");
   }
   const counts = [];
-  if (job.found) counts.push(`${job.found} trouvé${job.found > 1 ? "s" : ""}`);
-  if (job.missing) counts.push(`${job.missing} introuvable${job.missing > 1 ? "s" : ""}`);
+  if (job.found) counts.push(t(job.found > 1 ? "{n} trouvés" : "{n} trouvé", { n: job.found }));
+  if (job.missing) counts.push(t(job.missing > 1 ? "{n} introuvables" : "{n} introuvable", { n: job.missing }));
   sonsProgressText.textContent = counts.length ? `${text} (${counts.join(", ")})` : text;
 }
 
 function showZip(job) {
   const missing = job.missing
-    ? ` ${job.missing} son${job.missing > 1 ? "s" : ""} introuvable${job.missing > 1 ? "s" : ""}, signalé${job.missing > 1 ? "s" : ""} dans la liste.`
+    ? " " + t(job.missing > 1 ? "{n} sons introuvables, signalés dans la liste." : "{n} son introuvable, signalé dans la liste.", { n: job.missing })
     : "";
   sonsZip.replaceChildren(
     h("a", { class: "btn btn--success btn--sm", href: `/api/file/${job.id}`, download: true },
-      icon("download"), "Télécharger le zip"),
-    h("span", { class: "hint" }, `${job.found} son${job.found > 1 ? "s" : ""} dans le zip.${missing}`)
+      icon("download"), t("Télécharger le zip")),
+    h("span", { class: "hint" }, t(job.found > 1 ? "{n} sons dans le zip." : "{n} son dans le zip.", { n: job.found }) + missing)
   );
   sonsZip.classList.remove("hidden");
 }
@@ -329,10 +329,10 @@ function showPickerSon() {
     closePicker();
     return;
   }
-  ytFor.textContent = `Pour : ${son.query}`;
+  ytFor.textContent = t("Pour : {q}", { q: son.query });
   const left = ytQueue.length - 1;
-  ytRemaining.textContent = left ? `Encore ${left} son${left > 1 ? "s" : ""} à retrouver après celui-ci` : "";
-  ytSkip.textContent = left ? "Passer" : "Fermer";
+  ytRemaining.textContent = left ? t(left > 1 ? "Encore {n} sons à retrouver après celui-ci" : "Encore {n} son à retrouver après celui-ci", { n: left }) : "";
+  ytSkip.textContent = left ? t("Passer") : t("Fermer");
   ytQuery.value = son.query;
   searchYoutube();
 }
@@ -361,7 +361,7 @@ async function searchYoutube() {
   ytPlayer.replaceChildren();
   ytPlayer.classList.add("hidden");
   ytResults.replaceChildren();
-  ytMessage("Recherche sur YouTube…");
+  ytMessage(t("Recherche sur YouTube…"));
   let results;
   try {
     results = await api(`/api/sons/search?q=${encodeURIComponent(q)}`);
@@ -370,7 +370,7 @@ async function searchYoutube() {
     return;
   }
   if (searchId !== ytSearchId) return; // une autre recherche est partie entre-temps
-  ytMessage(results.length ? "" : "Aucun résultat. Essaie d'autres mots.");
+  ytMessage(results.length ? "" : t("Aucun résultat. Essaie d'autres mots."));
   ytResults.replaceChildren(...results.map(ytResultNode));
 }
 
@@ -380,7 +380,7 @@ function ytResultNode(video) {
     h("button", {
       type: "button",
       class: "yt-results__preview",
-      title: "Écouter",
+      title: t("Écouter"),
       onclick: () => previewVideo(video, li),
     },
       h("img", { src: video.thumbnail, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
@@ -388,7 +388,7 @@ function ytResultNode(video) {
     h("div", { class: "yt-results__body" },
       h("div", { class: "yt-results__title", title: video.title }, video.title),
       meta ? h("div", { class: "yt-results__meta" }, meta) : null),
-    h("button", { type: "button", class: "btn btn--solid btn--sm", onclick: () => pickVideo(video) }, "Choisir"));
+    h("button", { type: "button", class: "btn btn--solid btn--sm", onclick: () => pickVideo(video) }, t("Choisir")));
   return li;
 }
 

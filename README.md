@@ -8,6 +8,7 @@
 Tu colles un lien, tu cliques sur « Mettre au coffre ». Ça tourne sur ton PC, pas chez quelqu'un d'autre.</p>
 
 <p align="center">
+  <a href="README.en.md">English</a> ·
   <a href="#installer-sur-ton-pc">Installer</a> ·
   <a href="docs/UTILISATION.md">Mode d'emploi</a> ·
   <a href="docs/SERVEUR.md">Sur un serveur</a> ·
@@ -33,6 +34,8 @@ charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp), dans la qualité et le fo
 - **Extension Brave/Chrome** pour envoyer la page en cours d'un clic.
 - **Ton téléphone relié au PC** (comme WhatsApp Web) : scanne un QR code une fois, puis envoie des
   liens depuis le téléphone et récupère les fichiers, même en 4G.
+- **Français et anglais** : l'appli suit la langue de l'ordinateur ; le lien « English / Français »
+  en bas de page la change.
 
 Pas de compte, pas de publicité, aucune donnée envoyée au projet.
 
@@ -83,7 +86,7 @@ uv pip install -r requirements.txt -r requirements-local.txt
 ```
 
 ffmpeg est téléchargé automatiquement s'il n'est pas déjà installé. Tesseract (lecture des
-captures d'écran) est facultatif. Les fichiers vont dans `Téléchargements/MediaVior` ; pour en
+captures d'écran) est facultatif. Les fichiers vont dans `Téléchargements/MediaChest` ; pour en
 changer : `mediavior.py --dossier "D:\Mes médias"`.
 
 ### Sur un serveur
@@ -98,7 +101,7 @@ voir [docs/SERVEUR.md](docs/SERVEUR.md).
 | [`app/main.py`](app/main.py) | Le serveur (FastAPI) : analyse, file de téléchargement, bibliothèque, éditeur, liste de sons |
 | [`app/templates/`](app/templates), [`app/static/`](app/static) | L'interface (HTML, CSS, JavaScript sans framework) |
 | [`mediavior.py`](mediavior.py) | Le lanceur de la version PC : fenêtre, raccourci, mises à jour |
-| [`PROMPT.md`](PROMPT.md) | Le prompt d'installation à coller dans une IA |
+| [`PROMPT.md`](PROMPT.md), [`PROMPT.en.md`](PROMPT.en.md) | Le prompt d'installation à coller dans une IA (français, anglais) |
 | [`pinokio.js`](pinokio.js), `install.js`, `start.js`, `update.js` | Les scripts Pinokio |
 | [`extension/`](extension) | L'extension Brave/Chrome |
 | [`app/jumelage.py`](app/jumelage.py), [`relais/`](relais) | Le téléphone relié : côté PC, et le relais (Cloudflare Worker + page du téléphone) |

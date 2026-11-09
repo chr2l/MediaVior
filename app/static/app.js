@@ -68,19 +68,19 @@ try {
 
 // Explications courtes affichées sous le choix du format
 const VIDEO_HINTS = {
-  original: "Meilleure qualité possible : la vidéo est gardée telle que le site la fournit, sans conversion "
-    + "(souvent WebM en VP9 ou AV1). Parfait sur ordinateur ou avec VLC, mais pas toujours lu par un iPhone ou Photos Windows.",
-  mp4: "Lisible partout : téléphones, TV, logiciels de montage (H.264 + AAC). Si le site ne fournit pas ce format "
-    + "à la qualité choisie (souvent au-delà du 1080p), le serveur convertit la vidéo, ce qui peut être long.",
-  mov: "Comme le MP4, mais dans le format préféré des logiciels Apple (Final Cut, iMovie).",
+  original: t("Meilleure qualité possible : la vidéo est gardée telle que le site la fournit, sans conversion "
+    + "(souvent WebM en VP9 ou AV1). Parfait sur ordinateur ou avec VLC, mais pas toujours lu par un iPhone ou Photos Windows."),
+  mp4: t("Lisible partout : téléphones, TV, logiciels de montage (H.264 + AAC). Si le site ne fournit pas ce format "
+    + "à la qualité choisie (souvent au-delà du 1080p), le serveur convertit la vidéo, ce qui peut être long."),
+  mov: t("Comme le MP4, mais dans le format préféré des logiciels Apple (Final Cut, iMovie)."),
 };
 const AUDIO_HINTS = {
-  original: "Meilleure qualité possible : la piste est gardée telle que le site la fournit, sans réencodage "
-    + "(souvent Opus ou M4A). Lue par la plupart des appareils récents.",
-  mp3: "Le format le plus compatible, partout. Réencodé depuis la source : à 320 kb/s, la différence est inaudible.",
-  flac: "Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. "
-    + "Utile pour l'archivage ou les logiciels qui demandent du FLAC.",
-  wav: "Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio.",
+  original: t("Meilleure qualité possible : la piste est gardée telle que le site la fournit, sans réencodage "
+    + "(souvent Opus ou M4A). Lue par la plupart des appareils récents."),
+  mp3: t("Le format le plus compatible, partout. Réencodé depuis la source : à 320 kb/s, la différence est inaudible."),
+  flac: t("Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. "
+    + "Utile pour l'archivage ou les logiciels qui demandent du FLAC."),
+  wav: t("Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio."),
 };
 
 function setupOptions(root) {
@@ -153,10 +153,10 @@ function setupOptions(root) {
 const singleOptions = setupOptions(resultEl.querySelector(".js-options"));
 const batchOptions = setupOptions(batchEl.querySelector(".js-options"));
 // Plusieurs liens : la qualité choisie est un plafond (chaque média prend le meilleur en dessous)
-batchOptions.quality.closest(".field").querySelector(".field-label").textContent = "Qualité maximale";
+batchOptions.quality.closest(".field").querySelector(".field-label").textContent = t("Qualité maximale");
 
 [
-  ["", "Meilleure disponible"],
+  ["", t("Meilleure disponible")],
   ["2160", "4K (2160p) max"],
   ["1440", "1440p max"],
   ["1080", "1080p max"],
@@ -221,7 +221,7 @@ let currentAnalysis = null;
 async function analyze(url) {
   if (analyzing) return;
   analyzing = true;
-  analyzeBtn.textContent = "Analyse…";
+  analyzeBtn.textContent = t("Analyse…");
   analyzeBtn.classList.add("is-loading");
   analyzeBtn.disabled = true;
   resultEl.classList.add("hidden");
@@ -232,7 +232,7 @@ async function analyze(url) {
     showError(e.message);
   } finally {
     analyzing = false;
-    analyzeBtn.textContent = "Analyser";
+    analyzeBtn.textContent = t("Analyser");
     analyzeBtn.classList.remove("is-loading");
     analyzeBtn.disabled = false;
   }
@@ -260,12 +260,12 @@ function renderResult(data) {
       select.append(h("option", { value: height }, label));
     });
   } else {
-    select.append(h("option", { value: "" }, "Meilleure disponible"));
+    select.append(h("option", { value: "" }, t("Meilleure disponible")));
   }
   singleOptions.setMedia(data.duration, data.audio_size);
 
   downloadBtn.disabled = false;
-  downloadBtn.textContent = "Mettre au coffre";
+  downloadBtn.textContent = t("Mettre au coffre");
   resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -283,13 +283,13 @@ downloadBtn.addEventListener("click", async () => {
         ...singleOptions.values(),
       },
     });
-    downloadBtn.textContent = "En route vers le coffre ✓";
+    downloadBtn.textContent = t("En route vers le coffre ✓");
     urlInput.value = "";
     autoGrow();
     startPolling();
     revealQueue();
     setTimeout(() => {
-      downloadBtn.textContent = "Mettre au coffre";
+      downloadBtn.textContent = t("Mettre au coffre");
       downloadBtn.disabled = false;
     }, 1500);
   } catch (e) {
@@ -311,10 +311,10 @@ function batchUrls() {
 function renderBatch() {
   const n = batchUrls().length;
   batchCount.textContent = n
-    ? `${n} lien${n > 1 ? "s" : ""} trouvé${n > 1 ? "s" : ""}.`
-    : "Jusqu'à 100 liens.";
+    ? t(n > 1 ? "{n} liens trouvés." : "{n} lien trouvé.", { n })
+    : t("Jusqu'à 100 liens.");
   batchBtn.disabled = n < 1 || n > 100;
-  batchBtn.textContent = n > 1 ? `Mettre les ${n} liens au coffre (zip)` : "Mettre au coffre en zip";
+  batchBtn.textContent = n > 1 ? t("Mettre les {n} liens au coffre (zip)", { n }) : t("Mettre au coffre en zip");
 }
 
 batchInput.addEventListener("input", renderBatch);
@@ -330,7 +330,7 @@ batchBtn.addEventListener("click", async () => {
     batchInput.value = "";
     startPolling();
     revealQueue();
-    showToast(`${urls.length} lien${urls.length > 1 ? "s" : ""} en route : le zip arrivera dans le coffre.`);
+    showToast(t(urls.length > 1 ? "{n} liens en route : le zip arrivera dans le coffre." : "{n} lien en route : le zip arrivera dans le coffre.", { n: urls.length }));
   } catch (e) {
     batchError.textContent = e.message;
     batchError.classList.remove("hidden");
@@ -436,23 +436,23 @@ function jobStatusText(job) {
   const pct = `${Math.round(job.progress || 0)} %`;
   switch (job.status) {
     case "queued":
-      return job.position === 1 ? "En attente · prochain" : `En attente · ${job.position}ᵉ dans la file`;
+      return job.position === 1 ? t("En attente · prochain") : t("En attente · {n}ᵉ dans la file", { n: job.position });
     case "downloading": {
       const parts = [pct];
-      if (job.step) parts.push(job.step);
+      if (job.step) parts.push(t(job.step));
       if (job.speed) parts.push(`${formatBytes(job.speed)}/s`);
-      if (job.eta) parts.push(`${formatDuration(job.eta)} restantes`);
+      if (job.eta) parts.push(t("{time} restantes", { time: formatDuration(job.eta) }));
       return parts.join(" · ");
     }
     case "converting":
-      if (job.kind === "sons" || job.kind === "links") return "Création du zip…";
-      return job.encoding ? `Conversion… ${pct}` : "Conversion…";
+      if (job.kind === "sons" || job.kind === "links") return t("Création du zip…");
+      return job.encoding ? t("Conversion… {pct}", { pct }) : t("Conversion…");
     case "processing":
-      return `Montage… ${pct}`;
+      return t("Montage… {pct}", { pct });
     case "cancelled":
-      return "Annulé";
+      return t("Annulé");
     case "error":
-      return job.error || "Erreur";
+      return t(job.error || "Erreur");
     default:
       return "";
   }
@@ -460,8 +460,8 @@ function jobStatusText(job) {
 
 function updateJobNode(node, job) {
   node.job = job;
-  node.title.textContent = job.title;
-  node.title.title = job.title;
+  node.title.textContent = t(job.title);
+  node.title.title = t(job.title);
 
   if (node.thumbSrc !== (job.thumbnail || null)) {
     node.thumbSrc = job.thumbnail || null;
@@ -478,11 +478,11 @@ function updateJobNode(node, job) {
   node.progress.classList.toggle("is-busy", busy);
   node.fill.style.width = busy ? "100%" : `${job.progress || 0}%`;
 
-  node.meta.textContent = node.cancelling && active ? "Annulation…" : jobStatusText(job);
+  node.meta.textContent = node.cancelling && active ? t("Annulation…") : jobStatusText(job);
   node.meta.classList.toggle("is-error", job.status === "error");
   node.root.classList.toggle("is-muted", job.status === "cancelled");
 
-  node.action.textContent = active ? "Annuler" : "Retirer";
+  node.action.textContent = active ? t("Annuler") : t("Retirer");
   node.action.disabled = Boolean(node.cancelling && active);
 }
 
@@ -528,14 +528,14 @@ function renderLibrary(highlightIds = []) {
 
   const total = libraryItems.reduce((sum, i) => sum + i.size, 0);
   const n = libraryItems.length;
-  libraryStats.textContent = n ? `${n} média${n > 1 ? "s" : ""} · ${formatBytes(total)}` : "";
+  libraryStats.textContent = n ? t(n > 1 ? "{n} médias · {size}" : "{n} média · {size}", { n, size: formatBytes(total) }) : "";
   renderStats();
   libraryFilter.classList.toggle("hidden", n < 6 && !filter);
 
   libraryEmpty.classList.toggle("hidden", items.length > 0);
   libraryEmpty.textContent = n
-    ? "Aucun titre ne correspond à ce filtre."
-    : "Ton coffre est vide pour l’instant. Ce que tu mets au coffre apparaîtra ici.";
+    ? t("Aucun titre ne correspond à ce filtre.")
+    : t("Ton coffre est vide pour l’instant. Ce que tu mets au coffre apparaîtra ici.");
 
   // Rangés par jour, du plus récent au plus ancien
   const rows = [];
@@ -561,53 +561,53 @@ const heroHello = document.getElementById("heroHello");
 
 function sinceText(timestamp) {
   const minutes = Math.max(0, Math.round((Date.now() / 1000 - timestamp) / 60));
-  if (minutes < 1) return "à l'instant";
-  if (minutes < 60) return `il y a ${minutes} minute${minutes > 1 ? "s" : ""}`;
+  if (minutes < 1) return t("à l'instant");
+  if (minutes < 60) return t(minutes > 1 ? "il y a {n} minutes" : "il y a {n} minute", { n: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `il y a ${hours} heure${hours > 1 ? "s" : ""}`;
+  if (hours < 24) return t(hours > 1 ? "il y a {n} heures" : "il y a {n} heure", { n: hours });
   const days = Math.round(hours / 24);
-  return `il y a ${days} jour${days > 1 ? "s" : ""}`;
+  return t(days > 1 ? "il y a {n} jours" : "il y a {n} jour", { n: days });
 }
 
 function listenText(seconds) {
   const hours = Math.floor(seconds / 3600);
-  if (hours >= 1) return `${hours} h à écouter`;
-  return `${Math.max(1, Math.round(seconds / 60))} min à écouter`;
+  if (hours >= 1) return t("{n} h à écouter", { n: hours });
+  return t("{n} min à écouter", { n: Math.max(1, Math.round(seconds / 60)) });
 }
 
 function renderStats() {
   const items = libraryItems;
   if (!items.length) {
-    heroHello.textContent = "Colle un lien pour mettre ton premier média à l'abri.";
+    heroHello.textContent = t("Colle un lien pour mettre ton premier média à l'abri.");
     statsEl.replaceChildren();
     return;
   }
-  heroHello.textContent = `Dernier média rangé ${sinceText(items[0].created)}.`;
+  heroHello.textContent = t("Dernier média rangé {since}.", { since: sinceText(items[0].created) });
   const count = (mode) => items.filter((i) => i.mode === mode).length;
   const size = items.reduce((sum, i) => sum + i.size, 0);
   const seconds = items.reduce((sum, i) => sum + (i.duration || 0), 0);
   const n = items.length;
   const chip = (kind, iconName, strong, text) =>
     h("div", { class: `stat tint tint--${kind}` }, icon(iconName), h("b", {}, strong), h("span", { class: "stat__label" }, text));
-  const chips = [chip("neutral", "lock", n, `média${n > 1 ? "s" : ""} à l'abri`)];
+  const chips = [chip("neutral", "lock", n, t(n > 1 ? "médias à l'abri" : "média à l'abri"))];
   const sons = count("audio");
   const videos = count("video");
   const zips = count("archive");
-  if (sons) chips.push(chip("son", "music", sons, `son${sons > 1 ? "s" : ""}`));
-  if (videos) chips.push(chip("video", "film", videos, `vidéo${videos > 1 ? "s" : ""}`));
+  if (sons) chips.push(chip("son", "music", sons, t(sons > 1 ? "sons" : "son")));
+  if (videos) chips.push(chip("video", "film", videos, t(videos > 1 ? "vidéos" : "vidéo")));
   if (zips) chips.push(chip("zip", "box", zips, `zip${zips > 1 ? "s" : ""}`));
-  chips.push(chip("neutral", "disk", formatBytes(size), seconds ? listenText(seconds) : "sur le disque"));
+  chips.push(chip("neutral", "disk", formatBytes(size), seconds ? listenText(seconds) : t("sur le disque")));
   statsEl.replaceChildren(...chips);
 }
 
 function dayLabel(timestamp) {
   const date = new Date(timestamp * 1000);
   const now = new Date();
-  if (date.toDateString() === now.toDateString()) return "Aujourd'hui";
+  if (date.toDateString() === now.toDateString()) return t("Aujourd'hui");
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return "Hier";
-  const label = date.toLocaleDateString("fr-FR", {
+  if (date.toDateString() === yesterday.toDateString()) return t("Hier");
+  const label = date.toLocaleDateString(LOCALE, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -629,11 +629,14 @@ function libraryRow(item, isNew) {
       })
     : fallback();
 
+  // Titre d'un zip (« Plusieurs liens · 3 fichiers ») : écrit par le serveur, traduit ici
+  const shownTitle = item.mode === "archive" ? t(item.title) : item.title;
+
   // Sous le titre : le format choisi et la durée (ou le nombre de fichiers d'un zip)
   const meta = [
     item.ext.toUpperCase(),
     item.duration ? formatDuration(item.duration) : null,
-    item.mode === "archive" && item.count ? `${item.count} fichier${item.count > 1 ? "s" : ""}` : null,
+    item.mode === "archive" && item.count ? t(item.count > 1 ? "{n} fichiers" : "{n} fichier", { n: item.count }) : null,
     formatBytes(item.size),
   ].filter(Boolean).join(" · ");
 
@@ -656,43 +659,43 @@ function libraryRow(item, isNew) {
       h("span", { class: "item__check", "aria-hidden": "true" }, icon("check")),
       h("div", { class: `item__thumb tint tint--${kind}` }, thumb),
       h("div", { class: "item__body" },
-        h("div", { class: "item__title", title: item.title }, item.title),
+        h("div", { class: "item__title", title: shownTitle }, shownTitle),
         h("div", { class: "item__meta" }, meta)));
   }
 
   return h("li", { class: `item${isNew ? " is-new" : ""}` },
     h("div", { class: `item__thumb tint tint--${kind}` }, thumb),
     h("div", { class: "item__body" },
-      h("div", { class: "item__title", title: item.title }, item.title),
+      h("div", { class: "item__title", title: shownTitle }, shownTitle),
       h("div", { class: "item__meta" },
-        item.edited ? h("span", { class: "tag tag--small" }, "édité") : null,
+        item.edited ? h("span", { class: "tag tag--small" }, t("édité")) : null,
         meta,
-        isNew ? h("span", { class: "item__stored" }, icon("lock"), "rangé") : null)),
+        isNew ? h("span", { class: "item__stored" }, icon("lock"), t("rangé")) : null)),
     h("div", { class: "item__actions" },
       h("a", {
         class: "icon-btn",
         href: `/api/file/${item.id}`,
         download: true,
-        title: "Retélécharger le fichier",
-        "aria-label": "Retélécharger le fichier",
+        title: t("Retélécharger le fichier"),
+        "aria-label": t("Retélécharger le fichier"),
       }, icon("download")),
       item.mode === "archive" ? null : h("a", {
         class: "icon-btn",
         href: `/edit/${item.id}`,
-        title: "Couper, fondus, volume…",
-        "aria-label": "Ouvrir dans l'éditeur",
+        title: t("Couper, fondus, volume…"),
+        "aria-label": t("Ouvrir dans l'éditeur"),
       }, icon("scissors")),
       h("button", {
         type: "button",
         class: "icon-btn icon-btn--danger",
-        title: "Enlever du coffre",
-        "aria-label": "Enlever du coffre",
+        title: t("Enlever du coffre"),
+        "aria-label": t("Enlever du coffre"),
         onclick: () => deleteItem(item),
       }, icon("trash"))));
 }
 
 async function deleteItem(item) {
-  if (!confirm(`Enlever « ${item.title} » du coffre ?\nLe fichier sera définitivement effacé.`)) return;
+  if (!confirm(t("Enlever « {title} » du coffre ?\nLe fichier sera définitivement effacé.", { title: item.title }))) return;
   try {
     await api(`/api/library/${item.id}`, { method: "DELETE" });
     libraryItems = libraryItems.filter((i) => i.id !== item.id);
@@ -714,8 +717,8 @@ const selAll = document.getElementById("selAll");
 const selCount = document.getElementById("selCount");
 const selDownload = document.getElementById("selDownload");
 const selDelete = document.getElementById("selDelete");
-selDownload.append(icon("download"), "Télécharger");
-selDelete.append(icon("trash"), "Enlever");
+selDownload.append(icon("download"), t("Télécharger"));
+selDelete.append(icon("trash"), t("Enlever"));
 
 let selecting = false;
 const selected = new Set();
@@ -750,7 +753,7 @@ function renderSelection() {
   if (!libraryItems.length) selecting = false;
 
   selectBtn.classList.toggle("hidden", !libraryItems.length);
-  selectBtn.textContent = selecting ? "Terminé" : "Sélectionner";
+  selectBtn.textContent = selecting ? t("Terminé") : t("Sélectionner");
   selectBtn.setAttribute("aria-pressed", String(selecting));
   document.getElementById("library").classList.toggle("is-selecting", selecting);
   selbar.classList.toggle("hidden", !selecting);
@@ -759,8 +762,8 @@ function renderSelection() {
   const n = selected.size;
   const visible = visibleItems();
   const allVisible = visible.length > 0 && visible.every((i) => selected.has(i.id));
-  selAll.textContent = allVisible ? "Tout désélectionner" : "Tout sélectionner";
-  selCount.textContent = n ? `${n} sélectionné${n > 1 ? "s" : ""}` : "Choisis des fichiers";
+  selAll.textContent = allVisible ? t("Tout désélectionner") : t("Tout sélectionner");
+  selCount.textContent = n ? t(n > 1 ? "{n} sélectionnés" : "{n} sélectionné", { n }) : t("Choisis des fichiers");
   selDownload.disabled = !n;
   selDelete.disabled = !n;
 }
@@ -780,7 +783,7 @@ selDownload.addEventListener("click", () => {
   // Un seul fichier : tel quel. Plusieurs : un zip (un seul téléchargement, aussi sur téléphone)
   const href = ids.length === 1 ? `/api/file/${ids[0]}` : `/api/files.zip?ids=${ids.join(",")}`;
   h("a", { href, download: true }).click();
-  if (ids.length > 1) showToast(`Préparation du zip (${ids.length} fichiers)… le téléchargement va démarrer.`);
+  if (ids.length > 1) showToast(t("Préparation du zip ({n} fichiers)… le téléchargement va démarrer.", { n: ids.length }));
   setSelecting(false);
 });
 
@@ -788,8 +791,10 @@ selDelete.addEventListener("click", async () => {
   const items = libraryItems.filter((i) => selected.has(i.id));
   if (!items.length) return;
   const n = items.length;
-  const what = n === 1 ? `« ${items[0].title} »` : `ces ${n} fichiers`;
-  if (!confirm(`Enlever ${what} du coffre ?\nCette action est définitive.`)) return;
+  const question = n === 1
+    ? t("Enlever « {title} » du coffre ?\nCette action est définitive.", { title: items[0].title })
+    : t("Enlever ces {n} fichiers du coffre ?\nCette action est définitive.", { n });
+  if (!confirm(question)) return;
   selDelete.disabled = true;
   selDelete.classList.add("is-loading");
   const failures = [];
@@ -804,8 +809,8 @@ selDelete.addEventListener("click", async () => {
   await loadLibrary();
   setSelecting(false);
   const done = n - failures.length;
-  if (done) showToast(`${done} fichier${done > 1 ? "s" : ""} enlevé${done > 1 ? "s" : ""}.`);
-  if (failures.length) alert(`Impossible d'enlever :\n${failures.join("\n")}`);
+  if (done) showToast(t(done > 1 ? "{n} fichiers enlevés." : "{n} fichier enlevé.", { n: done }));
+  if (failures.length) alert(`${t("Impossible d'enlever :")}\n${failures.join("\n")}`);
 });
 
 document.addEventListener("keydown", (e) => {
@@ -826,7 +831,7 @@ function consumeSharedLink() {
   setWay("lien");
   const urls = extractUrls(shared);
   if (!urls.length) {
-    showError("Aucun lien trouvé dans le contenu partagé.");
+    showError(t("Aucun lien trouvé dans le contenu partagé."));
     return;
   }
   urlInput.value = urls.join("\n");

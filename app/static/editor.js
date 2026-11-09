@@ -20,7 +20,7 @@ const sel = { start: 0, end: 0 };
 let stopAt = null;
 let currentJob = null;
 
-$("backLink").append(icon("back"), "Bibliothèque");
+$("backLink").append(icon("back"), t("Bibliothèque"));
 $("playBtn").append(icon("play"));
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
@@ -43,12 +43,12 @@ async function init() {
   try {
     item = await api(`/api/library/${ITEM_ID}`);
   } catch (e) {
-    $("edTitle").textContent = "Fichier introuvable";
+    $("edTitle").textContent = t("Fichier introuvable");
     showError(e.message);
     return;
   }
 
-  document.title = `${item.title} · Éditeur`;
+  document.title = `${item.title} · ${t("Éditeur")}`;
   $("edTitle").textContent = item.title;
   $("edMeta").replaceChildren(
     h("span", { class: "tag" }, item.ext.toUpperCase()),
@@ -85,13 +85,13 @@ async function init() {
 
   // Formats de sortie possibles
   const options = [];
-  if (item.has_video) options.push(["mp4", "MP4 (vidéo)"], ["mov", "MOV (vidéo)"]);
+  if (item.has_video) options.push(["mp4", t("MP4 (vidéo)")], ["mov", t("MOV (vidéo)")]);
   if (item.has_audio) {
-    const suffix = item.has_video ? " · audio seul" : "";
+    const suffix = item.has_video ? t(" · audio seul") : "";
     options.push(["mp3", `MP3${suffix}`], ["wav", `WAV${suffix}`]);
   }
   format.replaceChildren(
-    h("option", { value: "", class: "js-original", hidden: true }, `Identique à l'original (${item.ext.toUpperCase()})`),
+    h("option", { value: "", class: "js-original", hidden: true }, t("Identique à l'original ({ext})", { ext: item.ext.toUpperCase() })),
     ...options.map(([value, label]) => h("option", { value }, label)),
   );
   format.value = options.some(([v]) => v === item.ext) ? item.ext : options[0][0];
@@ -164,10 +164,10 @@ function syncControls() {
   mute.disabled = audioOnly;
   if (audioOnly) mute.checked = false;
 
-  $("fadeInValue").textContent = `${Number(fadeIn.value).toLocaleString("fr-FR")} s`;
-  $("fadeOutValue").textContent = `${Number(fadeOut.value).toLocaleString("fr-FR")} s`;
+  $("fadeInValue").textContent = `${Number(fadeIn.value).toLocaleString(LOCALE)} s`;
+  $("fadeOutValue").textContent = `${Number(fadeOut.value).toLocaleString(LOCALE)} s`;
   const g = Number(gain.value);
-  $("gainValue").textContent = `${g > 0 ? "+" : ""}${g.toLocaleString("fr-FR")} dB`;
+  $("gainValue").textContent = `${g > 0 ? "+" : ""}${g.toLocaleString(LOCALE)} dB`;
 }
 
 function render() {
@@ -251,7 +251,7 @@ function tick() {
 function updatePlayButton() {
   const playing = !media.paused;
   $("playBtn").replaceChildren(icon(playing ? "pause" : "play"));
-  $("playBtn").setAttribute("aria-label", playing ? "Pause" : "Lecture");
+  $("playBtn").setAttribute("aria-label", playing ? t("Pause") : t("Lecture"));
 }
 
 // ---------------------------------------------------------------------------
@@ -433,7 +433,7 @@ async function trackRender(jobId) {
   progress.classList.toggle("is-busy", queued);
   fill.style.width = queued ? "100%" : `${job.progress || 0}%`;
   text.textContent = queued
-    ? (job.position === 1 ? "En attente…" : `En attente (${job.position}ᵉ)`)
+    ? (job.position === 1 ? t("En attente…") : t("En attente ({n}ᵉ)", { n: job.position }))
     : `${Math.round(job.progress || 0)} %`;
 
   if (job.status === "queued" || job.status === "processing") {
@@ -448,19 +448,19 @@ async function trackRender(jobId) {
   if (job.status === "done") {
     progress.classList.add("is-done");
     fill.style.width = "100%";
-    text.textContent = "Terminé";
+    text.textContent = t("Terminé");
     $("cancelBtn").classList.add("hidden");
     $("resultLink").href = `/api/file/${jobId}`;
-    $("resultLink").textContent = `Récupérer : ${job.filename}`;
+    $("resultLink").textContent = t("Récupérer : {name}", { name: job.filename });
     $("resultEdit").href = `/edit/${jobId}`;
     $("renderActions").classList.remove("hidden");
-    renderBtn.textContent = "Créer une autre version";
+    renderBtn.textContent = t("Créer une autre version");
     return;
   }
 
   progress.classList.add("hidden");
   $("cancelBtn").classList.remove("hidden");
-  if (job.status === "error") showError(job.error || "Le montage a échoué.");
+  if (job.status === "error") showError(t(job.error || "Le montage a échoué."));
 }
 
 init();
