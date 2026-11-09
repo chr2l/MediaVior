@@ -21,31 +21,23 @@
 
   <main class="main">
 
-    <!-- En-tête : nom de l'appli et boutons de la version PC -->
+    {% if local %}
+    <!-- En-tête : boutons de la version PC -->
     <header class="topbar">
-      <a class="brand" href="#telecharger">
-        <span class="brand__mark" data-icon="safe"></span>
-        <span class="brand__name">MediaVior</span>
-      </a>
-      {% if local %}
       <div class="topbar__local">
         <button type="button" class="btn btn--quiet btn--sm" id="phoneBtn" title="Envoyer des liens depuis ton téléphone"><span data-icon="phone"></span>Téléphone</button>
         <button type="button" class="btn btn--quiet btn--sm" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Ouvrir le dossier</button>
         <button type="button" class="btn-link" id="quitBtn">Quitter</button>
       </div>
-      {% endif %}
     </header>
+    {% endif %}
 
     <!-- ===== Télécharger : trois façons ===== -->
     <section class="view" data-view="telecharger" aria-labelledby="viewTelecharger">
       <header class="hero">
-        <svg class="hero__safe" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="6" y="7" width="52" height="42" rx="8"/><rect x="14" y="15" width="36" height="26" rx="4"/>
-          <circle cx="32" cy="28" r="6"/><circle cx="32" cy="28" r="2" fill="currentColor"/>
-          <path d="M17 49v6M47 49v6"/>
-        </svg>
+        <img class="hero__logo" src="/static/icons/icon.svg?v={{ v }}" alt="" width="64" height="64">
         <div>
-          <h1 class="hero__title" id="viewTelecharger">Mon coffre</h1>
+          <h1 class="hero__title" id="viewTelecharger">MediaVior</h1>
           <p class="hero__hello" id="heroHello">Colle un lien pour mettre un média à l'abri.</p>
         </div>
       </header>

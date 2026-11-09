@@ -51,6 +51,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-local.txt pyinstaller pillow
+      # Windows : lanceur de PyInstaller recompilé ici plutôt que celui tout fait, partagé par
+      # beaucoup de programmes (dont des virus) et donc souvent soupçonné par les antivirus.
+      - name: Lanceur PyInstaller recompilé (moins de fausses alertes)
+        if: runner.os == 'Windows'
+        env:
+          PYINSTALLER_COMPILE_BOOTLOADER: "1"
+        run: pip install --force-reinstall --no-deps --no-binary pyinstaller pyinstaller
       - name: ffmpeg, deno et numéro de version
         run: python packaging/prepare.py ${{ env.VERSION }}
       - name: Construction
