@@ -1673,3 +1673,46 @@ input[type="range"] {
   .stat { padding: 5px 10px 5px 8px; font-size: 0.78rem; }
   .ways__icon { width: 34px; height: 34px; }
 }
+
+/* Retouches du 09/11 : coffre en bleu, stats en tableau, icônes des trois façons sans fond */
+.hero__safe { color: var(--brass); }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.stats:empty { display: none; }
+.stat {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 0;
+  font-size: 0.8rem;
+}
+.stat + .stat { border-left: 1px solid var(--hairline-soft); }
+.stat .icon { width: 16px; height: 16px; grid-row: 1; }
+.stat b { grid-row: 1; font-size: 1.25rem; font-weight: 700; color: var(--paper); line-height: 1.2; }
+.stat__label { grid-column: 1 / -1; color: var(--t); font-weight: 500; }
+.tint--neutral.stat { background: transparent; }
+.tint--neutral .stat__label { color: var(--paper-dim); }
+
+.ways__icon, .ways__icon.tint { background: none; width: auto; height: auto; }
+.ways__btn .ways__icon.tint, .ways__btn.is-active .ways__icon.tint { color: var(--paper); }
+
+@media (max-width: 600px) {
+  .stats { grid-template-columns: repeat(3, 1fr); }
+  .stat { padding: 10px 12px; }
+  .stat:nth-child(3n + 1) { border-left: none; }
+  .stat:nth-child(n + 4) { border-top: 1px solid var(--hairline-soft); }
+  .stat b { font-size: 1.1rem; }
+}
