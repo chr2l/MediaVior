@@ -16,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css?v={{ v }}">
 </head>
-<body class="shell">
+<body class="shell"{% if apercu %} data-apercu{% endif %}>
 <div class="app">
 
   <main class="main">
@@ -66,7 +66,7 @@
           <li><span class="tint tint--son" data-icon="phone"></span><strong>Depuis ton téléphone</strong><small>Partage un lien, ton PC le télécharge, le fichier revient sur le téléphone.</small></li>
           <li><span class="tint tint--video" data-icon="lock"></span><strong>Chez toi, sans compte</strong><small>Rien ne passe par un serveur. Mises à jour automatiques. Code ouvert.</small></li>
         </ul>
-        <h2 class="showcase__try">Ou directement ici</h2>
+        <h2 class="showcase__try">{% if apercu %}Aperçu de l'appli{% else %}Ou directement ici{% endif %}</h2>
       </section>
       {% endif %}
 

@@ -23,6 +23,10 @@ Deux façons de lancer le même serveur :
   sites).
 - **Version serveur** : `Dockerfile` + `entrypoint.sh` lancent `uvicorn main:app` sur le port 8000
   du conteneur.
+  Avec `MEDIAVIOR_APERCU=1`, la page web devient une vitrine : les visiteurs voient l'interface,
+  mais les actions proposent de télécharger l'appli et le coffre paraît vide. Seule une requête
+  avec `X-Elie-Role: admin` garde l'outil complet. À n'activer que derrière la porte d'elie.place,
+  qui pose et filtre cet en-tête.
 
 ## Carte des fichiers
 

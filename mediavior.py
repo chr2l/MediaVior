@@ -8,7 +8,7 @@
 Options : --port 8010, --dossier CHEMIN (dossier des téléchargements, retenu pour la suite),
 --sans-fenetre (n'ouvre pas le navigateur, utilisé par Pinokio), --sans-maj (pas de mise à jour).
 
-Les fichiers vont par défaut dans « Téléchargements/MediaVior ». Les réglages et le journal
+Les fichiers vont par défaut dans « Téléchargements/MediaChest ». Les réglages et le journal
 sont dans ~/.mediavior/.
 """
 import argparse
@@ -72,7 +72,16 @@ def build_info() -> dict:
 
 
 def default_folder() -> Path:
-    return Path.home() / "Downloads" / "MediaVior"
+    """Dossier des téléchargements : Téléchargements/MediaChest. Les fichiers rangés avant dans
+    l'ancien dossier (Téléchargements/MediaVior) y sont déplacés une fois, au premier lancement."""
+    new = Path.home() / "Downloads" / "MediaChest"
+    old = Path.home() / "Downloads" / "MediaVior"
+    if old.is_dir() and not new.exists():
+        try:
+            old.rename(new)
+        except OSError:
+            return old  # déplacement impossible (fichier ouvert…) : on garde l'ancien dossier
+    return new
 
 
 # ---------------------------------------------------------------------------

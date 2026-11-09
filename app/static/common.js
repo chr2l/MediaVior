@@ -14,6 +14,11 @@ async function api(path, options = {}) {
     /* réponse vide */
   }
   if (!res.ok) {
+    // Page web en aperçu : on propose de télécharger l'appli au lieu d'agir sur le serveur
+    if (data && data.apercu) {
+      const dialog = document.getElementById("promptDialog");
+      if (dialog && !dialog.open) document.getElementById("showcasePrompt")?.click();
+    }
     const detail = data && data.detail;
     throw new Error(typeof detail === "string" ? detail : "Le serveur a renvoyé une erreur.");
   }
