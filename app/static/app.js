@@ -566,8 +566,8 @@ function sinceText(timestamp) {
 
 function listenText(seconds) {
   const hours = Math.floor(seconds / 3600);
-  if (hours >= 1) return `${hours} h de son et d'image`;
-  return `${Math.max(1, Math.round(seconds / 60))} min de son et d'image`;
+  if (hours >= 1) return `${hours} h à écouter`;
+  return `${Math.max(1, Math.round(seconds / 60))} min à écouter`;
 }
 
 function renderStats() {
@@ -583,15 +583,15 @@ function renderStats() {
   const seconds = items.reduce((sum, i) => sum + (i.duration || 0), 0);
   const n = items.length;
   const chip = (kind, iconName, strong, text) =>
-    h("span", { class: `stat tint tint--${kind}` }, icon(iconName), h("b", {}, strong), ` ${text}`);
-  const chips = [chip("accent", "lock", `${n} média${n > 1 ? "s" : ""}`, "à l'abri")];
+    h("div", { class: `stat tint tint--${kind}` }, icon(iconName), h("b", {}, strong), h("span", { class: "stat__label" }, text));
+  const chips = [chip("accent", "lock", n, `média${n > 1 ? "s" : ""} à l'abri`)];
   const sons = count("audio");
   const videos = count("video");
   const zips = count("archive");
   if (sons) chips.push(chip("son", "music", sons, `son${sons > 1 ? "s" : ""}`));
   if (videos) chips.push(chip("video", "film", videos, `vidéo${videos > 1 ? "s" : ""}`));
   if (zips) chips.push(chip("zip", "box", zips, `zip${zips > 1 ? "s" : ""}`));
-  chips.push(chip("neutral", "disk", formatBytes(size), seconds ? `· ${listenText(seconds)}` : ""));
+  chips.push(chip("neutral", "disk", formatBytes(size), seconds ? listenText(seconds) : "sur le disque"));
   statsEl.replaceChildren(...chips);
 }
 
