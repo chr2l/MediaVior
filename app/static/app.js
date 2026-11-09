@@ -6,10 +6,12 @@ const errorEl = document.getElementById("error");
 const resultEl = document.getElementById("result");
 const downloadBtn = document.getElementById("downloadBtn");
 const batchEl = document.getElementById("batch");
-const batchList = document.getElementById("batchList");
+const batchInput = document.getElementById("batchInput");
+const batchCount = document.getElementById("batchCount");
+const batchError = document.getElementById("batchError");
 const batchBtn = document.getElementById("batchBtn");
-const queueEl = document.getElementById("queue");
 const queueList = document.getElementById("queueList");
+const queueEmpty = document.getElementById("queueEmpty");
 const libraryList = document.getElementById("libraryList");
 const libraryFilter = document.getElementById("libraryFilter");
 const libraryEmpty = document.getElementById("libraryEmpty");
@@ -22,6 +24,42 @@ function showError(message) {
 
 function clearError() {
   errorEl.classList.add("hidden");
+}
+
+// ---------------------------------------------------------------------------
+// Trois façons de télécharger : un lien, plusieurs liens (zip), liste de titres
+// ---------------------------------------------------------------------------
+
+const WAYS = ["lien", "liens", "titres"];
+let currentWay = "lien";
+
+function setWay(name, { focus = false } = {}) {
+  if (!WAYS.includes(name)) name = WAYS[0];
+  currentWay = name;
+  document.querySelectorAll(".ways__btn").forEach((btn) => {
+    const active = btn.dataset.way === name;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll(".way").forEach((el) => el.classList.toggle("hidden", el.dataset.way !== name));
+  try {
+    localStorage.setItem("mediavior-way", name);
+  } catch (e) {
+    /* navigation privée : tant pis */
+  }
+  if (focus) {
+    const field = { lien: urlInput, liens: batchInput, titres: document.getElementById("sonsInput") }[name];
+    if (field) field.focus();
+  }
+}
+
+document.querySelectorAll(".ways__btn").forEach((btn) =>
+  btn.addEventListener("click", () => setWay(btn.dataset.way, { focus: true })));
+
+try {
+  setWay(localStorage.getItem("mediavior-way") || "lien");
+} catch (e) {
+  setWay("lien");
 }
 
 // ---------------------------------------------------------------------------
@@ -149,10 +187,15 @@ function handleInput() {
   clearError();
   const urls = extractUrls(text);
   if (urls.length > 1) {
-    showBatch(urls);
+    // Plusieurs liens collés dans la case « Un lien » : on passe tout seul à « Plusieurs liens »
+    batchInput.value = urls.join("\n");
+    urlInput.value = "";
+    autoGrow();
+    resultEl.classList.add("hidden");
+    setWay("liens");
+    renderBatch();
     return;
   }
-  batchEl.classList.add("hidden");
   analyze(urls[0] || text);
 }
 
@@ -242,6 +285,7 @@ downloadBtn.addEventListener("click", async () => {
     urlInput.value = "";
     autoGrow();
     startPolling();
+    revealQueue();
     setTimeout(() => {
       downloadBtn.textContent = "Télécharger";
       downloadBtn.disabled = false;
@@ -253,85 +297,48 @@ downloadBtn.addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Plusieurs liens
+// Plusieurs liens : un même format, tout dans un seul zip
 // ---------------------------------------------------------------------------
-
-let batchUrls = [];
 
 const shortUrl = (u) => u.replace(/^https?:\/\/(www\.)?/i, "");
 
-function showBatch(urls) {
-  batchUrls = urls;
-  resultEl.classList.add("hidden");
-  renderBatch();
-  batchEl.classList.remove("hidden");
-}
-
-function hideBatch() {
-  batchUrls = [];
-  batchEl.classList.add("hidden");
+function batchUrls() {
+  return extractUrls(batchInput.value);
 }
 
 function renderBatch() {
-  const n = batchUrls.length;
-  document.getElementById("batchTitle").textContent = `${n} lien${n > 1 ? "s" : ""}`;
-  batchBtn.textContent = `Ajouter ${n > 1 ? `les ${n} liens` : "le lien"} à la file`;
-  batchList.replaceChildren(
-    ...batchUrls.map((u, i) =>
-      h("li", { class: "batch-list__item" },
-        h("span", { class: "batch-list__url", title: u }, shortUrl(u)),
-        h("button", {
-          type: "button",
-          class: "icon-btn icon-btn--sm",
-          "aria-label": "Retirer ce lien",
-          title: "Retirer ce lien",
-          onclick: () => {
-            batchUrls.splice(i, 1);
-            if (batchUrls.length) renderBatch();
-            else hideBatch();
-          },
-        }, icon("close"))
-      )
-    )
-  );
+  const n = batchUrls().length;
+  batchCount.textContent = n
+    ? `${n} lien${n > 1 ? "s" : ""} trouvé${n > 1 ? "s" : ""}.`
+    : "Colle autant de liens que tu veux (jusqu'à 100).";
+  batchBtn.disabled = n < 1 || n > 100;
+  batchBtn.textContent = n > 1 ? `Télécharger les ${n} liens en zip` : "Télécharger en zip";
 }
 
-document.getElementById("batchClear").addEventListener("click", () => {
-  hideBatch();
-  urlInput.value = "";
-  autoGrow();
-  urlInput.focus();
-});
+batchInput.addEventListener("input", renderBatch);
 
 batchBtn.addEventListener("click", async () => {
-  clearError();
+  const urls = batchUrls();
+  if (!urls.length) return;
+  batchError.classList.add("hidden");
   batchBtn.disabled = true;
   batchBtn.classList.add("is-loading");
-  const options = batchOptions.values();
-  const failures = [];
-
-  for (const url of batchUrls) {
-    try {
-      await api("/api/download", { method: "POST", body: { url, ...options } });
-      startPolling();
-    } catch (e) {
-      failures.push({ url, message: e.message });
-    }
-  }
-
-  batchBtn.disabled = false;
-  batchBtn.classList.remove("is-loading");
-  if (failures.length) {
-    showError(failures.map((f) => `${shortUrl(f.url)} : ${f.message}`).join("\n"));
-    batchUrls = failures.map((f) => f.url);
+  try {
+    await api("/api/links", { method: "POST", body: { urls, ...batchOptions.values() } });
+    batchInput.value = "";
+    startPolling();
+    revealQueue();
+    showToast(`${urls.length} lien${urls.length > 1 ? "s" : ""} en route : le zip arrivera dans la bibliothèque.`);
+  } catch (e) {
+    batchError.textContent = e.message;
+    batchError.classList.remove("hidden");
+  } finally {
+    batchBtn.classList.remove("is-loading");
     renderBatch();
-    urlInput.value = batchUrls.join("\n");
-  } else {
-    hideBatch();
-    urlInput.value = "";
   }
-  autoGrow();
 });
+
+renderBatch();
 
 // ---------------------------------------------------------------------------
 // File d'attente
@@ -377,8 +384,8 @@ async function pollJobs() {
 
 function renderQueue(jobs) {
   const visible = jobs.filter((j) => j.status !== "done");
-  queueEl.classList.toggle("hidden", !visible.length);
-  setBadge("telecharger", visible.filter((j) => ACTIVE.has(j.status)).length);
+  queueEmpty.classList.toggle("hidden", visible.length > 0);
+  setBadge("encours", visible.filter((j) => ACTIVE.has(j.status)).length);
 
   const ids = new Set(visible.map((j) => j.id));
   for (const [id, node] of queueNodes) {
@@ -433,7 +440,7 @@ function jobStatusText(job) {
       return parts.join(" · ");
     }
     case "converting":
-      if (job.kind === "sons") return "Création du zip…";
+      if (job.kind === "sons" || job.kind === "links") return "Création du zip…";
       return job.encoding ? `Conversion… ${pct}` : "Conversion…";
     case "processing":
       return `Montage… ${pct}`;
@@ -456,7 +463,7 @@ function updateJobNode(node, job) {
     node.thumb.replaceChildren(
       job.thumbnail
         ? h("img", { src: job.thumbnail, alt: "", referrerpolicy: "no-referrer" })
-        : icon(job.kind === "edit" ? "scissors" : job.kind === "sons" ? "archive" : "download")
+        : icon({ edit: "scissors", sons: "archive", links: "archive" }[job.kind] || "download")
     );
   }
 
@@ -486,7 +493,7 @@ async function onJobAction(node) {
       await api(`/api/jobs/${job.id}`, { method: "DELETE" });
       node.root.remove();
       queueNodes.delete(job.id);
-      queueEl.classList.toggle("hidden", !queueNodes.size);
+      queueEmpty.classList.toggle("hidden", queueNodes.size > 0);
     }
   } catch (e) {
     showError(e.message);
@@ -524,8 +531,35 @@ function renderLibrary(highlightIds = []) {
     ? "Aucun titre ne correspond à ce filtre."
     : "Rien dans la bibliothèque pour l'instant. Les fichiers téléchargés apparaîtront ici.";
 
-  libraryList.replaceChildren(...items.map((item) => libraryRow(item, highlightIds.includes(item.id))));
+  // Rangés par jour, du plus récent au plus ancien
+  const rows = [];
+  let lastDay = null;
+  items.forEach((item) => {
+    const day = dayLabel(item.created);
+    if (day !== lastDay) {
+      rows.push(h("li", { class: "item-day", "aria-hidden": "true" }, day));
+      lastDay = day;
+    }
+    rows.push(libraryRow(item, highlightIds.includes(item.id)));
+  });
+  libraryList.replaceChildren(...rows);
   renderSelection();
+}
+
+function dayLabel(timestamp) {
+  const date = new Date(timestamp * 1000);
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) return "Aujourd'hui";
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Hier";
+  const label = date.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function libraryRow(item, isNew) {
@@ -540,11 +574,12 @@ function libraryRow(item, isNew) {
       })
     : fallback();
 
+  // Sous le titre : le format choisi et la durée (ou le nombre de fichiers d'un zip)
   const meta = [
     item.ext.toUpperCase(),
-    formatBytes(item.size),
     item.duration ? formatDuration(item.duration) : null,
-    formatDate(item.created),
+    item.mode === "archive" && item.count ? `${item.count} fichier${item.count > 1 ? "s" : ""}` : null,
+    formatBytes(item.size),
   ].filter(Boolean).join(" · ");
 
   if (selecting) {
@@ -582,8 +617,8 @@ function libraryRow(item, isNew) {
         class: "icon-btn",
         href: `/api/file/${item.id}`,
         download: true,
-        title: "Récupérer le fichier",
-        "aria-label": "Récupérer le fichier",
+        title: "Retélécharger le fichier",
+        "aria-label": "Retélécharger le fichier",
       }, icon("download")),
       item.mode === "archive" ? null : h("a", {
         class: "icon-btn",
@@ -594,14 +629,14 @@ function libraryRow(item, isNew) {
       h("button", {
         type: "button",
         class: "icon-btn icon-btn--danger",
-        title: "Supprimer du serveur",
-        "aria-label": "Supprimer du serveur",
+        title: "Enlever de la bibliothèque",
+        "aria-label": "Enlever de la bibliothèque",
         onclick: () => deleteItem(item),
       }, icon("trash"))));
 }
 
 async function deleteItem(item) {
-  if (!confirm(`Supprimer « ${item.title} » du serveur ?\nLe fichier sera définitivement effacé.`)) return;
+  if (!confirm(`Enlever « ${item.title} » de la bibliothèque ?\nLe fichier sera définitivement effacé.`)) return;
   try {
     await api(`/api/library/${item.id}`, { method: "DELETE" });
     libraryItems = libraryItems.filter((i) => i.id !== item.id);
@@ -624,7 +659,7 @@ const selCount = document.getElementById("selCount");
 const selDownload = document.getElementById("selDownload");
 const selDelete = document.getElementById("selDelete");
 selDownload.append(icon("download"), "Télécharger");
-selDelete.append(icon("trash"), "Supprimer");
+selDelete.append(icon("trash"), "Enlever");
 
 let selecting = false;
 const selected = new Set();
@@ -698,7 +733,7 @@ selDelete.addEventListener("click", async () => {
   if (!items.length) return;
   const n = items.length;
   const what = n === 1 ? `« ${items[0].title} »` : `ces ${n} fichiers`;
-  if (!confirm(`Supprimer ${what} du serveur ?\nCette action est définitive.`)) return;
+  if (!confirm(`Enlever ${what} de la bibliothèque ?\nCette action est définitive.`)) return;
   selDelete.disabled = true;
   selDelete.classList.add("is-loading");
   const failures = [];
@@ -713,8 +748,8 @@ selDelete.addEventListener("click", async () => {
   await loadLibrary();
   setSelecting(false);
   const done = n - failures.length;
-  if (done) showToast(`${done} fichier${done > 1 ? "s" : ""} supprimé${done > 1 ? "s" : ""}.`);
-  if (failures.length) alert(`Impossible de supprimer :\n${failures.join("\n")}`);
+  if (done) showToast(`${done} fichier${done > 1 ? "s" : ""} enlevé${done > 1 ? "s" : ""}.`);
+  if (failures.length) alert(`Impossible d'enlever :\n${failures.join("\n")}`);
 });
 
 document.addEventListener("keydown", (e) => {
@@ -732,6 +767,7 @@ function consumeSharedLink() {
   if (!shared) return;
   history.replaceState(null, "", "/");
   showView("telecharger");
+  setWay("lien");
   const urls = extractUrls(shared);
   if (!urls.length) {
     showError("Aucun lien trouvé dans le contenu partagé.");

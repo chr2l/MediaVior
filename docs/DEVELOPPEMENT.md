@@ -26,11 +26,11 @@ Deux façons de lancer le même serveur :
 | Fichier | Contenu |
 |---|---|
 | `app/main.py` | Tout le serveur, découpé en sections commentées : modèles, mise à jour de yt-dlp, pages, version locale, sécurité des liens, bibliothèque, analyse, file d'attente, téléchargement, éditeur, liste de sons |
-| `app/templates/index.html` | La page principale (trois vues : Télécharger, Liste de sons, Bibliothèque) |
+| `app/templates/index.html` | La page principale : Télécharger (trois façons : un lien, plusieurs liens en zip, liste de titres) et le panneau de droite (En cours, Bibliothèque) |
 | `app/templates/editor.html` | L'éditeur (coupe, fondus, volume) |
 | `app/templates/legal.html` | Mentions légales, avec sommaire latéral |
 | `app/static/common.js` | Outils partagés : `api()`, `h()` (création d'éléments sans `innerHTML`), icônes |
-| `app/static/shell.js` | Navigation entre les vues, pastilles, notifications |
+| `app/static/shell.js` | Navigation (panneau de droite sur ordinateur, onglets du bas sur téléphone), pastilles, notifications |
 | `app/static/app.js` | Analyse, options, file d'attente, bibliothèque |
 | `app/static/sons.js` | Liste de sons, captures d'écran, fenêtre de choix YouTube |
 | `app/static/editor.js` | Forme d'onde et commandes de l'éditeur |
