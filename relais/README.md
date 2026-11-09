@@ -35,7 +35,16 @@ Protections : 30 connexions par minute et par adresse IP, 120 messages par minut
 
 ## Mettre en ligne ou mettre à jour
 
-Depuis ce dossier, avec Node.js :
+**Automatique** : `.github/workflows/relais.yml` met le relais en ligne à chaque mise en ligne
+(`main`) qui touche ce dossier, ou à la main depuis l'onglet **Actions** → **Relais téléphone** →
+**Run workflow**. Il lui faut deux secrets GitHub (**Settings → Secrets and variables → Actions**) :
+
+- `CLOUDFLARE_API_TOKEN` : Cloudflare → **Mon profil → Jetons d'API → Créer un jeton** → modèle
+  **Modifier les Cloudflare Workers** (compte et zone du domaine du relais) ;
+- `CLOUDFLARE_ACCOUNT_ID` : l'identifiant du compte, affiché à droite de la page d'accueil de
+  **Workers et Pages**.
+
+**À la main**, depuis ce dossier, avec Node.js :
 
 ```bash
 npm install
