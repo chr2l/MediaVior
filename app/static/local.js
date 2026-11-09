@@ -45,20 +45,23 @@ async function loadPrompt() {
 }
 
 // Met en avant le bouton de téléchargement du système de la personne
-const dlButtons = document.getElementById("dlButtons");
-if (dlButtons) {
+const userOs = (() => {
   const ua = navigator.userAgent;
-  const os = /Windows/.test(ua) ? "win" : /Macintosh|Mac OS X/.test(ua) ? "mac" : /Linux/.test(ua) && !/Android/.test(ua) ? "linux" : "";
-  const mine = os && dlButtons.querySelector(`[data-os="${os}"]`);
-  if (mine) {
-    mine.classList.add("is-mine");
-    mine.textContent = "Télécharger pour " + mine.textContent;
-    dlButtons.prepend(mine);
-  }
+  // Téléphone ou tablette (un iPad se présente comme un Mac, mais tactile) : rien à mettre en avant
+  if (/Android|iPhone|iPad|Mobile/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "";
+  return /Windows/.test(ua) ? "win" : /Macintosh|Mac OS X/.test(ua) ? "mac" : /Linux/.test(ua) ? "linux" : "";
+})();
+for (const box of document.querySelectorAll(".dl-buttons")) {
+  const mine = userOs && box.querySelector(`[data-os="${userOs}"]`);
+  if (!mine) continue;
+  mine.classList.add("is-mine");
+  mine.lastChild.textContent = "Télécharger pour " + mine.lastChild.textContent;
+  box.prepend(mine);
 }
 
-if (promptOpen) {
-  promptOpen.addEventListener("click", async () => {
+for (const opener of [promptOpen, document.getElementById("showcasePrompt")]) {
+  if (!opener) continue;
+  opener.addEventListener("click", async () => {
     promptDialog.showModal();
     try {
       await loadPrompt();
