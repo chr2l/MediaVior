@@ -1,0 +1,38 @@
+name: Relais téléphone (Cloudflare)
+# Met en ligne le relais (dossier relais/) sur Cloudflare Workers à chaque mise en ligne qui le
+# modifie, ou à la main (onglet Actions → Run workflow).
+# Il faut deux secrets dans Settings → Secrets and variables → Actions :
+#   CLOUDFLARE_API_TOKEN (modèle « Modifier les Cloudflare Workers ») et CLOUDFLARE_ACCOUNT_ID.
+on:
+  push:
+    branches: [main]
+    paths: ["relais/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relais
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Mise en ligne
+        working-directory: relais
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Secret CLOUDFLARE_API_TOKEN manquant (voir relais/README.md)"
+            exit 1
+          fi
+          npm ci
+          npx wrangler deploy

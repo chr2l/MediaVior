@@ -1787,3 +1787,28 @@ input[type="range"] {
 @media (max-width: 960px) {
   .vault-dock { top: 0; margin: 0 0 14px; padding: 12px 0 18px; }
 }
+
+/* ---------- Fenêtre « Téléphone » (version PC) ---------- */
+
+.phone-dialog__body { display: flex; gap: 20px; align-items: center; margin-top: 16px; }
+.phone-dialog__qr {
+  flex: none; width: 220px; height: 220px; border-radius: var(--radius-sm);
+  background: #FFFFFF; display: grid; place-items: center; overflow: hidden;
+}
+.phone-dialog__qr img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.phone-dialog__qr .hint { color: #5E6876; text-align: center; padding: 12px; }
+.phone-dialog__steps ol { margin: 0; padding-left: 20px; line-height: 1.55; font-size: 0.9rem; }
+.phone-dialog__steps li { margin-bottom: 6px; }
+.phone-dialog__status { font-size: 0.88rem; margin: 12px 0 0; color: var(--paper-dim); }
+.phone-dialog__status.is-ok { color: var(--teal); }
+.phone-dialog__status.is-error { color: var(--danger); }
+@media (max-width: 560px) {
+  .phone-dialog__body { flex-direction: column; align-items: stretch; }
+  .phone-dialog__qr { width: 100%; height: auto; aspect-ratio: 1; }
+}
+
+/* Boutons de téléchargement de l'appli PC (fenêtre « Avoir MediaVior sur ton PC ») */
+.dl-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.dl-buttons .btn.is-mine { background: var(--brass); color: var(--on-accent); border-color: var(--brass); }
+.prompt-dialog .hint a { color: var(--brass); }
+.prompt-dialog__alt { font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--paper-dim); margin: 20px 0 0; }

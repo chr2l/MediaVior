@@ -43,6 +43,9 @@ GITHUB_URL = "https://github.com/chr2l/MediaVior"
 # contre les autres sites ouverts dans le navigateur.
 LOCAL_MODE = os.environ.get("MEDIAVIOR_LOCAL") == "1"
 QUIT_HOOK = None  # fourni par mediavior.py pour arrêter le serveur proprement
+# Appli prête à installer (.exe, .dmg, AppImage) : nouvelle version publiée et installation
+APP_UPDATE: Optional[dict] = None
+APP_UPDATE_HOOK = None
 
 # Change à chaque démarrage : force le navigateur à recharger CSS/JS après une mise à jour
 ASSET_VERSION = str(int(time.time()))
@@ -83,11 +86,12 @@ class JobCancelled(Exception):
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     _cleanup_unfinished()
-    worker = asyncio.create_task(_worker())
-    updater = asyncio.create_task(_ytdlp_updater())
+    tasks = [asyncio.create_task(_worker()), asyncio.create_task(_ytdlp_updater())]
+    if LOCAL_MODE:
+        tasks += jumelage.setup(sys.modules[__name__])  # liaison avec le téléphone
     yield
-    worker.cancel()
-    updater.cancel()
+    for task in tasks:
+        task.cancel()
 
 
 app = FastAPI(title=APP_NAME, lifespan=lifespan)
@@ -116,6 +120,11 @@ if LOCAL_MODE:
             if not same and not re.match(r"^(chrome|moz)-extension://[a-z0-9-]+$", origin):
                 return JSONResponse({"detail": "Requête refusée."}, status_code=403)
         return await call_next(request)
+
+
+if LOCAL_MODE:
+    import jumelage  # app/jumelage.py : téléphone jumelé (QR code), version PC seulement
+    app.include_router(jumelage.router)
 
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
@@ -273,6 +282,25 @@ async def open_folder():
     else:
         subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", target],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {"ok": True}
+
+
+@app.get("/api/local/maj")
+async def app_update_info():
+    """Nouvelle version de l'appli prête à installer, s'il y en a une."""
+    _local_only()
+    return (APP_UPDATE or {}).get("release") or {}
+
+
+@app.post("/api/local/maj")
+async def app_update_install():
+    _local_only()
+    if not APP_UPDATE_HOOK or not (APP_UPDATE or {}).get("release"):
+        raise HTTPException(status_code=404, detail="Pas de mise à jour disponible.")
+    try:
+        await asyncio.get_running_loop().run_in_executor(None, APP_UPDATE_HOOK)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Mise à jour impossible : {exc}")
     return {"ok": True}
 
 

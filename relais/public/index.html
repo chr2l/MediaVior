@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MediaVior</title>
+  <meta name="description" content="Envoie un lien à MediaVior sur ton PC, récupère le fichier sur ton téléphone.">
+  <meta name="theme-color" content="#121821">
+  <meta name="color-scheme" content="dark light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="MediaVior">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/tel.css">
+</head>
+<body>
+  <header class="top">
+    <span class="brand"><img src="/icons/icon.svg" alt="" width="28" height="28"> MediaVior</span>
+    <span class="pill" id="statut" hidden></span>
+  </header>
+
+  <main>
+    <!-- Ajouter à l'écran d'accueil -->
+    <section class="card install" id="installer" hidden>
+      <div class="install__head">
+        <img src="/icons/icon-192.png" alt="" width="44" height="44">
+        <div>
+          <strong>Ajoute MediaVior à ton écran d'accueil</strong>
+          <p class="hint">Il s'ouvre comme une appli, et apparaît dans « Partager » depuis YouTube.</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn--solid" id="installerBtn" hidden>Ajouter à l'écran d'accueil</button>
+      <ol class="steps" id="installerIos" hidden>
+        <li>Touche le bouton <b>Partager</b>
+          <svg class="ios-share" viewBox="0 0 24 24" aria-label="Partager"><path d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>
+          en bas de Safari.</li>
+        <li>Fais défiler et choisis <b>Sur l'écran d'accueil</b>
+          <svg class="ios-share" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>.</li>
+        <li>Touche <b>Ajouter</b>, en haut à droite.</li>
+      </ol>
+      <p class="hint" id="installerAutre" hidden>Dans le menu du navigateur (⋮), choisis <b>Ajouter à l'écran d'accueil</b> ou <b>Installer l'application</b>.</p>
+      <button type="button" class="btn-link" id="installerPlusTard">Plus tard</button>
+    </section>
+
+    <!-- Pas encore jumelé -->
+    <section class="card" id="vueJumeler" hidden>
+      <h1>Relie ton téléphone à ton PC</h1>
+      <ol class="steps">
+        <li>Sur ton ordinateur, ouvre <b>MediaVior</b>.</li>
+        <li>Clique sur <b>Téléphone</b>, en haut de la fenêtre. Un QR code s'affiche.</li>
+        <li>Scanne-le avec l'appareil photo de ce téléphone.</li>
+      </ol>
+      <p class="hint">C'est à faire une seule fois. Pas de compte, rien à installer sur le PC en plus.
+        Tu n'as pas encore MediaVior ? <a href="https://github.com/chr2l/MediaVior#installer-sur-ton-pc" target="_blank" rel="noopener">Installe-le sur ton PC</a>.</p>
+      <p class="error" id="erreurJumelage" hidden></p>
+    </section>
+
+    <!-- Jumelé -->
+    <section id="vueAppli" hidden>
+      <form class="card" id="envoi" autocomplete="off">
+        <label class="label" for="lien">Lien de la vidéo ou de la musique</label>
+        <div class="row">
+          <input type="url" id="lien" inputmode="url" placeholder="https://…" required>
+          <button type="button" class="btn btn--ghost" id="coller">Coller</button>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Type">
+          <label><input type="radio" name="mode" value="video" checked><span>Vidéo (MP4)</span></label>
+          <label><input type="radio" name="mode" value="audio"><span>Audio (MP3)</span></label>
+        </div>
+        <button type="submit" class="btn btn--solid" id="envoyer">Mettre au coffre</button>
+        <p class="hint" id="envoiInfo">Le PC télécharge le fichier. Tu pourras ensuite le récupérer ici.</p>
+      </form>
+
+      <section class="card">
+        <h2>Sur ton PC</h2>
+        <ul class="list" id="taches"></ul>
+        <ul class="list" id="fichiers"></ul>
+        <p class="hint" id="vide">Rien pour l'instant.</p>
+      </section>
+
+      <p class="foot">
+        <button type="button" class="btn-link" id="oublier">Oublier ce PC</button>
+        <a href="https://github.com/chr2l/MediaVior" target="_blank" rel="noopener">Code source</a>
+      </p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script src="/tel.js"></script>
+</body>
+</html>

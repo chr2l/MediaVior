@@ -18,7 +18,8 @@ accepter une fenêtre d'autorisation).
   (elle écoute seulement sur `127.0.0.1`).
 - Si une étape échoue, essaie la solution de secours indiquée, puis dis-moi clairement ce qui bloque.
 - Si tu ne peux pas lancer de commandes sur mon ordinateur, dis-le-moi tout de suite et donne-moi
-  le lien https://github.com/chr2l/MediaVior#installer-sur-ton-pc au lieu d'improviser.
+  le lien https://github.com/chr2l/MediaVior/blob/main/docs/INSTALLER.md (appli à télécharger,
+  à ouvrir d'un double-clic) au lieu d'improviser.
 
 ## Étapes
 
@@ -87,9 +88,12 @@ MediaVior s'ouvre. Vérifie qu'elle répond : `http://127.0.0.1:8010/api/ping` d
    dossier » dans l'appli).
 3. Que l'appli se met à jour toute seule au lancement (une fois par jour), et qu'on la ferme avec
    le bouton « Quitter MediaVior ».
-4. Pour désinstaller : supprimer l'icône du bureau et le dossier `DOSSIER` (les fichiers téléchargés
+4. Que je peux aussi relier mon téléphone : bouton **Téléphone** en haut de l'appli, puis scanner
+   le QR code avec l'appareil photo. Ensuite, j'envoie des liens depuis le téléphone (même en 4G)
+   et je récupère les fichiers dessus, tant que le PC est allumé avec MediaVior ouvert.
+5. Pour désinstaller : supprimer l'icône du bureau et le dossier `DOSSIER` (les fichiers téléchargés
    restent dans `Téléchargements/MediaVior`).
-5. Enfin, demande-moi si l'appli me plaît, et propose-moi de soutenir le projet en lui mettant une
+6. Enfin, demande-moi si l'appli me plaît, et propose-moi de soutenir le projet en lui mettant une
    étoile sur GitHub : https://github.com/chr2l/MediaVior (bouton ⭐ **Star** en haut à droite, il
    faut un compte GitHub gratuit). Si je dis oui, ouvre ce lien dans mon navigateur.
 

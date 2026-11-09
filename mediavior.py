@@ -12,6 +12,9 @@ Les fichiers vont par défaut dans « Téléchargements/MediaVior ». Les régla
 sont dans ~/.mediavior/.
 """
 import argparse
+import hashlib
+import importlib.abc
+import importlib.machinery
 import json
 import os
 import shutil
@@ -20,13 +23,22 @@ import subprocess
 import sys
 import threading
 import time
+import re
+import tempfile
 import webbrowser
 from pathlib import Path
-from urllib.request import urlopen
+from typing import Optional
+from urllib.request import Request, urlopen
 
-ROOT = Path(__file__).resolve().parent
-APP_DIR = ROOT / "app"
+# Appli « prête à installer » (.exe, .dmg, AppImage construits par GitHub, voir
+# packaging/) : Python, yt-dlp, ffmpeg et deno sont dans le paquet, rangés dans sys._MEIPASS.
+FROZEN = bool(getattr(sys, "frozen", False))
+ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+APP_DIR = ROOT if FROZEN else ROOT / "app"
 HOME_DIR = Path.home() / ".mediavior"
+YTDLP_DIR = HOME_DIR / "yt-dlp"  # versions plus récentes de yt-dlp, téléchargées après coup
+GITHUB_API = "https://api.github.com/repos/chr2l/MediaVior/releases/latest"
+RELEASE_ASSETS = {"win": "MediaVior-Windows.exe", "mac": "MediaVior-Mac.dmg", "linux": "MediaVior-Linux.AppImage"}
 CONFIG = HOME_DIR / "config.json"
 LOG = HOME_DIR / "mediavior.log"
 DEFAULT_PORT = 8010
@@ -51,6 +63,14 @@ def save_config(cfg: dict) -> None:
     CONFIG.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def build_info() -> dict:
+    """Version de l'appli et de yt-dlp inclus (fichier écrit par la construction GitHub)."""
+    try:
+        return json.loads((ROOT / "build.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
 def default_folder() -> Path:
     return Path.home() / "Downloads" / "MediaVior"
 
@@ -64,6 +84,15 @@ def prepare_path() -> None:
     # sont à côté de python : on les rend visibles pour yt-dlp et l'appli.
     bindir = str(Path(sys.executable).parent)
     os.environ["PATH"] = bindir + os.pathsep + os.environ.get("PATH", "")
+    if FROZEN:
+        # ffmpeg, ffprobe et deno livrés dans le paquet ; certificats HTTPS de certifi (le Mac
+        # n'en fournit pas à Python)
+        os.environ["PATH"] = str(ROOT / "bin") + os.pathsep + os.environ["PATH"]
+        try:
+            import certifi
+            os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+        except ImportError:
+            pass
     if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
         try:
             import static_ffmpeg  # téléchargé au premier lancement si besoin
@@ -91,6 +120,12 @@ def check() -> int:
         except ImportError:
             print(f"{mod} : MANQUANT (pip install -r requirements.txt -r requirements-local.txt)")
             ok = False
+    for mod in ("segno", "aiortc"):
+        try:
+            __import__(mod)
+            print(f"{mod} : ok")
+        except ImportError:
+            print(f"{mod} : absent (optionnel : téléphone relié)")
     for tool, needed in (("ffmpeg", True), ("ffprobe", True), ("deno", True), ("tesseract", False)):
         found = shutil.which(tool)
         label = "ok" if found else ("MANQUANT" if needed else "absent (optionnel : lecture des captures)")
@@ -107,6 +142,9 @@ def check() -> int:
 # ---------------------------------------------------------------------------
 
 def update_in_background(cfg: dict) -> None:
+    if FROZEN:
+        threading.Thread(target=update_frozen, args=(cfg,), daemon=True).start()
+        return
     if time.time() - cfg.get("last_update", 0) < UPDATE_EVERY:
         return
 
@@ -130,6 +168,171 @@ def update_in_background(cfg: dict) -> None:
             print(f"Mise à jour impossible : {exc}", file=sys.stderr)
 
     threading.Thread(target=run, daemon=True).start()
+
+
+# ---------------------------------------------------------------------------
+# Mise à jour de l'appli prête à installer (.exe, .dmg, AppImage)
+# ---------------------------------------------------------------------------
+# On ne peut pas faire « pip install » dans un paquet figé. Donc :
+#   - yt-dlp : la dernière version est téléchargée depuis PyPI (fichier .whl, vérifié par son
+#     empreinte SHA-256) dans ~/.mediavior/yt-dlp, et utilisée à la place de celle du paquet ;
+#   - l'appli : si une nouvelle version est publiée sur GitHub, un bouton « Mettre à jour »
+#     apparaît (Windows et Linux l'installent seuls, le Mac télécharge le .dmg).
+
+def _version_tuple(v: str) -> tuple:
+    return tuple(int(x) for x in re.findall(r"\d+", v or "0"))
+
+
+def _get_json(url: str):
+    req = Request(url, headers={"User-Agent": "MediaVior", "Accept": "application/json"})
+    with urlopen(req, timeout=20) as resp:
+        return json.load(resp)
+
+
+def _download(url: str, dest: Path, sha256: Optional[str] = None) -> None:
+    tmp = dest.with_name(dest.name + ".part")
+    digest = hashlib.sha256()
+    with urlopen(Request(url, headers={"User-Agent": "MediaVior"}), timeout=60) as resp, tmp.open("wb") as f:
+        while chunk := resp.read(1 << 16):
+            digest.update(chunk)
+            f.write(chunk)
+    if sha256 and digest.hexdigest() != sha256:
+        tmp.unlink(missing_ok=True)
+        raise ValueError(f"empreinte incorrecte pour {dest.name}")
+    tmp.replace(dest)
+
+
+def _pypi_wheel(project: str, version: Optional[str] = None) -> tuple:
+    data = _get_json(f"https://pypi.org/pypi/{project}/{version + '/' if version else ''}json")
+    for f in data["urls"]:
+        if f["packagetype"] == "bdist_wheel" and f["filename"].endswith("-py3-none-any.whl"):
+            return data["info"]["version"], data["info"].get("requires_dist") or [], f
+    raise ValueError(f"pas de wheel pour {project}")
+
+
+def update_ytdlp_wheel() -> None:
+    YTDLP_DIR.mkdir(parents=True, exist_ok=True)
+    current = _ytdlp_override() or {}
+    bundled = build_info().get("yt_dlp", "0")
+    version, requires, wheel = _pypi_wheel("yt-dlp")
+    best = max(_version_tuple(bundled), _version_tuple(current.get("version", "0")))
+    if _version_tuple(version) <= best:
+        return
+    new = {"version": version}
+    dest = YTDLP_DIR / wheel["filename"]
+    _download(wheel["url"], dest, wheel["digests"]["sha256"])
+    new["yt_dlp"] = dest.name
+    # yt-dlp-ejs (défis JavaScript de YouTube) va avec une version précise de yt-dlp
+    ejs = next((re.search(r"==\s*([\w.]+)", r) for r in requires if r.startswith("yt-dlp-ejs")), None)
+    if ejs:
+        _, _, ejs_wheel = _pypi_wheel("yt-dlp-ejs", ejs.group(1))
+        ejs_dest = YTDLP_DIR / ejs_wheel["filename"]
+        _download(ejs_wheel["url"], ejs_dest, ejs_wheel["digests"]["sha256"])
+        new["yt_dlp_ejs"] = ejs_dest.name
+    (YTDLP_DIR / "actuel.json").write_text(json.dumps(new), encoding="utf-8")
+    # Ménage : on garde seulement les fichiers utilisés
+    keep = {new.get("yt_dlp"), new.get("yt_dlp_ejs"), "actuel.json"}
+    for f in YTDLP_DIR.iterdir():
+        if f.name not in keep:
+            f.unlink(missing_ok=True)
+    print(f"yt-dlp {version} téléchargé : utilisé au prochain lancement.")
+
+
+def _ytdlp_override() -> Optional[dict]:
+    try:
+        cur = json.loads((YTDLP_DIR / "actuel.json").read_text(encoding="utf-8"))
+        return cur if (YTDLP_DIR / cur["yt_dlp"]).is_file() else None
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+class _WheelFinder(importlib.abc.MetaPathFinder):
+    """Importe yt_dlp (et yt_dlp_ejs) depuis le .whl téléchargé plutôt que depuis le paquet."""
+
+    def __init__(self, wheels: dict):
+        self.wheels = wheels
+
+    def find_spec(self, fullname, path, target=None):
+        top = fullname.partition(".")[0]
+        if top not in self.wheels:
+            return None
+        search = [self.wheels[top]] if "." not in fullname else path
+        return importlib.machinery.PathFinder.find_spec(fullname, search)
+
+
+def use_newer_ytdlp() -> None:
+    cur = _ytdlp_override()
+    if not cur or _version_tuple(cur.get("version")) <= _version_tuple(build_info().get("yt_dlp", "0")):
+        return
+    wheels = {"yt_dlp": str(YTDLP_DIR / cur["yt_dlp"])}
+    if cur.get("yt_dlp_ejs") and (YTDLP_DIR / cur["yt_dlp_ejs"]).is_file():
+        wheels["yt_dlp_ejs"] = str(YTDLP_DIR / cur["yt_dlp_ejs"])
+    sys.meta_path.insert(0, _WheelFinder(wheels))
+
+
+def _platform_key() -> str:
+    return "win" if IS_WIN else "mac" if IS_MAC else "linux"
+
+
+def check_app_release() -> Optional[dict]:
+    current = build_info().get("version")
+    if not current:
+        return None
+    rel = _get_json(GITHUB_API)
+    tag = rel.get("tag_name", "")
+    if _version_tuple(tag) <= _version_tuple(current):
+        return None
+    name = RELEASE_ASSETS[_platform_key()]
+    asset = next((a for a in rel.get("assets", []) if a.get("name") == name), None)
+    if not asset:
+        return None
+    return {"version": tag.lstrip("v"), "url": asset["browser_download_url"], "page": rel.get("html_url"),
+            "auto": not IS_MAC}
+
+
+def install_app_update(info: dict, quit_hook) -> None:
+    """Windows : lance l'installeur en silencieux puis quitte (il relance l'appli).
+    Linux : remplace le fichier AppImage, puis relance. Mac : ouvre la page de téléchargement."""
+    if IS_MAC:
+        webbrowser.open(info["url"])
+        return
+    tmpdir = Path(tempfile.mkdtemp(prefix="mediavior-maj-"))
+    if IS_WIN:
+        setup = tmpdir / RELEASE_ASSETS["win"]
+        _download(info["url"], setup)
+        subprocess.Popen([str(setup), "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART"],
+                         creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
+        quit_hook()
+        return
+    appimage = os.environ.get("APPIMAGE")
+    if not appimage:
+        webbrowser.open(info["url"])
+        return
+    new = Path(appimage).with_name(Path(appimage).name + ".nouveau")
+    _download(info["url"], new)
+    new.chmod(0o755)
+    new.replace(appimage)
+    subprocess.Popen([appimage], start_new_session=True,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    quit_hook()
+
+
+def update_frozen(cfg: dict) -> None:
+    try:  # nouvelle version de l'appli : vérifiée à chaque lancement (une petite requête)
+        STATE["release"] = check_app_release()
+    except Exception as exc:
+        print(f"Vérification de la version impossible : {exc}", file=sys.stderr)
+    if time.time() - cfg.get("last_update", 0) < UPDATE_EVERY:
+        return
+    try:
+        update_ytdlp_wheel()
+        cfg["last_update"] = time.time()
+        save_config(cfg)
+    except Exception as exc:
+        print(f"Mise à jour de yt-dlp impossible : {exc}", file=sys.stderr)
+
+
+STATE: dict = {"release": None}
 
 
 # ---------------------------------------------------------------------------
@@ -206,18 +409,25 @@ def create_shortcut() -> int:
     desk = desktop_dir()
     desk.mkdir(parents=True, exist_ok=True)
 
+    if FROZEN and IS_MAC:
+        print("Sur Mac, glisse MediaVior dans le dossier Applications : il apparaît dans le Launchpad.")
+        return 0
+    # Appli prête à installer : on lance l'exécutable lui-même (ou le fichier AppImage)
+    launch_args = "" if FROZEN else f'"{script}"'
+    exe = Path(os.environ.get("APPIMAGE") or sys.executable)
+
     if IS_WIN:
         # pythonw : pas de fenêtre noire de console
         pyw = Path(sys.executable).with_name("pythonw.exe")
-        target = pyw if pyw.is_file() else Path(sys.executable)
+        target = exe if FROZEN else pyw if pyw.is_file() else Path(sys.executable)
         q = lambda v: str(v).replace("'", "''")  # échappement PowerShell
         ps = f"""
 $ws = New-Object -ComObject WScript.Shell
 foreach ($dir in @('{q(desk)}', [Environment]::GetFolderPath('Programs'))) {{
   $s = $ws.CreateShortcut((Join-Path $dir 'MediaVior.lnk'))
   $s.TargetPath = '{q(target)}'
-  $s.Arguments = '"{q(script)}"'
-  $s.WorkingDirectory = '{q(ROOT)}'
+  $s.Arguments = '{q(launch_args)}'
+  $s.WorkingDirectory = '{q(target.parent if FROZEN else ROOT)}'
   $s.IconLocation = '{q(icons / "mediavior.ico")}'
   $s.Description = 'MediaVior : sauvegarde tes médias'
   $s.Save()
@@ -255,13 +465,18 @@ foreach ($dir in @('{q(desk)}', [Environment]::GetFolderPath('Programs'))) {{
         where.symlink_to(app)
 
     else:
+        icon_file = icons / "icon-512.png"
+        if FROZEN:  # le dossier du paquet AppImage disparaît à la fermeture : on copie l'icône
+            HOME_DIR.mkdir(parents=True, exist_ok=True)
+            icon_file = HOME_DIR / "mediavior.png"
+            shutil.copyfile(icons / "icon-512.png", icon_file)
         entry = f"""[Desktop Entry]
 Type=Application
 Name=MediaVior
 Comment=Sauvegarde tes médias
-Exec="{sys.executable}" "{script}"
-Path={ROOT}
-Icon={icons / "icon-512.png"}
+Exec="{exe}" {launch_args}
+Path={exe.parent if FROZEN else ROOT}
+Icon={icon_file}
 Terminal=false
 Categories=AudioVideo;Network;
 """
@@ -341,18 +556,31 @@ def main() -> int:
         port += 1
 
     prepare_path()
+    if FROZEN and not IS_WIN and not IS_MAC and not cfg.get("raccourci"):
+        # AppImage : au premier lancement, ajoute MediaVior au menu des applis et au bureau
+        try:
+            create_shortcut()
+            cfg["raccourci"] = True
+            save_config(cfg)
+        except Exception as exc:
+            print(f"Raccourci impossible : {exc}", file=sys.stderr)
     os.environ["MEDIAVIOR_LOCAL"] = "1"
     os.environ["LECOFFRE_DOWNLOAD_DIR"] = str(folder)
     os.environ["LECOFFRE_AUTO_UPDATE"] = "0"  # en local, c'est ce lanceur qui met à jour
     if not args.sans_maj:
         update_in_background(cfg)
 
+    if FROZEN:
+        use_newer_ytdlp()
     sys.path.insert(0, str(APP_DIR))
     import uvicorn
     import main as web  # app/main.py
 
     server = uvicorn.Server(uvicorn.Config(web.app, host="127.0.0.1", port=port, log_level="warning"))
     web.QUIT_HOOK = lambda: setattr(server, "should_exit", True)
+    if FROZEN:
+        web.APP_UPDATE = STATE  # « release » est rempli en arrière-plan s'il y a du nouveau
+        web.APP_UPDATE_HOOK = lambda: install_app_update(STATE["release"], web.QUIT_HOOK)
     url = f"http://127.0.0.1:{port}/"
 
     def when_ready():
