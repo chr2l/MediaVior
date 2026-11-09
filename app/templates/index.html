@@ -42,6 +42,30 @@
         </div>
       </header>
 
+      {% if not local %}
+      <!-- Vitrine : ce qu'est MediaVior et comment l'avoir chez soi (page web seulement) -->
+      <section class="showcase" aria-label="Présentation de MediaVior">
+        <p class="showcase__lead">Mets à l'abri les vidéos et les sons que tu aimes, avant qu'ils
+          disparaissent. Une appli <strong>gratuite et libre</strong>, qui tourne sur ton ordinateur.</p>
+        <div class="dl-buttons showcase__dl" id="showcaseDl">
+          <a class="btn btn--ghost" data-os="win" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe"><span data-icon="download"></span>Windows</a>
+          <a class="btn btn--ghost" data-os="mac" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg"><span data-icon="download"></span>Mac (puce Apple)</a>
+          <a class="btn btn--ghost" data-os="linux" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage"><span data-icon="download"></span>Linux</a>
+        </div>
+        <p class="showcase__more">
+          <button type="button" class="btn-link" id="showcasePrompt">Autres façons d'installer (avec une IA, Pinokio)</button>
+          · <a href="{{ github }}/blob/main/docs/INSTALLER.md" target="_blank" rel="noopener">Aide à l'installation</a>
+        </p>
+        <ul class="showcase__grid">
+          <li><span class="tint tint--accent" data-icon="link"></span><strong>Plus de 1 000 sites</strong><small>YouTube, SoundCloud, Bandcamp, Vimeo… en MP3, MP4 ou meilleure qualité.</small></li>
+          <li><span class="tint tint--zip" data-icon="box"></span><strong>Par lots</strong><small>Plusieurs liens ou une liste de titres, rangés dans un seul zip.</small></li>
+          <li><span class="tint tint--son" data-icon="phone"></span><strong>Depuis ton téléphone</strong><small>Partage un lien, ton PC le télécharge, le fichier revient sur le téléphone.</small></li>
+          <li><span class="tint tint--video" data-icon="lock"></span><strong>Chez toi, sans compte</strong><small>Rien ne passe par un serveur. Mises à jour automatiques. Code ouvert.</small></li>
+        </ul>
+        <h2 class="showcase__try">Ou directement ici</h2>
+      </section>
+      {% endif %}
+
       <div class="ways" role="tablist" aria-label="Façon de télécharger">
         <button type="button" class="ways__btn is-active" role="tab" data-way="lien" aria-selected="true">
           <span class="ways__icon tint tint--accent" data-icon="link"></span>
