@@ -105,7 +105,7 @@ body.shell {
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  margin-bottom: 40px;
+  margin-bottom: 16px;
 }
 .topbar__local {
   display: flex;
@@ -293,7 +293,7 @@ body.shell {
 
 .way { animation: rise 0.25s var(--ease) both; }
 .way > .panel + .panel { margin-top: 16px; }
-#batchInput { width: 100%; resize: vertical; min-height: 120px; }
+#batchInput { width: 100%; resize: vertical; min-height: 84px; }
 
 /* Petite notification (« prêt, voir dans la bibliothèque ») */
 .toast {
@@ -1863,3 +1863,9 @@ input[type="range"] {
   .showcase__grid { grid-template-columns: 1fr; }
   .showcase__dl .btn { flex: 1 1 100%; justify-content: center; }
 }
+
+/* Plusieurs liens : tout tient sans faire défiler (compteur à côté du titre, aide sur toute la largeur) */
+.field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.field-head .field-label { margin-bottom: 0; }
+.field-head .hint { margin: 0; }
+#batch .option-hint { max-width: none; }

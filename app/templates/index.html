@@ -113,12 +113,13 @@
       <!-- 2. Plusieurs liens : un même format, tout dans un zip -->
       <div class="way hidden" data-way="liens">
         <section class="panel" id="batch">
-          <label class="field-label" for="batchInput">Les liens, un par ligne</label>
-          <textarea id="batchInput" rows="5" spellcheck="false" autocomplete="off"
+          <div class="field-head">
+            <label class="field-label" for="batchInput">Les liens, un par ligne</label>
+            <span class="hint" id="batchCount">Jusqu'à 100 liens.</span>
+          </div>
+          <textarea id="batchInput" rows="3" spellcheck="false" autocomplete="off"
             placeholder="https://www.youtube.com/watch?v=…&#10;https://soundcloud.com/…&#10;https://…"></textarea>
-          <p class="hint" id="batchCount">Colle autant de liens que tu veux (jusqu'à 100).</p>
           <div class="js-options"></div>
-          <p class="hint">La qualité choisie est un maximum : chaque média prend la meilleure version disponible en dessous.</p>
           <p id="batchError" class="error hidden" role="alert"></p>
           <button id="batchBtn" class="btn btn--solid" disabled>Mettre au coffre en zip</button>
         </section>
