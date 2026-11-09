@@ -66,8 +66,32 @@ dans `brave://extensions`.
 
 ## Sur téléphone
 
-Le téléphone utilise la version serveur (voir [SERVEUR.md](SERVEUR.md#sur-téléphone)) : MediaVior
-s'y installe comme une appli et apparaît dans le menu **Partager**.
+Relie ton téléphone à MediaVior sur ton PC, comme WhatsApp Web. C'est à faire une seule fois, sans
+compte, et ça marche partout (4G comprise), pas seulement sur le wifi de la maison.
+
+1. Dans l'appli PC, clique sur **Téléphone** (en haut). Un QR code s'affiche.
+2. Scanne-le avec l'appareil photo du téléphone et touche le lien : la page MediaVior s'ouvre, déjà
+   reliée.
+3. Ajoute-la à l'écran d'accueil quand elle le propose (Android : un bouton ; iPhone : Partager →
+   **Sur l'écran d'accueil**).
+
+Ensuite, colle un lien et touche **Mettre au coffre** : le PC télécharge. Sur Android, tu peux aussi
+faire **Partager → MediaVior** depuis YouTube. Quand c'est prêt, **Récupérer** envoie le fichier
+directement du PC au téléphone.
+
+Bon à savoir :
+
+- Le PC doit être allumé, avec MediaVior ouvert.
+- Les messages passent par un petit relais gratuit (dossier [`relais/`](../relais)), **chiffrés de
+  bout en bout** : la clé est dans le QR code, le relais ne peut pas les lire. Les fichiers, eux, ne
+  passent pas par le relais.
+- Sur certains réseaux (wifi d'entreprise, certaines box 4G), la connexion directe PC → téléphone
+  est bloquée : le fichier reste alors sur le PC.
+- **Oublier les téléphones reliés** (dans la fenêtre Téléphone) déconnecte tous les téléphones et
+  change la clé.
+
+Avec la version serveur, le téléphone peut aussi utiliser le serveur directement (voir
+[SERVEUR.md](SERVEUR.md#sur-téléphone)).
 
 ## Depuis n'importe quelle page (favori)
 
@@ -83,8 +107,12 @@ javascript:location.href='http://127.0.0.1:8010/?url='+encodeURIComponent(locati
 `yt-dlp` doit rester à jour : les sites changent leur structure et cassent l'extraction sans
 prévenir.
 
-- **Version PC** : au lancement (une fois par jour au plus), le lanceur récupère la dernière version
-  de MediaVior (`git pull`) et de yt-dlp, en arrière-plan. Elles servent au lancement suivant.
+- **Appli installée** (`.exe`, `.dmg`, AppImage) : yt-dlp est téléchargé une fois par jour au plus,
+  et sert au lancement suivant. Une nouvelle version de MediaVior fait apparaître un bouton
+  **Mettre à jour** en haut de l'appli.
+- **Version PC installée par le prompt ou Pinokio** : au lancement (une fois par jour au plus), le
+  lanceur récupère la dernière version de MediaVior (`git pull`) et de yt-dlp, en arrière-plan.
+  Elles servent au lancement suivant.
 - **Version serveur** : voir [SERVEUR.md](SERVEUR.md#mises-à-jour).
 
 La version de yt-dlp utilisée est affichée en bas de la barre latérale.

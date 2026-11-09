@@ -15,6 +15,9 @@ navigateur ──HTTP──► app/main.py (FastAPI)
 
 Deux façons de lancer le même serveur :
 
+- **Appli installée** (`.exe`, `.dmg`, AppImage) : le même `mediavior.py`, figé avec PyInstaller
+  (`packaging/`). `FROZEN` y est vrai : ffmpeg/deno viennent du paquet, et yt-dlp est mis à jour
+  en téléchargeant son `.whl` dans `~/.mediavior/yt-dlp`.
 - **Version PC** : `mediavior.py` démarre `app/main.py` sur `127.0.0.1`, ouvre une fenêtre et pose
   `MEDIAVIOR_LOCAL=1` (boutons « Ouvrir le dossier » / « Quitter », protection contre les autres
   sites).
@@ -37,6 +40,9 @@ Deux façons de lancer le même serveur :
 | `app/static/local.js` | Boutons de la version PC et fenêtre « Copier le prompt » |
 | `app/static/sw.js` | Service worker (appli installable). Change `CACHE` quand tu modifies l'interface |
 | `mediavior.py` | Lanceur PC : options, ffmpeg de secours, mises à jour, fenêtre, raccourci bureau |
+| `app/jumelage.py` | Téléphone relié (version PC) : QR code, connexion au relais, messages chiffrés, envoi des fichiers en WebRTC (aiortc) |
+| `relais/` | Relais Cloudflare (`src/worker.js`, un Durable Object par paire PC + téléphones) et page du téléphone (`public/`). Voir `relais/README.md` |
+| `packaging/` | Installeurs : recette PyInstaller, installeur Windows (Inno Setup), AppImage. Construits par `.github/workflows/installeurs.yml` à chaque push sur `main` |
 | `extension/` | Extension Manifest V3, sans dépendance |
 | `pinokio.js`, `install.js`, `start.js`, `update.js` | Scripts [Pinokio](https://pinokio.co) |
 

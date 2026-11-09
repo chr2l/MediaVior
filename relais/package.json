@@ -1,0 +1,13 @@
+{
+  "name": "mediavior-relais",
+  "private": true,
+  "description": "Relais MediaVior (Cloudflare Worker) : jumelage PC ↔ téléphone",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}

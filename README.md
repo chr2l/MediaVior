@@ -30,12 +30,26 @@ charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp), dans la qualité et le fo
   téléchargé (format, durée, retélécharger, enlever), avec recherche, sélection multiple et un **éditeur** (coupe, fondus, volume,
   extraction de l'audio).
 - **Extension Brave/Chrome** pour envoyer la page en cours d'un clic.
+- **Ton téléphone relié au PC** (comme WhatsApp Web) : scanne un QR code une fois, puis envoie des
+  liens depuis le téléphone et récupère les fichiers, même en 4G.
 
 Pas de compte, pas de publicité, aucune donnée envoyée au projet.
 
 ## Installer sur ton PC
 
-### En un prompt (le plus simple)
+### Télécharger l'appli (le plus simple)
+
+| [**Windows**](https://github.com/chr2l/MediaVior/releases/latest/download/MediaVior-Windows.exe) | [**Mac** (puce Apple)](https://github.com/chr2l/MediaVior/releases/latest/download/MediaVior-Mac.dmg) | [**Linux**](https://github.com/chr2l/MediaVior/releases/latest/download/MediaVior-Linux.AppImage) |
+|---|---|---|
+
+Double-clique sur le fichier téléchargé : tout est inclus, et l'appli se met à jour toute seule.
+Au premier lancement, Windows ou le Mac affichent un avertissement, car l'appli n'a pas de
+signature payante : [comment l'ouvrir quand même, en images](docs/INSTALLER.md).
+
+Ensuite, bouton **Téléphone** : scanne le QR code pour envoyer des liens depuis ton téléphone,
+même hors de chez toi ([détails](docs/UTILISATION.md#sur-téléphone)).
+
+### En un prompt
 
 1. Ouvre une IA qui peut agir sur ton ordinateur : **Claude Desktop** (avec Claude Code), **ChatGPT
    Codex**, **Cursor**, **Windsurf**… Un simple chat dans le navigateur ne suffit pas : il faut
@@ -86,6 +100,8 @@ voir [docs/SERVEUR.md](docs/SERVEUR.md).
 | [`PROMPT.md`](PROMPT.md) | Le prompt d'installation à coller dans une IA |
 | [`pinokio.js`](pinokio.js), `install.js`, `start.js`, `update.js` | Les scripts Pinokio |
 | [`extension/`](extension) | L'extension Brave/Chrome |
+| [`app/jumelage.py`](app/jumelage.py), [`relais/`](relais) | Le téléphone relié : côté PC, et le relais (Cloudflare Worker + page du téléphone) |
+| [`packaging/`](packaging), `.github/workflows/installeurs.yml` | La construction des installeurs Windows, Mac et Linux |
 | `Dockerfile`, `docker-compose.yml`, `entrypoint.sh` | La version serveur |
 | [`docs/`](docs) | Mode d'emploi, serveur, développement |
 

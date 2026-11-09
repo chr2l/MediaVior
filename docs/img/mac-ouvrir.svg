@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="300" viewBox="0 0 760 300" font-family="-apple-system, Helvetica, Arial, sans-serif">
+  <!-- Étape 1 : le message du Mac -->
+  <rect x="10" y="10" width="340" height="280" rx="14" fill="#ECECEC" stroke="#C8C8C8"/>
+  <rect x="150" y="34" width="60" height="60" rx="14" fill="#1B1B1B"/>
+  <text x="161" y="73" fill="#C9A227" font-size="22" font-weight="700" font-family="monospace">[M]</text>
+  <text x="180" y="124" text-anchor="middle" fill="#222" font-size="14" font-weight="600">« MediaVior » n'a pas été ouvert</text>
+  <text x="180" y="146" text-anchor="middle" fill="#555" font-size="12">Apple n'a pas pu vérifier que l'app ne</text>
+  <text x="180" y="162" text-anchor="middle" fill="#555" font-size="12">contient pas de logiciel malveillant.</text>
+  <rect x="30" y="196" width="300" height="32" rx="7" fill="#fff" stroke="#C8C8C8"/>
+  <text x="180" y="217" text-anchor="middle" fill="#222" font-size="13">Placer dans la corbeille</text>
+  <rect x="30" y="238" width="300" height="32" rx="7" fill="#2F7CAC"/>
+  <rect x="27" y="235" width="306" height="38" rx="9" fill="none" stroke="#FFD43B" stroke-width="3"/>
+  <text x="180" y="259" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">OK</text>
+  <circle cx="330" cy="254" r="14" fill="#FFD43B"/>
+  <text x="325" y="260" font-size="15" font-weight="700" fill="#222">1</text>
+  <!-- Étape 2 : Réglages > Confidentialité et sécurité -->
+  <rect x="380" y="10" width="370" height="280" rx="14" fill="#F6F6F6" stroke="#C8C8C8"/>
+  <text x="400" y="44" fill="#222" font-size="15" font-weight="600">Réglages Système › Confidentialité et sécurité</text>
+  <text x="400" y="78" fill="#555" font-size="12">Descends jusqu'à « Sécurité » :</text>
+  <rect x="400" y="94" width="330" height="96" rx="8" fill="#fff" stroke="#DDD"/>
+  <text x="414" y="122" fill="#222" font-size="12">L'ouverture de « MediaVior » a été bloquée</text>
+  <text x="414" y="140" fill="#222" font-size="12">car le développeur n'est pas identifié.</text>
+  <rect x="580" y="152" width="136" height="28" rx="6" fill="#E8E8E8" stroke="#BBB"/>
+  <rect x="577" y="149" width="142" height="34" rx="8" fill="none" stroke="#FFD43B" stroke-width="3"/>
+  <text x="648" y="171" text-anchor="middle" fill="#222" font-size="12" font-weight="600">Ouvrir quand même</text>
+  <circle cx="560" cy="166" r="14" fill="#FFD43B"/>
+  <text x="555" y="172" font-size="15" font-weight="700" fill="#222">2</text>
+  <text x="400" y="222" fill="#555" font-size="12">Puis confirme avec ton mot de passe (ou Touch ID)</text>
+  <text x="400" y="240" fill="#555" font-size="12">et touche « Ouvrir quand même ».</text>
+  <circle cx="414" cy="264" r="14" fill="#FFD43B"/>
+  <text x="409" y="270" font-size="15" font-weight="700" fill="#222">3</text>
+  <text x="436" y="270" fill="#222" font-size="12">C'est fait pour de bon : la suite, double-clic normal.</text>
+</svg>

@@ -1,0 +1,17 @@
+// Relais MediaVior sur Cloudflare Workers (offre gratuite). Voir relais/README.md.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mediavior-relais",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "mediavior-tel.elie.place", "custom_domain": true }],
+  // Page du téléphone (appli installable sur l'écran d'accueil)
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/ws/*"] },
+  "durable_objects": { "bindings": [{ "name": "PAIRE", "class_name": "Paire" }] },
+  // L'offre gratuite n'accepte que les Durable Objects « SQLite »
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Paire"] }],
+  // 30 connexions par minute et par adresse IP, largement assez pour un usage normal
+  "ratelimits": [{ "name": "LIMITE_CONNEXIONS", "namespace_id": "4207", "simple": { "limit": 30, "period": 60 } }],
+  "observability": { "enabled": true }
+}
