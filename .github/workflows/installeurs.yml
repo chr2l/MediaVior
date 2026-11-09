@@ -35,7 +35,7 @@ jobs:
         include:
           - os: windows-latest
             asset: MediaVior-Windows.exe
-          - os: macos-14  # puces Apple (M1 et suivantes)
+          - os: macos-latest  # puces Apple (M1 et suivantes)
             asset: MediaVior-Mac.dmg
           - os: ubuntu-22.04  # ancienne base = compatible avec plus de Linux
             asset: MediaVior-Linux.AppImage
