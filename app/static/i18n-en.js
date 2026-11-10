@@ -454,6 +454,9 @@ window.I18N_EN = {
   "Pourquoi l'extension n'est pas sur le Chrome Web Store ?": "Why isn't the extension on the Chrome Web Store?",
   "Le store demande un compte payant et une vérification à chaque mise à jour. L'appli prépare donc l'extension et la tient à jour : tu l'ajoutes une fois en « mode développeur », le mode prévu par Chrome pour ça.": "The store requires a paid account and a review for every update. So the app prepares the extension and keeps it up to date: you add it once in “developer mode”, the mode Chrome provides for this.",
 
+  "Téléphone (Android, iPhone), à relier à ton ordinateur": "Phone (Android, iPhone), linked to your computer",
+  "Ouvrir": "Open",
+
   // ----- Mentions légales -----
   "Mentions légales · MediaVior": "Legal notice · MediaVior",
   "← Retour à MediaVior": "← Back to MediaVior",
