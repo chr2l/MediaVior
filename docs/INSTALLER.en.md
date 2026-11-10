@@ -30,6 +30,9 @@ So you need to tell your computer once that you trust it. After that, it doesn't
 3. Installation takes a few seconds, without administrator rights. MediaVior opens, and an icon is
    added to the desktop and the Start menu.
 
+The app installs into the `MediaVior` folder of your user folder (`C:\Users\<your name>\MediaVior`,
+can be changed during setup). Your media lands right next to it, in `MediaVior\MediaChest`.
+
 If your antivirus blocks the file, it's for the same reason (an unsigned app that downloads things).
 You can allow it in your antivirus, or use [the prompt](../README.en.md#with-one-prompt).
 
@@ -56,4 +59,4 @@ On older versions of macOS (before Sequoia), **right-click MediaVior → Open** 
   click is enough. On Mac, it downloads the new `.dmg` to drag into Applications.
 - **Your phone**: the **Phone** button at the top of the app, then scan the QR code.
 - **Uninstall**: Windows → Settings → Apps → MediaVior → Uninstall. Mac → drag MediaVior to the
-  Trash. Linux → delete the AppImage file. Your files stay in `Downloads/MediaChest`.
+  Trash. Linux → delete the AppImage file. Your files stay in the `MediaChest` folder.

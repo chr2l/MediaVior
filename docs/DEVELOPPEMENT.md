@@ -55,8 +55,12 @@ Deux façons de lancer le même serveur :
 
 ## Principes
 
-- **Pas de base de données** : chaque fichier téléchargé vit dans son dossier
-  `<id>/fichier + meta.json`. La bibliothèque relit le disque.
+- **Pas de base de données** : les médias finis sont rangés directement dans le dossier des
+  téléchargements (MediaChest). Leur fiche est dans `.mediavior/<id>/meta.json` (dossier caché,
+  qui sert aussi au téléchargement en cours) ; `meta.json` retient le nom du média (`file`). La
+  bibliothèque relit le disque. Un média effacé depuis l'explorateur disparaît au lancement suivant.
+- **Version PC** : MediaChest est à côté de l'appli installée (MediaVior.exe, AppImage), sinon dans
+  Téléchargements (Mac, prompt, Pinokio). Installeur Windows : `C:\Users\<nom>\MediaVior`.
 - **Jobs en mémoire** : un seul worker traite la file, un média à la fois. Suffisant pour un usage
   personnel ; au redémarrage, les jobs inachevés sont nettoyés.
 - **Pas de `innerHTML` avec des données externes** : les titres viennent de sites tiers, on passe

@@ -33,6 +33,16 @@ from yt_dlp.postprocessor import EmbedThumbnailPP, PostProcessor
 BASE_DIR = Path(__file__).resolve().parent
 DOWNLOAD_DIR = Path(os.environ.get("LECOFFRE_DOWNLOAD_DIR", "/downloads"))
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# Les médias finis sont rangés directement dans DOWNLOAD_DIR. Leurs fiches (titre, pochette…)
+# et les fichiers en cours de téléchargement vont dans ce sous-dossier caché.
+ITEMS_DIR = DOWNLOAD_DIR / ".mediavior"
+ITEMS_DIR.mkdir(exist_ok=True)
+if os.name == "nt":
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetFileAttributesW(str(ITEMS_DIR), 0x2)  # dossier caché
+    except Exception:
+        pass
 FFMPEG = os.environ.get("FFMPEG_BIN", "ffmpeg")
 FFPROBE = os.environ.get("FFPROBE_BIN", "ffprobe")
 
@@ -67,7 +77,7 @@ YTDLP_CHECK_EVERY = 12 * 3600  # vérification d'une nouvelle version de yt-dlp
 IGNORED_SUFFIXES = {".part", ".ytdl", ".temp", ".tmp"}
 ACTIVE_STATUSES = {"queued", "downloading", "converting", "processing"}
 TESSERACT = os.environ.get("TESSERACT_BIN", "tesseract")
-SONS_FILE = DOWNLOAD_DIR / ".liste-sons.json"
+SONS_FILE = ITEMS_DIR / "liste-sons.json"
 SONS_LOCK = threading.Lock()  # la liste est aussi modifiée par le job, dans un autre thread
 MAX_SCREEN_BYTES = 20 * 1024 * 1024
 MAX_SON_DURATION = 15 * 60  # au-delà, c'est sûrement un mix ou un album entier
@@ -529,7 +539,11 @@ def _write_meta(d: Path, meta: dict) -> None:
     tmp.replace(d / META_FILE)
 
 
-def _media_file(d: Path) -> Optional[Path]:
+def _media_file(d: Path, meta: Optional[dict] = None) -> Optional[Path]:
+    meta = _read_meta(d) if meta is None else meta
+    if meta.get("file"):  # média fini, rangé dans le dossier principal
+        media = DOWNLOAD_DIR / meta["file"]
+        return media if media.is_file() else None
     candidates = [
         p for p in d.iterdir()
         if p.is_file() and not p.name.startswith(".") and p.name != META_FILE
@@ -542,7 +556,7 @@ def _item_view(d: Path) -> Optional[dict]:
     meta = _read_meta(d)
     if meta and meta.get("status") != "done":
         return None
-    media = _media_file(d)
+    media = _media_file(d, meta)
     if not media:
         return None
     st = media.stat()
@@ -563,10 +577,34 @@ def _item_view(d: Path) -> Optional[dict]:
     }
 
 
+def _free_name(name: str) -> Path:
+    """Nom libre dans le dossier principal : « Titre.mp3 », sinon « Titre (2).mp3 »…"""
+    target, n = DOWNLOAD_DIR / name, 2
+    while target.exists():
+        target = DOWNLOAD_DIR / f"{Path(name).stem} ({n}){Path(name).suffix}"
+        n += 1
+    return target
+
+
+def _publish(d: Path) -> Optional[Path]:
+    """Sort le média fini de son dossier de travail et le range directement dans le dossier
+    principal, à côté des autres. Sa fiche retient son nom."""
+    meta = _read_meta(d)
+    media = _media_file(d, meta)
+    if not media or meta.get("file"):
+        return media
+    target = _free_name(media.name)
+    shutil.move(str(media), str(target))
+    meta.setdefault("status", "done")  # anciens médias sans fiche
+    meta["file"] = target.name
+    _write_meta(d, meta)
+    return target
+
+
 def _item_dir(item_id: str) -> Path:
     if not ITEM_ID.match(item_id):
         raise HTTPException(status_code=404, detail="Fichier introuvable")
-    d = DOWNLOAD_DIR / item_id
+    d = ITEMS_DIR / item_id
     if not d.is_dir():
         raise HTTPException(status_code=404, detail="Fichier introuvable")
     return d
@@ -580,20 +618,38 @@ def _item_or_404(item_id: str) -> dict:
 
 
 def _cleanup_unfinished() -> None:
-    """Au démarrage, supprime les dossiers de jobs interrompus par un redémarrage."""
+    """Au démarrage : range les médias de l'ancienne version (un sous-dossier par média),
+    supprime les jobs interrompus par un redémarrage et les fiches dont le média a été effacé."""
+    old_sons = DOWNLOAD_DIR / ".liste-sons.json"
+    if old_sons.is_file() and not SONS_FILE.exists():
+        old_sons.replace(SONS_FILE)
     for d in DOWNLOAD_DIR.iterdir():
-        if d.is_dir() and ITEM_ID.match(d.name):
-            meta = _read_meta(d)
-            if meta and meta.get("status") != "done":
-                shutil.rmtree(d, ignore_errors=True)
-    for z in DOWNLOAD_DIR.glob(".selection-*.zip"):  # zips de sélection pas encore effacés
-        z.unlink(missing_ok=True)
+        if d.is_dir() and ITEM_ID.match(d.name) and not (ITEMS_DIR / d.name).exists():
+            try:
+                d.replace(ITEMS_DIR / d.name)
+            except OSError:
+                pass  # fichier ouvert ailleurs : on réessaiera au prochain lancement
+    for d in ITEMS_DIR.iterdir():
+        if not (d.is_dir() and ITEM_ID.match(d.name)):
+            continue
+        meta = _read_meta(d)
+        if meta and meta.get("status") != "done":
+            shutil.rmtree(d, ignore_errors=True)
+            continue
+        try:
+            if not _publish(d):
+                shutil.rmtree(d, ignore_errors=True)  # média supprimé depuis l'explorateur
+        except OSError:
+            pass
+    for folder in (ITEMS_DIR, DOWNLOAD_DIR):  # zips de sélection pas encore effacés
+        for z in folder.glob(".selection-*.zip"):
+            z.unlink(missing_ok=True)
 
 
 @app.get("/api/library")
 async def library():
     items = [
-        item for d in DOWNLOAD_DIR.iterdir()
+        item for d in ITEMS_DIR.iterdir()
         if d.is_dir() and ITEM_ID.match(d.name) and (item := _item_view(d))
     ]
     items.sort(key=lambda i: i["created"], reverse=True)
@@ -624,7 +680,7 @@ def _probe(path: Path) -> dict:
 @app.get("/api/library/{item_id}")
 async def library_item(item_id: str):
     item = _item_or_404(item_id)
-    media = DOWNLOAD_DIR / item_id / item["filename"]
+    media = _media_file(_item_dir(item_id))
     try:
         probe = await asyncio.get_running_loop().run_in_executor(None, _probe, media)
     except Exception:
@@ -638,6 +694,9 @@ async def delete_item(item_id: str):
     job = JOBS.get(item_id)
     if job and job["status"] in ACTIVE_STATUSES:
         raise HTTPException(status_code=409, detail="Ce fichier est encore en cours de traitement.")
+    media = _media_file(d)
+    if media and media.parent == DOWNLOAD_DIR:
+        media.unlink(missing_ok=True)
     shutil.rmtree(d, ignore_errors=True)
     JOBS.pop(item_id, None)
     return {"ok": True}
@@ -647,14 +706,14 @@ async def delete_item(item_id: str):
 async def get_file(item_id: str, inline: bool = False):
     item = _item_or_404(item_id)
     return FileResponse(
-        DOWNLOAD_DIR / item_id / item["filename"],
+        _media_file(_item_dir(item_id)),
         filename=item["filename"],
         content_disposition_type="inline" if inline else "attachment",
     )
 
 
 def _zip_items(items: list) -> Path:
-    fd, tmp = tempfile.mkstemp(prefix=".selection-", suffix=".zip", dir=DOWNLOAD_DIR)
+    fd, tmp = tempfile.mkstemp(prefix=".selection-", suffix=".zip", dir=ITEMS_DIR)
     os.close(fd)
     used = set()
     # Les médias sont déjà compressés : on les range tels quels (rapide, même taille)
@@ -665,7 +724,7 @@ def _zip_items(items: list) -> Path:
                 name = f"{Path(item['filename']).stem} ({n}){Path(item['filename']).suffix}"
                 n += 1
             used.add(name.casefold())
-            zf.write(DOWNLOAD_DIR / item["id"] / item["filename"], name)
+            zf.write(_media_file(ITEMS_DIR / item["id"]), name)
     return Path(tmp)
 
 
@@ -702,10 +761,10 @@ def _make_waveform(media: Path, png: Path) -> bool:
 @app.get("/api/library/{item_id}/waveform")
 async def waveform(item_id: str):
     item = _item_or_404(item_id)
-    d = DOWNLOAD_DIR / item_id
+    d = ITEMS_DIR / item_id
     png = d / ".waveform.png"
     if not png.exists():
-        ok = await asyncio.get_running_loop().run_in_executor(None, _make_waveform, d / item["filename"], png)
+        ok = await asyncio.get_running_loop().run_in_executor(None, _make_waveform, _media_file(d), png)
         if not ok:
             raise HTTPException(status_code=404, detail="Pas de piste audio")
     return FileResponse(png, media_type="image/png")
@@ -834,13 +893,16 @@ async def _worker() -> None:
             await loop.run_in_executor(None, runner, job)
             if job["_cancel"]:
                 raise JobCancelled()
+            media = await loop.run_in_executor(None, _publish, ITEMS_DIR / job_id)
+            if media:
+                job["filename"] = media.name
             job.update(status="done", progress=100, speed=None, eta=None)
         except Exception as exc:
             if job["_cancel"] or isinstance(exc, JobCancelled):
                 job["status"] = "cancelled"
             else:
                 job.update(status="error", error=_humanize_error(exc))
-            shutil.rmtree(DOWNLOAD_DIR / job_id, ignore_errors=True)
+            shutil.rmtree(ITEMS_DIR / job_id, ignore_errors=True)
         finally:
             job["finished"] = time.time()
             PROCS.pop(job_id, None)
@@ -870,7 +932,7 @@ async def cancel_job(job_id: str):
         raise HTTPException(status_code=404, detail="Job introuvable")
     if job["status"] == "queued":
         job.update(status="cancelled", finished=time.time())
-        shutil.rmtree(DOWNLOAD_DIR / job_id, ignore_errors=True)
+        shutil.rmtree(ITEMS_DIR / job_id, ignore_errors=True)
     elif job["status"] in ACTIVE_STATUSES:
         job["_cancel"] = True
         proc = PROCS.get(job_id)
@@ -1080,7 +1142,7 @@ async def start_download(payload: DownloadRequest):
     data = payload.model_dump()
     data["url"] = url
     job = _new_job("download", payload.title or url, payload.thumbnail, data)
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     job_dir.mkdir(parents=True)
     _write_meta(job_dir, {
         "status": "queued", "kind": "download", "url": url, "title": payload.title,
@@ -1194,7 +1256,7 @@ def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, co
 
 def _download_sync(job: dict) -> None:
     p = job["_payload"]
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     info = _fetch_media(job, p, p["url"], job_dir)
     result_file = _media_file(job_dir)
     if not result_file:
@@ -1239,7 +1301,7 @@ async def start_links(payload: LinksRequest):
     data = {**payload.model_dump(), "urls": urls}
     job = _new_job("links", title, None, data)
     job.update(step=None, found=0, missing=0)
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     job_dir.mkdir(parents=True)
     _write_meta(job_dir, {"status": "queued", "kind": "links", "title": title, "created": job["created"]})
     await QUEUE.put(job["id"])
@@ -1249,7 +1311,7 @@ async def start_links(payload: LinksRequest):
 def _links_sync(job: dict) -> None:
     """Télécharge chaque lien dans son sous-dossier, puis range tout dans un zip."""
     p = job["_payload"]
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     work = job_dir / ".pistes"
     work.mkdir(exist_ok=True)
     urls = p["urls"]
@@ -1378,7 +1440,7 @@ def _build_edit_cmd(p: dict, src: Path, out: Path) -> list:
 @app.post("/api/library/{item_id}/edit")
 async def start_edit(item_id: str, payload: EditRequest):
     item = _item_or_404(item_id)
-    src = DOWNLOAD_DIR / item_id / item["filename"]
+    src = _media_file(_item_dir(item_id))
     try:
         probe = await asyncio.get_running_loop().run_in_executor(None, _probe, src)
     except Exception:
@@ -1416,10 +1478,10 @@ async def start_edit(item_id: str, payload: EditRequest):
             bad("Impossible de supprimer le son d'un fichier audio.")
 
     title = f"{item['title']} (édité)"
-    data = {**payload.model_dump(), "format": fmt, "src": str(src),
+    data = {**payload.model_dump(), "format": fmt, "src": str(src), "parent_id": item_id,
             "filename": f"{src.stem[:150]} (édité).{fmt}", **probe}
     job = _new_job("edit", title, item.get("thumbnail"), data)
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     job_dir.mkdir(parents=True)
     _write_meta(job_dir, {"status": "queued", "kind": "edit", "parent": item_id, "title": title,
                           "created": job["created"]})
@@ -1429,7 +1491,7 @@ async def start_edit(item_id: str, payload: EditRequest):
 
 def _edit_sync(job: dict) -> None:
     p = job["_payload"]
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     out = job_dir / p["filename"]
     log_path = job_dir / ".ffmpeg.log"
     total = p["end"] - p["start"]
@@ -1440,11 +1502,11 @@ def _edit_sync(job: dict) -> None:
         raise RuntimeError("Le montage a échoué : aucun fichier produit.")
 
     job["filename"] = out.name
-    parent = _read_meta(Path(p["src"]).parent)
+    parent = _read_meta(ITEMS_DIR / p["parent_id"])
     _write_meta(job_dir, {
         "status": "done",
         "kind": "edit",
-        "parent": Path(p["src"]).parent.name,
+        "parent": p["parent_id"],
         "title": job["title"],
         "thumbnail": job["thumbnail"],
         "duration": round(total, 2),
@@ -1710,7 +1772,7 @@ async def fetch_sons(payload: SonsFetchRequest):
                      for s in sons], **payload.model_dump()}
     job = _new_job("sons", title, None, data)
     job.update(step=None, found=0, missing=0)
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     job_dir.mkdir(parents=True)
     _write_meta(job_dir, {"status": "queued", "kind": "sons", "title": title, "created": job["created"]})
     await QUEUE.put(job["id"])
@@ -1748,7 +1810,7 @@ def _search_son(query: str) -> list:
 
 def _sons_sync(job: dict) -> None:
     p = job["_payload"]
-    job_dir = DOWNLOAD_DIR / job["id"]
+    job_dir = ITEMS_DIR / job["id"]
     work = job_dir / ".pistes"
     work.mkdir(exist_ok=True)
     sons = p["sons"]
