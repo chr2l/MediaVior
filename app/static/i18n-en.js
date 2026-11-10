@@ -130,6 +130,28 @@ window.I18N_EN = {
   "Copié ✓": "Copied ✓",
   "Prompt introuvable.": "Prompt not found.",
   "Télécharger pour {os}": "Download for {os}",
+  // Fenêtre « Navigateur » : extension ajoutée sans store
+  "Envoyer des liens depuis ton navigateur": "Send links from your browser",
+  "Navigateur": "Browser",
+  "Ton navigateur, relié à MediaVior": "Your browser, linked to MediaVior",
+  "Une petite extension pour Chrome, Brave, Edge, Opera ou Vivaldi : un clic sur son icône envoie la page en cours à MediaVior, avec le choix du format. À faire une seule fois.":
+    "A small extension for Chrome, Brave, Edge, Opera or Vivaldi: one click on its icon sends the current page to MediaVior, with a choice of format. You only do this once.",
+  "Prépare le dossier de l'extension : il s'ouvre tout seul.": "Prepare the extension folder: it opens by itself.",
+  "Préparer l'extension": "Prepare the extension",
+  "Dans ton navigateur, colle cette adresse dans la barre d'adresse, puis appuie sur Entrée.":
+    "In your browser, paste this address into the address bar, then press Enter.",
+  "Copier": "Copy",
+  "Active le « Mode développeur » (un interrupteur en haut à droite de la page).":
+    "Turn on “Developer mode” (a switch at the top right of the page).",
+  "Clique sur « Charger l'extension non empaquetée » et choisis le dossier « MediaVior extension ».":
+    "Click “Load unpacked” and pick the “MediaVior extension” folder.",
+  "Épingle MediaVior : clique sur la pièce de puzzle à droite de la barre d'adresse, puis sur la punaise.":
+    "Pin MediaVior: click the puzzle piece to the right of the address bar, then the pin.",
+  "Laisse le dossier où il est : le navigateur s'en sert. MediaVior le met à jour tout seul ; les nouveautés arrivent au prochain redémarrage du navigateur. Le navigateur peut rappeler qu'une extension est en « mode développeur » : c'est normal, ce n'est pas un problème.":
+    "Leave the folder where it is: the browser uses it. MediaVior keeps it up to date by itself; new features arrive the next time the browser restarts. The browser may remind you that an extension is in “developer mode”: that's normal and not a problem.",
+  "Dossier prêt : {folder}": "Folder ready: {folder}",
+  "Copie impossible : sélectionne l'adresse et copie-la à la main.": "Couldn't copy: select the address and copy it by hand.",
+  "Extension introuvable dans cette version.": "Extension not found in this version.",
   "Ton téléphone, relié à ce PC": "Your phone, linked to this PC",
   "Envoie un lien depuis ton téléphone, même en 4G : ce PC le télécharge, puis tu récupères le fichier sur le téléphone. Pas de compte, à faire une seule fois.":
     "Send a link from your phone, even on mobile data: this PC downloads it, then you get the file on your phone. No account, and you only do this once.",
@@ -437,6 +459,19 @@ window.I18N_EN = {
   "L'ordinateur le télécharge, puis le fichier arrive sur le téléphone.": "The computer downloads it, then the file arrives on the phone.",
   "Les messages sont chiffrés de bout en bout, et les fichiers vont directement de l'ordinateur au téléphone. L'ordinateur doit rester allumé avec MediaVior ouvert.": "Messages are end-to-end encrypted, and files go straight from the computer to the phone. The computer must stay on with MediaVior open.",
   "chiffré": "encrypted",
+  "Un clic depuis ton navigateur.": "One click from your browser.",
+  "Tu regardes une vidéo ? Clique sur l'icône MediaVior en haut du navigateur, choisis MP3 ou MP4, c'est parti dans ton coffre. Le clic droit sur un lien marche aussi.":
+    "Watching a video? Click the MediaVior icon at the top of the browser, pick MP3 or MP4, and it's on its way to your vault. Right-clicking a link works too.",
+  "Dans MediaVior, clique sur « Navigateur », puis sur « Préparer l'extension ».": "In MediaVior, click “Browser”, then “Prepare the extension”.",
+  "Suis les quatre petites étapes montrées : environ une minute, une seule fois.": "Follow the four short steps shown: about a minute, only once.",
+  "C'est fait : l'extension trouve ton MediaVior toute seule et se met à jour avec lui.": "Done: the extension finds your MediaVior by itself and updates along with it.",
+  "Pour Chrome, Brave, Edge, Opera et Vivaldi. Elle est fournie avec l'appli, sans passer par le Chrome Web Store. Firefox et Safari ne sont pas encore pris en charge.":
+    "For Chrome, Brave, Edge, Opera and Vivaldi. It comes with the app, without going through the Chrome Web Store. Firefox and Safari aren't supported yet.",
+  "Extension seule (.zip)": "Extension only (.zip)",
+  "un clic": "one click",
+  "Pourquoi l'extension n'est pas sur le Chrome Web Store ?": "Why isn't the extension on the Chrome Web Store?",
+  "Le store demande un compte payant et une vérification à chaque mise à jour. L'extension est donc fournie avec l'appli : MediaVior prépare son dossier, tu l'ajoutes en « mode développeur » (c'est le mode prévu par Chrome pour ça), et l'appli la tient à jour. Son code est public sur GitHub, comme le reste.":
+    "The store requires a paid account and a review for every update. So the extension comes with the app: MediaVior prepares its folder, you add it in “developer mode” (the mode Chrome provides for this), and the app keeps it up to date. Its code is public on GitHub, like the rest.",
   "Ce qui change avec MediaVior": "What MediaVior changes",
   "Critère": "Criterion",
   "Sites en ligne": "Download websites",
@@ -575,6 +610,7 @@ window.I18N_EN_PATTERNS = [
   [/^La conversion a échoué : (.*)$/, "Conversion failed: $1"],
   [/^Le montage a échoué : (.*)$/, "Editing failed: $1"],
   [/^Mise à jour impossible : (.*)$/, "Update failed: $1"],
+  [/^Copie impossible : (.*)$/, "Copy failed: $1"],
   [/^Relais : erreur (\d+)\.$/, "Relay: error $1."],
   [/^yt-dlp (\S+) disponible : redémarrage pour mise à jour$/, "yt-dlp $1 available: restarting to update"],
 ];

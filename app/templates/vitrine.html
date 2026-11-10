@@ -29,6 +29,7 @@
     <a href="#pourquoi">Pourquoi</a>
     <a href="#comment">Comment ça marche</a>
     <a href="#telephone">Téléphone</a>
+    <a href="#navigateur">Navigateur</a>
     <a href="#comparer">Comparer</a>
     <a href="#questions">Questions</a>
   </nav>
@@ -132,6 +133,30 @@
     </div>
   </section>
 
+  <!-- 4 bis. Extension de navigateur (sans Chrome Web Store) -->
+  <section class="v-section v-phone" id="navigateur" aria-labelledby="navigateurTitre">
+    <div>
+      <p class="v-kicker">Navigateur</p>
+      <h2 class="v-title" id="navigateurTitre">Un clic depuis ton navigateur.</h2>
+      <p class="v-intro">Tu regardes une vidéo ? Clique sur l'icône MediaVior en haut du
+        navigateur, choisis MP3 ou MP4, c'est parti dans ton coffre. Le clic droit sur un lien
+        marche aussi.</p>
+      <ol class="v-list">
+        <li>Dans MediaVior, clique sur « Navigateur », puis sur « Préparer l'extension ».</li>
+        <li>Suis les quatre petites étapes montrées : environ une minute, une seule fois.</li>
+        <li>C'est fait : l'extension trouve ton MediaVior toute seule et se met à jour avec lui.</li>
+      </ol>
+      <p class="v-small">Pour Chrome, Brave, Edge, Opera et Vivaldi. Elle est fournie avec l'appli,
+        sans passer par le Chrome Web Store. Firefox et Safari ne sont pas encore pris en charge.
+        <a href="{{ github }}/releases/latest/download/MediaVior-extension.zip">Extension seule (.zip)</a></p>
+    </div>
+    <div class="v-phone__art" aria-hidden="true">
+      <div class="v-device v-device--nav"><span data-icon="puzzle"></span><i>Navigateur</i></div>
+      <div class="v-device__link"><span></span><small>un clic</small></div>
+      <div class="v-device v-device--pc"><span data-icon="disk"></span><i>MediaVior</i></div>
+    </div>
+  </section>
+
   <!-- 5. Comparaison simple -->
   <section class="v-section" id="comparer" aria-labelledby="comparerTitre">
     <p class="v-kicker">Comparer</p>
@@ -184,6 +209,13 @@
         <p>Une IA qui peut agir sur ton ordinateur (Claude Desktop, ChatGPT Codex, Cursor…) peut
           l'installer pour toi avec un simple texte à coller. Pinokio marche aussi.
           <button type="button" class="btn-link" id="showcasePrompt">Voir les autres façons d'installer</button></p>
+      </details>
+      <details>
+        <summary>Pourquoi l'extension n'est pas sur le Chrome Web Store ?</summary>
+        <p>Le store demande un compte payant et une vérification à chaque mise à jour.
+          L'extension est donc fournie avec l'appli : MediaVior prépare son dossier, tu l'ajoutes en
+          « mode développeur » (c'est le mode prévu par Chrome pour ça), et l'appli la tient à jour.
+          Son code est public sur GitHub, comme le reste.</p>
       </details>
       <details>
         <summary>Est-ce que j'ai le droit ?</summary>

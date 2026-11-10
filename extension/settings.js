@@ -44,7 +44,7 @@ export async function api(server, path, options = {}) {
   try {
     resp = await fetch(server + path, init);
   } catch {
-    throw new Error("MediaVior ne répond pas. Vérifie l'adresse dans les options et que MediaVior est bien lancé.");
+    throw new Error("MediaVior n'est pas ouvert sur cet ordinateur. Lance-le (icône MediaVior du bureau), puis rouvre cette fenêtre.");
   }
   let data = null;
   try {
@@ -57,4 +57,37 @@ export async function api(server, path, options = {}) {
     throw new Error(typeof detail === "string" ? detail : `Erreur ${resp.status}`);
   }
   return data;
+}
+
+const LOCAL_HOSTS = ["127.0.0.1", "localhost"];
+
+async function isMediavior(server) {
+  try {
+    const resp = await fetch(server + "/api/ping", { signal: AbortSignal.timeout(1500) });
+    const data = await resp.json();
+    return data && data.app === "mediavior";
+  } catch {
+    return false;
+  }
+}
+
+// L'appli de bureau écoute sur 8010, ou sur le port libre suivant si 8010 est pris.
+// On la cherche là, et on retient l'adresse trouvée pour la prochaine fois.
+export async function findServer(server) {
+  if (await isMediavior(server)) return server;
+  let url;
+  try {
+    url = new URL(server);
+  } catch {
+    return server;
+  }
+  if (!LOCAL_HOSTS.includes(url.hostname)) return server; // adresse choisie à la main
+  for (let port = 8010; port < 8020; port++) {
+    const candidate = `http://127.0.0.1:${port}`;
+    if (candidate !== server && (await isMediavior(candidate))) {
+      await saveSettings({ server: candidate });
+      return candidate;
+    }
+  }
+  return server;
 }

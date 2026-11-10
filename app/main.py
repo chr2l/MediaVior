@@ -89,6 +89,11 @@ async def lifespan(_app: FastAPI):
     tasks = [asyncio.create_task(_worker()), asyncio.create_task(_ytdlp_updater())]
     if LOCAL_MODE:
         tasks += jumelage.setup(sys.modules[__name__])  # liaison avec le téléphone
+        if EXTENSION_TARGET.is_dir():  # extension déjà ajoutée : on la garde à jour avec l'appli
+            try:
+                _copy_extension()
+            except OSError:
+                pass
     yield
     for task in tasks:
         task.cancel()
@@ -328,16 +333,58 @@ def _local_only() -> None:
         raise HTTPException(status_code=404, detail="Disponible seulement dans la version PC.")
 
 
+def _show_in_explorer(target: Path) -> None:
+    if sys.platform.startswith("win"):
+        os.startfile(str(target))  # type: ignore[attr-defined]
+    else:
+        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(target)],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 @app.post("/api/local/open-folder")
 async def open_folder():
     _local_only()
-    target = str(DOWNLOAD_DIR)
-    if sys.platform.startswith("win"):
-        os.startfile(target)  # type: ignore[attr-defined]
-    else:
-        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", target],
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    _show_in_explorer(DOWNLOAD_DIR)
     return {"ok": True}
+
+
+# Extension de navigateur (dossier extension/), ajoutée sans passer par le Chrome Web Store :
+# l'appli la copie dans un dossier facile à retrouver, que Chrome/Brave/Edge chargent en « mode
+# développeur ». Ce dossier est recopié à chaque lancement : l'extension suit les mises à jour.
+# Dans le dépôt elle est à côté de app/, dans l'appli installée à côté de main.py.
+EXTENSION_SOURCE = next((p for p in (BASE_DIR.parent / "extension", BASE_DIR / "extension")
+                         if (p / "manifest.json").is_file()), None)
+_DOCUMENTS = Path.home() / "Documents"
+EXTENSION_TARGET = (_DOCUMENTS if _DOCUMENTS.is_dir() else Path.home()) / "MediaVior extension"
+
+
+def _copy_extension() -> None:
+    if not EXTENSION_SOURCE:
+        raise HTTPException(status_code=404, detail="Extension introuvable dans cette version.")
+    shutil.copytree(EXTENSION_SOURCE, EXTENSION_TARGET, dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("*.zip", ".*"))
+
+
+@app.get("/api/local/extension")
+async def extension_info():
+    _local_only()
+    return {"folder": str(EXTENSION_TARGET), "ready": EXTENSION_TARGET.is_dir(),
+            "available": bool(EXTENSION_SOURCE)}
+
+
+@app.post("/api/local/extension")
+async def extension_prepare():
+    """Copie l'extension dans Documents/MediaVior extension, puis ouvre ce dossier."""
+    _local_only()
+    try:
+        _copy_extension()
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=f"Copie impossible : {exc}")
+    try:
+        _show_in_explorer(EXTENSION_TARGET)
+    except OSError:
+        pass  # pas d'explorateur de fichiers : le chemin reste affiché dans la fenêtre
+    return {"folder": str(EXTENSION_TARGET)}
 
 
 @app.get("/api/local/maj")
