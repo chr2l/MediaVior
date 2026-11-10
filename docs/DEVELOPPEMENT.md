@@ -85,6 +85,22 @@ Même moteur, copié, pour la page du téléphone (`relais/public/i18n*.js`) et 
 (`extension/i18n*.js`, plus `extension/_locales/` pour le nom et le menu clic droit). Le prompt
 d'installation existe en deux versions : `PROMPT.md` et `PROMPT.en.md`, à garder pareilles.
 
+## Vitrine (site public)
+
+`app/templates/vitrine.html` est la page d'accueil des visiteurs. Elle reste **courte**, façon page
+produit : une phrase, un bouton de téléchargement, une grande capture de l'appli, deux cartes
+(ordinateur, téléphone), une ligne « pourquoi chez toi », les liens de téléchargement en lignes,
+quatre questions. Pas de longues listes d'arguments ni de grilles d'icônes.
+
+Sites de référence pour la présenter simplement :
+
+- [Google Antigravity](https://antigravity.google/) : une phrase en titre, les produits en
+  quelques cartes courtes avec une image chacune.
+- [Claude, page Télécharger](https://claude.com/download) : un titre, un bouton, puis une ligne
+  par système avec son bouton, et une FAQ courte.
+
+La capture vient de l'appli en aperçu, remplie de médias d'exemple (`app/static/vitrine/`).
+
 ## Lancer en développement
 
 ```bash
