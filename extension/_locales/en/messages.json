@@ -10,5 +10,37 @@
   },
   "menuSend": {
     "message": "Send to MediaVior…"
+  },
+  "ytButton": {
+    "message": "Send to MediaVior"
+  },
+  "ytVideo": {
+    "message": "Video"
+  },
+  "ytAudio": {
+    "message": "Audio"
+  },
+  "ytBest": {
+    "message": "best quality"
+  },
+  "ytSending": {
+    "message": "Sending to MediaVior…"
+  },
+  "ytSent": {
+    "message": "Sent to MediaVior ✓"
+  },
+  "ytOffline": {
+    "message": "MediaVior isn't open on this computer. Start it, then try again."
+  },
+  "ytFailed": {
+    "message": "Couldn't send: $DETAIL$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "ytMore": {
+    "message": "More options…"
   }
 }

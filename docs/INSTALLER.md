@@ -30,6 +30,9 @@ Il faut donc dire une fois à ton ordinateur que tu lui fais confiance. Ensuite,
 3. L'installation prend quelques secondes, sans droits administrateur. MediaVior s'ouvre, et une
    icône est ajoutée au bureau et au menu Démarrer.
 
+L'appli s'installe dans le dossier `MediaVior` de ton dossier personnel (`C:\Users\<ton nom>\MediaVior`,
+modifiable à l'installation). Tes médias arrivent juste à côté, dans `MediaVior\MediaChest`.
+
 Si ton antivirus bloque le fichier, c'est pour la même raison (appli non signée qui télécharge des
 choses). Tu peux l'autoriser dans ton antivirus, ou passer par [le prompt](../README.md#en-un-prompt).
 
@@ -63,4 +66,4 @@ suffit.
   [le mode d'emploi](UTILISATION.md#sur-téléphone).
 - **Désinstaller** : Windows → Paramètres → Applications → MediaVior → Désinstaller. Mac →
   glisse MediaVior à la corbeille. Linux → supprime le fichier AppImage. Tes fichiers restent dans
-  `Téléchargements/MediaChest`.
+  le dossier `MediaChest`.

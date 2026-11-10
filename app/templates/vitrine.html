@@ -7,8 +7,9 @@
 <meta name="description" content="MediaVior : une appli gratuite et libre pour télécharger vidéos et sons sur ton ordinateur. Ton propre téléchargeur, sans site partagé, sans compte, sans pub.">
 <meta name="theme-color" content="#121821" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#F3F5F8" media="(prefers-color-scheme: light)">
-<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" href="/static/icons/icon.svg?v={{ v }}" type="image/svg+xml">
+<link rel="icon" href="/static/icons/icon-192.png?v={{ v }}" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v={{ v }}">
 <meta property="og:title" content="MediaVior">
 <meta property="og:description" content="Ton propre téléchargeur de vidéos et de sons. Gratuit, libre, sur ton ordinateur.">
 <meta property="og:image" content="/static/vitrine/appli-sombre.webp">
@@ -25,7 +26,11 @@
 <!-- Page courte, façon page produit : une phrase, un bouton, l'appli en grand, puis le reste en bref.
      Références : antigravity.google, claude.com/download (voir docs/DEVELOPPEMENT.md, « Vitrine »). -->
 <header class="v-top">
-  <a class="v-top__brand" href="#haut"><img src="/static/icons/icon.svg" alt="" width="24" height="24">MediaVior</a>
+  <a class="v-top__brand" href="#haut"><pre class="ascii-logo" aria-hidden="true"> _________ 
+|  ___    |
+| | O |  =|
+| |___|  =|
+|_________|</pre>MediaVior</a>
   <div class="v-top__end">
     <button type="button" class="btn-link" data-lang-switch></button>
     <a class="v-top__dl" href="#telecharger">Télécharger</a>
@@ -60,7 +65,7 @@
     <article class="v-tile">
       <h2>Sur ton ordinateur</h2>
       <p>Colle un lien, plusieurs liens ou une liste de titres. MP3 ou MP4, la qualité que tu veux,
-        rangé dans Téléchargements.</p>
+        rangé dans ton dossier MediaChest.</p>
       <ul class="v-tile__tags"><li>Un lien</li><li>Lots en zip</li><li>Liste de titres</li><li>Éditeur</li></ul>
     </article>
     <article class="v-tile">
@@ -108,7 +113,7 @@
     </details>
     <details>
       <summary>Où vont mes fichiers ?</summary>
-      <p>Dans le dossier Téléchargements de ton ordinateur, sous MediaChest. Ils ne passent par aucun serveur.</p>
+      <p>Dans le dossier MediaChest, juste à côté de l'appli sur Windows et Linux, dans Téléchargements sur Mac. Le bouton « Ouvrir le dossier » de l'appli y mène directement. Ils ne passent par aucun serveur.</p>
     </details>
     <details>
       <summary>Et si YouTube change quelque chose ?</summary>

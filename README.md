@@ -46,6 +46,9 @@ Pas de compte, pas de publicité, aucune donnée envoyée au projet.
 | [**Windows**](https://github.com/chr2l/MediaVior/releases/latest/download/MediaVior-Windows.exe) | [**Mac** (puce Apple)](https://github.com/chr2l/MediaVior/releases/latest/download/MediaVior-Mac.dmg) | [**Linux**](https://github.com/chr2l/MediaVior/releases/latest/download/MediaVior-Linux.AppImage) |
 |---|---|---|
 
+Code signing policy : free code signing provided by [SignPath.io](https://about.signpath.io),
+certificate by [SignPath Foundation](https://signpath.org) ([détails](CODE_SIGNING.md)).
+
 Double-clique sur le fichier téléchargé : tout est inclus, et l'appli se met à jour toute seule.
 Au premier lancement, Windows ou le Mac affichent un avertissement, car l'appli n'a pas de
 signature payante : [comment l'ouvrir quand même, en images](docs/INSTALLER.md).

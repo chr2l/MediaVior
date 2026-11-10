@@ -8,7 +8,8 @@
 Options : --port 8010, --dossier CHEMIN (dossier des téléchargements, retenu pour la suite),
 --sans-fenetre (n'ouvre pas le navigateur, utilisé par Pinokio), --sans-maj (pas de mise à jour).
 
-Les fichiers vont par défaut dans « Téléchargements/MediaChest ». Les réglages et le journal
+Les fichiers vont par défaut dans le dossier « MediaChest », à côté de l'appli installée
+(Windows, Linux) ou dans Téléchargements (Mac, version Python). Les réglages et le journal
 sont dans ~/.mediavior/.
 """
 import argparse
@@ -71,16 +72,48 @@ def build_info() -> dict:
         return {}
 
 
+def _app_folder() -> Optional[Path]:
+    """Dossier où se trouve l'appli installée : celui de MediaVior.exe (Windows) ou du fichier
+    AppImage (Linux). None pour le Mac (appli dans Applications) et la version Python."""
+    if not FROZEN or IS_MAC:
+        return None
+    exe = Path(os.environ.get("APPIMAGE") or sys.executable).resolve()
+    return exe.parent
+
+
+def _writable(folder: Path) -> bool:
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        probe = folder / ".mediavior-test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+        return True
+    except OSError:
+        return False
+
+
 def default_folder() -> Path:
-    """Dossier des téléchargements : Téléchargements/MediaChest. Les fichiers rangés avant dans
-    l'ancien dossier (Téléchargements/MediaVior) y sont déplacés une fois, au premier lancement."""
-    new = Path.home() / "Downloads" / "MediaChest"
-    old = Path.home() / "Downloads" / "MediaVior"
-    if old.is_dir() and not new.exists():
+    """Dossier des médias, « MediaChest » :
+    - Windows et Linux (AppImage) : à côté de l'appli, dans le même dossier qu'elle ;
+    - Mac et version Python : dans Téléchargements.
+    Les médias rangés avant dans Téléchargements/MediaChest (ou l'ancien Téléchargements/MediaVior)
+    y sont déplacés une fois, au premier lancement."""
+    downloads = Path.home() / "Downloads"
+    olds = [downloads / "MediaChest", downloads / "MediaVior"]
+    app = _app_folder()
+    new = app / "MediaChest" if app and _writable(app) else olds[0]
+    for old in olds:
+        if old == new or not old.is_dir():
+            continue
+        if new.exists() and any(new.iterdir()):
+            break  # le nouveau dossier sert déjà : on n'y touche plus
         try:
-            old.rename(new)
+            if new.exists():
+                new.rmdir()
+            shutil.move(str(old), str(new))
         except OSError:
             return old  # déplacement impossible (fichier ouvert…) : on garde l'ancien dossier
+        break
     return new
 
 

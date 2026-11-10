@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MediaVior",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "__MSG_description__",
   "default_locale": "fr",
   "icons": {
@@ -26,13 +26,39 @@
     "page": "options.html",
     "open_in_tab": true
   },
-  "permissions": ["activeTab", "contextMenus", "storage"],
-  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
-  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "commands": {
     "_execute_action": {
-      "suggested_key": { "default": "Alt+Shift+C" },
+      "suggested_key": {
+        "default": "Alt+Shift+C"
+      },
       "description": "__MSG_commandSend__"
     }
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "youtube.js"
+      ],
+      "css": [
+        "youtube.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }
