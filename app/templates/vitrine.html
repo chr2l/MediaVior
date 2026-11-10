@@ -14,7 +14,7 @@
 <meta property="og:image" content="/static/vitrine/appli-sombre.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css?v={{ v }}">
 <link rel="stylesheet" href="/static/vitrine.css?v={{ v }}">
 <script src="/static/i18n-en.js?v={{ v }}"></script>
@@ -22,51 +22,29 @@
 </head>
 <body class="vitrine">
 
-<!-- Barre du haut : nom, sommaire, langue -->
+<!-- Page courte, façon page produit : une phrase, un bouton, l'appli en grand, puis le reste en bref.
+     Références : antigravity.google, claude.com/download (voir docs/DEVELOPPEMENT.md, « Vitrine »). -->
 <header class="v-top">
-  <a class="v-top__brand" href="#haut"><img src="/static/icons/icon.svg" alt="" width="26" height="26">MediaVior</a>
-  <nav class="v-top__nav" aria-label="Sommaire">
-    <a href="#pourquoi">Pourquoi</a>
-    <a href="#comment">Comment ça marche</a>
-    <a href="#telephone">Téléphone</a>
-    <a href="#comparer">Comparer</a>
-    <a href="#questions">Questions</a>
-  </nav>
+  <a class="v-top__brand" href="#haut"><img src="/static/icons/icon.svg" alt="" width="24" height="24">MediaVior</a>
   <div class="v-top__end">
     <button type="button" class="btn-link" data-lang-switch></button>
-    <a class="btn btn--ghost btn--sm" href="#telecharger"><span data-icon="download"></span>Télécharger</a>
+    <a class="v-top__dl" href="#telecharger">Télécharger</a>
   </div>
 </header>
 
 <main id="haut">
 
-  <!-- 1. Accroche -->
+  <!-- Accroche : une phrase, un bouton, l'appli en grand -->
   <section class="v-hero">
-    <div class="v-hero__text">
-      <div class="hero">
-        <pre class="hero__ascii" aria-hidden="true"> _________
-|  ___    |
-| | O |  =|
-| |___|  =|
-|_________|</pre>
-        <div>
-          <h1 class="hero__title">MediaVior</h1>
-          <p class="hero__hello">Gratuit · libre · sans compte</p>
-        </div>
-      </div>
-      <p class="v-hero__claim">Ton propre téléchargeur de vidéos et de sons.</p>
-      <p class="v-hero__lead">MediaVior s'installe sur ton ordinateur et télécharge depuis YouTube,
-        SoundCloud, Bandcamp et plus de 1 000 sites. Pas de site partagé qui sature, pas de pub, pas
-        de compte : il est à toi.</p>
-      <div class="dl-buttons v-dl" id="heroDl">
-        <a class="btn btn--ghost" data-os="win" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe"><span data-icon="download"></span>Windows</a>
-        <a class="btn btn--ghost" data-os="mac" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg"><span data-icon="download"></span>Mac (puce Apple)</a>
-        <a class="btn btn--ghost" data-os="linux" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage"><span data-icon="download"></span>Linux</a>
-      </div>
-      <p class="v-small">
-        {% if apercu_url %}<a href="{{ apercu_url }}">Voir l'appli en aperçu</a> · {% endif %}<a href="{{ github }}" target="_blank" rel="noopener">Code source sur GitHub</a>
-      </p>
+    <h1 class="v-hero__title">Ton téléchargeur, chez toi.</h1>
+    <p class="v-hero__lead">Vidéos et sons de YouTube, SoundCloud, Bandcamp et 1 000 autres sites.
+      Sur ton ordinateur, pas sur un site partagé. Gratuit, sans compte, sans pub.</p>
+    <div class="dl-buttons v-hero__dl">
+      <a class="btn btn--ghost" data-os="win" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe">Windows</a>
+      <a class="btn btn--ghost" data-os="mac" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg">Mac (puce Apple)</a>
+      <a class="btn btn--ghost" data-os="linux" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage">Linux</a>
     </div>
+    {% if apercu_url %}<p class="v-hero__alt"><a href="{{ apercu_url }}">Essayer l'aperçu dans le navigateur</a></p>{% endif %}
     <figure class="v-shot">
       <picture>
         <source srcset="/static/vitrine/appli-clair.webp" media="(prefers-color-scheme: light)">
@@ -75,143 +53,70 @@
     </figure>
   </section>
 
-  <!-- 2. Le message principal : chacun son téléchargeur -->
-  <section class="v-section" id="pourquoi" aria-labelledby="pourquoiTitre">
-    <p class="v-kicker">Pourquoi ton propre téléchargeur</p>
-    <h2 class="v-title" id="pourquoiTitre">Les sites de téléchargement se partagent un seul serveur. Toi, tu as le tien.</h2>
-    <p class="v-intro">Sur un site en ligne, des milliers de personnes passent par la même machine.
-      Elle sature, se fait bloquer par YouTube, et se paie avec de la pub. MediaVior fait le travail
-      chez toi, avec ta connexion, comme ton navigateur.</p>
-    <ul class="v-cards">
-      <li><span class="tint tint--accent" data-icon="disk"></span><strong>Il ne sature jamais</strong><small>Personne d'autre ne l'utilise. Pas de file d'attente, pas de limite par jour.</small></li>
-      <li><span class="tint tint--accent" data-icon="check"></span><strong>Il ne se fait pas bloquer</strong><small>Les sites voient une personne normale, pas un serveur qui télécharge pour tout le monde.</small></li>
-      <li><span class="tint tint--accent" data-icon="lock"></span><strong>Tes fichiers restent chez toi</strong><small>Rien ne passe par un serveur. Pas de compte, pas de pub, aucun suivi.</small></li>
-      <li><span class="tint tint--accent" data-icon="clock"></span><strong>Il se répare tout seul</strong><small>Quand un site change, MediaVior se met à jour sans que tu fasses rien.</small></li>
+  <!-- Deux écrans : l'ordinateur télécharge, le téléphone envoie -->
+  <section class="v-duo" aria-label="Sur ordinateur et sur téléphone">
+    <article class="v-tile">
+      <h2>Sur ton ordinateur</h2>
+      <p>Colle un lien, plusieurs liens ou une liste de titres. MP3 ou MP4, la qualité que tu veux,
+        rangé dans Téléchargements.</p>
+      <ul class="v-tile__tags"><li>Un lien</li><li>Lots en zip</li><li>Liste de titres</li><li>Éditeur</li></ul>
+    </article>
+    <article class="v-tile">
+      <h2>Depuis ton téléphone</h2>
+      <p>Vise un QR code une fois. Ensuite, partage un lien depuis YouTube : ton ordinateur le
+        télécharge et te renvoie le fichier, même en 4G.</p>
+      <ul class="v-tile__tags"><li>Chiffré de bout en bout</li><li>Sans compte</li></ul>
+    </article>
+  </section>
+
+  <!-- Le message principal, en une ligne -->
+  <section class="v-why">
+    <p><strong>Pourquoi chez toi ?</strong> Les sites de téléchargement font passer tout le monde par
+      le même serveur : il sature, se fait bloquer et se paie avec de la pub. Le tien ne sert qu'à
+      toi, et se met à jour tout seul.</p>
+  </section>
+
+  <!-- Téléchargement : une ligne par système, comme une page de téléchargement -->
+  <section class="v-get" id="telecharger" aria-labelledby="telechargerTitre">
+    <h2 id="telechargerTitre">Télécharger MediaVior</h2>
+    <ul class="v-rows">
+      <li><span>Windows 10 et 11</span><a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe">Télécharger</a></li>
+      <li><span>Mac avec puce Apple</span><a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg">Télécharger</a></li>
+      <li><span>Linux (AppImage)</span><a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage">Télécharger</a></li>
+      <li><span>Mac Intel, ou installation par une IA ou Pinokio</span><button type="button" class="btn btn--ghost btn--sm" id="showcasePrompt">Voir</button></li>
     </ul>
+    <p class="v-note">Au premier lancement, Windows ou le Mac peuvent afficher un avertissement :
+      <a href="{{ github }}/blob/main/docs/INSTALLER.md" data-href-en="{{ github }}/blob/main/docs/INSTALLER.en.md" target="_blank" rel="noopener">comment l'ouvrir quand même</a>.</p>
   </section>
 
-  <!-- 3. Installation en trois étapes -->
-  <section class="v-section" id="comment" aria-labelledby="commentTitre">
-    <p class="v-kicker">Comment ça marche</p>
-    <h2 class="v-title" id="commentTitre">Trois étapes, et c'est prêt.</h2>
-    <ol class="v-steps">
-      <li><b>1</b><strong>Télécharge l'appli</strong><small>Un seul fichier pour Windows, Mac ou Linux. Tout est inclus.</small></li>
-      <li><b>2</b><strong>Double-clique dessus</strong><small>MediaVior s'ouvre et pose une icône sur ton bureau.</small></li>
-      <li><b>3</b><strong>Colle un lien</strong><small>Choisis MP3 ou MP4, la qualité, et c'est rangé dans ton dossier Téléchargements.</small></li>
-    </ol>
-    <h3 class="v-sub">Ce que tu peux faire</h3>
-    <ul class="v-cards v-cards--3">
-      <li><span class="tint tint--accent" data-icon="link"></span><strong>Un lien</strong><small>Aperçu du média et choix précis de la qualité, jusqu'à la meilleure disponible.</small></li>
-      <li><span class="tint tint--zip" data-icon="box"></span><strong>Plusieurs liens</strong><small>Jusqu'à 100 liens d'un coup, dans un même format, rangés dans un seul zip.</small></li>
-      <li><span class="tint tint--son" data-icon="list"></span><strong>Liste de titres</strong><small>Colle « Artiste - Titre » ligne par ligne : chaque son est retrouvé tout seul.</small></li>
-      <li><span class="tint tint--video" data-icon="scissors"></span><strong>Petit éditeur</strong><small>Coupe le début ou la fin, ajoute un fondu, règle le volume.</small></li>
-      <li><span class="tint tint--accent" data-icon="music"></span><strong>Pochettes et titres</strong><small>Les MP3 gardent leur pochette et leur titre, pour ta musique.</small></li>
-      <li><span class="tint tint--neutral" data-icon="library"></span><strong>Ton coffre</strong><small>Tout ce que tu as téléchargé, avec une recherche, sur ton disque.</small></li>
-    </ul>
-  </section>
-
-  <!-- 4. Téléphone relié -->
-  <section class="v-section v-phone" id="telephone" aria-labelledby="telephoneTitre">
-    <div>
-      <p class="v-kicker">Téléphone</p>
-      <h2 class="v-title" id="telephoneTitre">Ton téléphone envoie, ton ordinateur télécharge.</h2>
-      <p class="v-intro">Comme WhatsApp Web, mais à l'envers : vise un QR code une fois, et ton
-        téléphone est relié à ton MediaVior. Même en 4G, même loin de chez toi.</p>
-      <ol class="v-list">
-        <li>Sur l'ordinateur, clique sur « Téléphone » et vise le QR code.</li>
-        <li>Sur le téléphone, partage un lien YouTube vers MediaVior.</li>
-        <li>L'ordinateur le télécharge, puis le fichier arrive sur le téléphone.</li>
-      </ol>
-      <p class="v-small">Les messages sont chiffrés de bout en bout, et les fichiers vont directement
-        de l'ordinateur au téléphone. L'ordinateur doit rester allumé avec MediaVior ouvert.</p>
-    </div>
-    <div class="v-phone__art" aria-hidden="true">
-      <div class="v-device v-device--pc"><span data-icon="disk"></span><i>MediaVior</i></div>
-      <div class="v-device__link"><span></span><small>chiffré</small></div>
-      <div class="v-device v-device--tel"><span data-icon="phone"></span><i>Téléphone</i></div>
-    </div>
-  </section>
-
-  <!-- 5. Comparaison simple -->
-  <section class="v-section" id="comparer" aria-labelledby="comparerTitre">
-    <p class="v-kicker">Comparer</p>
-    <h2 class="v-title" id="comparerTitre">Ce qui change avec MediaVior</h2>
-    <div class="v-table-wrap">
-      <table class="v-table">
-        <thead>
-          <tr><th scope="col"><span class="sr-only">Critère</span></th><th scope="col" class="is-us">MediaVior</th><th scope="col">Sites en ligne</th><th scope="col">Logiciels payants</th><th scope="col">Applis téléphone</th></tr>
-        </thead>
-        <tbody>
-          <tr><th scope="row">Gratuit, sans limite</th><td class="is-us">Oui</td><td>Oui</td><td>Non</td><td>Oui</td></tr>
-          <tr><th scope="row">Sans pub</th><td class="is-us">Oui</td><td>Rarement</td><td>Oui</td><td>Oui</td></tr>
-          <tr><th scope="row">Ne sature pas, pas bloqué</th><td class="is-us">Oui</td><td>Non</td><td>Oui</td><td>Oui</td></tr>
-          <tr><th scope="row">Ordinateur et téléphone</th><td class="is-us">Oui</td><td>Oui</td><td>Non</td><td>Non</td></tr>
-          <tr><th scope="row">Liste de titres retrouvée seule</th><td class="is-us">Oui</td><td>Non</td><td>Non</td><td>Non</td></tr>
-          <tr><th scope="row">Code ouvert</th><td class="is-us">Oui</td><td>Parfois</td><td>Non</td><td>Souvent</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- 6. Questions fréquentes -->
-  <section class="v-section" id="questions" aria-labelledby="questionsTitre">
-    <p class="v-kicker">Questions</p>
-    <h2 class="v-title" id="questionsTitre">Questions fréquentes</h2>
-    <div class="v-faq">
-      <details>
-        <summary>C'est vraiment gratuit ?</summary>
-        <p>Oui. MediaVior est un logiciel libre (licence AGPL) : pas de version payante, pas de pub,
-          pas de compte. Si tu l'aimes, une étoile sur GitHub aide à le faire connaître.</p>
-      </details>
-      <details>
-        <summary>Pourquoi Windows ou le Mac affichent un avertissement ?</summary>
-        <p>L'appli n'a pas encore de signature payante, alors le système prévient au premier
-          lancement. Le guide en images montre comment l'ouvrir quand même.
-          <a href="{{ github }}/blob/main/docs/INSTALLER.md" data-href-en="{{ github }}/blob/main/docs/INSTALLER.en.md" target="_blank" rel="noopener">Aide à l'installation</a></p>
-      </details>
-      <details>
-        <summary>Où vont mes fichiers ?</summary>
-        <p>Dans le dossier Téléchargements de ton ordinateur, sous MediaChest. Tu peux changer de
-          dossier, et tes fichiers ne quittent jamais ta machine.</p>
-      </details>
-      <details>
-        <summary>Et si YouTube change quelque chose ?</summary>
-        <p>MediaVior s'appuie sur yt-dlp, mis à jour très souvent par une grande communauté. L'appli
-          récupère la dernière version toute seule.</p>
-      </details>
-      <details>
-        <summary>J'ai un Mac Intel ou je ne veux pas installer de fichier.</summary>
-        <p>Une IA qui peut agir sur ton ordinateur (Claude Desktop, ChatGPT Codex, Cursor…) peut
-          l'installer pour toi avec un simple texte à coller. Pinokio marche aussi.
-          <button type="button" class="btn-link" id="showcasePrompt">Voir les autres façons d'installer</button></p>
-      </details>
-      <details>
-        <summary>Est-ce que j'ai le droit ?</summary>
-        <p>MediaVior est fait pour un usage personnel : garder ce que tu as le droit de garder, tes
-          propres vidéos, des contenus libres. Respecte les droits d'auteur et les règles des sites.
-          <a href="/legal">Mentions légales</a></p>
-      </details>
-    </div>
-  </section>
-
-  <!-- 7. Dernier appel -->
-  <section class="v-section v-end" id="telecharger" aria-labelledby="telechargerTitre">
-    <h2 class="v-title" id="telechargerTitre">Prêt à avoir ton propre téléchargeur&nbsp;?</h2>
-    <p class="v-intro">Gratuit, en français et en anglais, mis à jour tout seul.</p>
-    <div class="dl-buttons v-dl" id="endDl">
-      <a class="btn btn--ghost" data-os="win" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe"><span data-icon="download"></span>Windows</a>
-      <a class="btn btn--ghost" data-os="mac" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg"><span data-icon="download"></span>Mac (puce Apple)</a>
-      <a class="btn btn--ghost" data-os="linux" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage"><span data-icon="download"></span>Linux</a>
-    </div>
-    <p class="v-small"><a href="{{ github }}" target="_blank" rel="noopener">Tu aimes MediaVior ? Mets une étoile ⭐ sur GitHub</a></p>
+  <!-- Questions -->
+  <section class="v-faq" aria-labelledby="questionsTitre">
+    <h2 id="questionsTitre">Questions</h2>
+    <details>
+      <summary>C'est vraiment gratuit ?</summary>
+      <p>Oui. C'est un logiciel libre (licence AGPL) : pas de version payante, pas de pub, pas de compte.</p>
+    </details>
+    <details>
+      <summary>Où vont mes fichiers ?</summary>
+      <p>Dans le dossier Téléchargements de ton ordinateur, sous MediaChest. Ils ne passent par aucun serveur.</p>
+    </details>
+    <details>
+      <summary>Et si YouTube change quelque chose ?</summary>
+      <p>MediaVior s'appuie sur yt-dlp, mis à jour très souvent. L'appli récupère la dernière version toute seule.</p>
+    </details>
+    <details>
+      <summary>Est-ce que j'ai le droit ?</summary>
+      <p>Pour un usage personnel, avec des contenus que tu as le droit de garder. Respecte les droits
+        d'auteur et les règles des sites. <a href="/legal">Mentions légales</a></p>
+    </details>
   </section>
 
 </main>
 
 <footer class="app-foot">
   {% if apercu_url %}<a href="{{ apercu_url }}">Aperçu de l'appli</a>{% endif %}
-  <a href="/legal">Mentions légales</a>
   <a href="{{ github }}" target="_blank" rel="noopener">Code source</a>
+  <a href="/legal">Mentions légales</a>
   <button type="button" class="btn-link" data-lang-switch></button>
 </footer>
 <p class="app-foot app-foot--small">Logiciel libre (AGPL) · yt-dlp &amp; ffmpeg</p>
@@ -220,15 +125,12 @@
 <dialog class="yt-dialog prompt-dialog" id="promptDialog" aria-labelledby="promptTitle">
   <div class="yt-dialog__head">
     <div class="yt-dialog__heading">
-      <h2 class="panel__title" id="promptTitle">Ton propre MediaVior, sur ton PC</h2>
-      <p class="hint">Télécharge l'appli, double-clique dessus, c'est tout : tout est inclus, et elle
-        se met à jour toute seule. Gratuit, sans compte.</p>
+      <h2 class="panel__title" id="promptTitle">Installer avec une IA</h2>
+      <p class="hint">Copie ce texte et colle-le dans une IA qui peut agir sur ton ordinateur
+        (Claude Desktop, ChatGPT Codex, Cursor…). Elle installe MediaVior et crée l'icône sur ton bureau.</p>
     </div>
     <button type="button" class="icon-btn" id="promptClose" aria-label="Fermer" title="Fermer"></button>
   </div>
-  <h3 class="prompt-dialog__alt">Ou avec une IA</h3>
-  <p class="hint">Copie ce texte et colle-le dans une IA qui peut agir sur ton ordinateur
-    (Claude Desktop, ChatGPT Codex, Cursor…). Elle installe MediaVior et crée l'icône sur ton bureau.</p>
   <textarea class="prompt-dialog__text" id="promptText" readonly rows="10" aria-label="Prompt d'installation"></textarea>
   <div class="yt-dialog__foot">
     <a class="hint" href="{{ github }}#installer-sur-ton-pc" data-href-en="{{ github }}/blob/main/README.en.md#install-on-your-pc" target="_blank" rel="noopener">Autres façons d'installer (Pinokio, à la main)</a>
