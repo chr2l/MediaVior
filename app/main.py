@@ -273,6 +273,8 @@ def _app_page(request: Request):
 def _vitrine_page(request: Request):
     return templates.TemplateResponse(request, "vitrine.html", {
         "v": ASSET_VERSION, "github": GITHUB_URL, "apercu_url": "/apercu" if APERCU else None,
+        # Page du téléphone (relais), même adresse que dans jumelage.py
+        "telephone_url": os.environ.get("MEDIAVIOR_RELAIS", "https://mediavior-tel.elie.place").rstrip("/"),
     })
 
 
