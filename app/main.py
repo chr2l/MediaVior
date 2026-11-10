@@ -257,13 +257,38 @@ async def _ytdlp_updater() -> None:
 # Pages
 # ---------------------------------------------------------------------------
 
-@app.get("/")
-async def index(request: Request):
+def _app_page(request: Request):
     return templates.TemplateResponse(request, "index.html", {
         "v": ASSET_VERSION, "ytdlp": yt_dlp.version.__version__, "updated": UPDATED_AT,
         "local": LOCAL_MODE, "github": GITHUB_URL, "folder": str(DOWNLOAD_DIR),
         "apercu": is_apercu(request),
     })
+
+
+def _vitrine_page(request: Request):
+    return templates.TemplateResponse(request, "vitrine.html", {
+        "v": ASSET_VERSION, "github": GITHUB_URL, "apercu_url": "/apercu" if APERCU else None,
+    })
+
+
+@app.get("/")
+async def index(request: Request):
+    # Site public : les visiteurs arrivent sur la vitrine ; l'appli reste visible sur /apercu
+    if is_apercu(request):
+        return _vitrine_page(request)
+    return _app_page(request)
+
+
+@app.get("/apercu")
+async def apercu(request: Request):
+    if not APERCU:
+        return RedirectResponse("/", status_code=303)
+    return _app_page(request)
+
+
+@app.get("/vitrine")
+async def vitrine(request: Request):
+    return _vitrine_page(request)
 
 
 @app.get("/legal")

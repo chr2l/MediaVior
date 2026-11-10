@@ -826,7 +826,7 @@ function consumeSharedLink() {
   const params = new URLSearchParams(location.search);
   const shared = ["url", "text", "title"].map((k) => params.get(k)).filter(Boolean).join(" ");
   if (!shared) return;
-  history.replaceState(null, "", "/");
+  history.replaceState(null, "", location.pathname);
   showView("telecharger");
   setWay("lien");
   const urls = extractUrls(shared);
