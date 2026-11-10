@@ -48,7 +48,14 @@
         </div>
       </header>
 
-      {% if not local %}
+      {% if apercu %}
+      <!-- Aperçu (site public) : la présentation complète est sur la vitrine, à l'adresse / -->
+      <p class="apercu-bar">
+        <span>Ceci est un aperçu : rien ne se télécharge ici.</span>
+        <a href="/">← Présentation</a>
+        <button type="button" class="btn btn--ghost btn--sm" id="showcasePrompt"><span data-icon="download"></span>Avoir l'appli</button>
+      </p>
+      {% elif not local %}
       <!-- Vitrine : ce qu'est MediaVior et comment l'avoir chez soi (page web seulement) -->
       <section class="showcase" aria-label="Présentation de MediaVior">
         <p class="showcase__lead">Mets à l'abri les vidéos et les sons que tu aimes, avant qu'ils
@@ -68,7 +75,7 @@
           <li><span class="tint tint--son" data-icon="phone"></span><strong>Depuis ton téléphone</strong><small>Partage un lien, ton PC le télécharge, le fichier revient sur le téléphone.</small></li>
           <li><span class="tint tint--video" data-icon="lock"></span><strong>Chez toi, sans compte</strong><small>Rien ne passe par un serveur. Mises à jour automatiques. Code ouvert.</small></li>
         </ul>
-        <h2 class="showcase__try">{% if apercu %}Aperçu de l'appli{% else %}Ou directement ici{% endif %}</h2>
+        <h2 class="showcase__try">Ou directement ici</h2>
       </section>
       {% endif %}
 

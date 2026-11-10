@@ -1,0 +1,187 @@
+/* Page vitrine (site public) : présente l'appli et pousse à l'installer chez soi.
+   Reprend les couleurs et les boutons de style.css. */
+
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body.vitrine { display: block; padding: 0 0 48px; }
+.vitrine .app-foot { padding: 0 16px; }
+.vitrine main { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Barre du haut ---------- */
+
+.v-top {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 24px;
+  padding: 12px 24px;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.v-top__brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 600;
+  color: var(--paper); text-decoration: none;
+}
+.v-top__brand img { border-radius: 6px; }
+.v-top__nav { display: flex; gap: 4px; margin: 0 auto; }
+.v-top__nav a {
+  padding: 6px 10px; border-radius: var(--radius-sm);
+  font-size: 0.88rem; color: var(--paper-dim); text-decoration: none;
+}
+.v-top__nav a:hover { color: var(--paper); background: var(--surface); }
+.v-top__nav a.is-active { color: var(--brass); }
+.v-top__end { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.v-top__end .btn .icon { width: 15px; height: 15px; }
+
+/* ---------- Accroche ---------- */
+
+.v-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 48px;
+  align-items: center;
+  padding: 64px 0 72px;
+}
+.v-hero .hero { margin-bottom: 0; }
+.v-hero__claim {
+  margin: 28px 0 0;
+  font-family: 'Fraunces', serif;
+  font-size: 2.3rem; line-height: 1.12; font-weight: 600; letter-spacing: -0.015em;
+  color: var(--paper);
+}
+.v-hero__lead { margin: 16px 0 0; font-size: 1.08rem; line-height: 1.6; color: var(--paper-dim); max-width: 52ch; }
+.v-dl { margin-top: 28px; }
+.v-dl .btn { margin-top: 0; }
+.v-dl .btn .icon { width: 16px; height: 16px; }
+.v-dl .btn.is-mine { padding: 14px 24px; font-size: 1rem; font-weight: 600; }
+.v-small { margin: 14px 0 0; font-size: 0.86rem; line-height: 1.5; color: var(--paper-dim); }
+.v-small a { color: var(--paper-dim); }
+.v-small a:hover { color: var(--brass); }
+
+.v-shot { margin: 0; }
+.v-shot img {
+  display: block; width: 100%; height: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.55), 0 0 0 6px color-mix(in srgb, var(--brass) 8%, transparent);
+}
+
+/* ---------- Parties ---------- */
+
+.v-section { padding: 64px 0; border-top: 1px solid var(--hairline-soft); }
+.v-kicker {
+  margin: 0 0 10px;
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--brass);
+}
+.v-title {
+  margin: 0; max-width: 26ch;
+  font-family: 'Fraunces', serif; font-size: 1.9rem; line-height: 1.18; font-weight: 600; letter-spacing: -0.01em;
+}
+.v-intro { margin: 14px 0 0; max-width: 64ch; font-size: 1.02rem; line-height: 1.6; color: var(--paper-dim); }
+.v-sub { margin: 48px 0 0; font-size: 1.05rem; font-weight: 600; }
+
+.v-cards {
+  list-style: none; margin: 28px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;
+}
+.v-cards--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; }
+.v-cards li {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 18px;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--surface);
+}
+.v-cards .tint { width: 38px; height: 38px; display: grid; place-items: center; border-radius: var(--radius-sm); margin-bottom: 6px; }
+.v-cards .tint .icon { width: 20px; height: 20px; }
+.v-cards strong { font-size: 1rem; color: var(--paper); }
+.v-cards small { font-size: 0.9rem; line-height: 1.5; color: var(--paper-dim); }
+
+.v-steps {
+  list-style: none; margin: 28px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+  counter-reset: none;
+}
+.v-steps li { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+.v-steps b {
+  width: 34px; height: 34px; display: grid; place-items: center; margin-bottom: 8px;
+  border-radius: 50%; background: var(--brass); color: var(--on-accent);
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem;
+}
+.v-steps strong { font-size: 1.05rem; }
+.v-steps small { font-size: 0.92rem; line-height: 1.5; color: var(--paper-dim); max-width: 34ch; }
+
+/* ---------- Téléphone ---------- */
+
+.v-phone { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.v-list { margin: 20px 0 0; padding-left: 22px; line-height: 1.6; color: var(--paper); }
+.v-list li { margin-bottom: 6px; }
+.v-phone__art { display: flex; align-items: center; justify-content: center; gap: 0; }
+.v-device {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  border: 2px solid var(--brass); border-radius: 14px; background: var(--surface);
+  color: var(--brass);
+}
+.v-device .icon { width: 30px; height: 30px; }
+.v-device i { font-style: normal; font-size: 0.8rem; color: var(--paper-dim); }
+.v-device--pc { width: 170px; height: 118px; }
+.v-device--tel { width: 78px; height: 140px; border-radius: 16px; }
+.v-device__link { position: relative; width: 90px; display: grid; justify-items: center; gap: 6px; }
+.v-device__link span { width: 100%; border-top: 2px dashed var(--brass-dim); }
+.v-device__link small { font-size: 0.72rem; color: var(--paper-dim); }
+
+/* ---------- Comparaison ---------- */
+
+.v-table-wrap { margin-top: 28px; overflow-x: auto; border: 1px solid var(--hairline); border-radius: var(--radius); }
+.v-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 620px; }
+.v-table th, .v-table td { padding: 12px 16px; text-align: center; border-bottom: 1px solid var(--hairline-soft); }
+.v-table tbody tr:last-child th, .v-table tbody tr:last-child td { border-bottom: 0; }
+.v-table thead th { font-size: 0.82rem; font-weight: 600; color: var(--paper-dim); background: var(--surface); }
+.v-table tbody th { text-align: left; font-weight: 500; color: var(--paper); }
+.v-table td { color: var(--paper-dim); }
+.v-table .is-us { color: var(--brass); font-weight: 600; background: color-mix(in srgb, var(--brass) 7%, transparent); }
+.v-table thead .is-us { color: var(--brass); background: color-mix(in srgb, var(--brass) 14%, var(--surface)); }
+
+/* ---------- Questions ---------- */
+
+.v-faq { margin-top: 24px; display: grid; gap: 10px; max-width: 800px; }
+.v-faq details { border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); }
+.v-faq summary {
+  cursor: pointer; list-style: none;
+  padding: 16px 18px; font-weight: 500;
+  display: flex; justify-content: space-between; gap: 12px;
+}
+.v-faq summary::-webkit-details-marker { display: none; }
+.v-faq summary::after { content: "+"; color: var(--brass); font-size: 1.2rem; line-height: 1; }
+.v-faq details[open] summary::after { content: "−"; }
+.v-faq p { margin: 0; padding: 0 18px 16px; line-height: 1.6; color: var(--paper-dim); }
+.v-faq a, .v-faq .btn-link { color: var(--brass); font-size: inherit; }
+
+/* ---------- Dernier appel ---------- */
+
+.v-end { text-align: center; padding-bottom: 32px; }
+.v-end .v-title, .v-end .v-intro { margin-left: auto; margin-right: auto; }
+.v-end .v-title { max-width: none; }
+.v-end .dl-buttons { justify-content: center; }
+
+/* ---------- Petits écrans ---------- */
+
+@media (max-width: 960px) {
+  .v-top__nav { display: none; }
+  .v-hero { grid-template-columns: 1fr; gap: 36px; padding: 40px 0 56px; }
+  .v-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v-cards--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v-phone { grid-template-columns: 1fr; gap: 32px; }
+}
+@media (max-width: 600px) {
+  .vitrine main { padding: 0 16px; }
+  .v-top { padding: 10px 16px; gap: 12px; }
+  .v-hero__claim { font-size: 1.75rem; }
+  .v-title { font-size: 1.5rem; }
+  .v-section { padding: 48px 0; }
+  .v-cards, .v-cards--3, .v-steps { grid-template-columns: 1fr; }
+  .v-dl .btn { flex: 1 1 100%; justify-content: center; }
+  .v-device--pc { width: 130px; height: 96px; }
+  .v-device__link { width: 60px; }
+}
