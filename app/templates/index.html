@@ -28,6 +28,7 @@
     <header class="topbar">
       <div class="topbar__local">
         <button type="button" class="btn btn--quiet btn--sm" id="phoneBtn" title="Envoyer des liens depuis ton téléphone"><span data-icon="phone"></span>Téléphone</button>
+        <button type="button" class="btn btn--quiet btn--sm" id="extBtn" title="Envoyer des liens depuis ton navigateur"><span data-icon="puzzle"></span>Navigateur</button>
         <button type="button" class="btn btn--quiet btn--sm" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Ouvrir le dossier</button>
         <button type="button" class="btn-link" id="quitBtn">Quitter</button>
       </div>
@@ -384,6 +385,35 @@
   </div>
   <p class="hint">Ce PC doit rester allumé avec MediaVior ouvert. Les messages sont chiffrés de bout
     en bout, et les fichiers vont directement du PC au téléphone.</p>
+</dialog>
+
+<!-- Extension de navigateur, ajoutée sans le Chrome Web Store -->
+<dialog class="yt-dialog ext-dialog" id="extDialog" aria-labelledby="extTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="extTitle">Ton navigateur, relié à MediaVior</h2>
+      <p class="hint">Une petite extension pour Chrome, Brave, Edge, Opera ou Vivaldi : un clic sur son
+        icône envoie la page en cours à MediaVior, avec le choix du format. À faire une seule fois.</p>
+    </div>
+    <button type="button" class="icon-btn" id="extClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <ol class="ext-steps">
+    <li>
+      <span>Prépare le dossier de l'extension : il s'ouvre tout seul.</span>
+      <button type="button" class="btn btn--ghost btn--sm" id="extPrepare"><span data-icon="folder"></span>Préparer l'extension</button>
+      <span class="ext-steps__path" id="extPath"></span>
+    </li>
+    <li>
+      <span>Dans ton navigateur, colle cette adresse dans la barre d'adresse, puis appuie sur Entrée.</span>
+      <span class="ext-steps__copy"><code>chrome://extensions</code><button type="button" class="btn btn--quiet btn--sm" id="extCopy">Copier</button></span>
+    </li>
+    <li><span>Active le « Mode développeur » (un interrupteur en haut à droite de la page).</span></li>
+    <li><span>Clique sur « Charger l'extension non empaquetée » et choisis le dossier « MediaVior extension ».</span></li>
+    <li><span>Épingle MediaVior : clique sur la pièce de puzzle à droite de la barre d'adresse, puis sur la punaise.</span></li>
+  </ol>
+  <p class="hint">Laisse le dossier où il est : le navigateur s'en sert. MediaVior le met à jour
+    tout seul ; les nouveautés arrivent au prochain redémarrage du navigateur. Le navigateur peut
+    rappeler qu'une extension est en « mode développeur » : c'est normal, ce n'est pas un problème.</p>
 </dialog>
 {% endif %}
 

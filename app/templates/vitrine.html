@@ -54,7 +54,7 @@
   </section>
 
   <!-- Deux écrans : l'ordinateur télécharge, le téléphone envoie -->
-  <section class="v-duo" aria-label="Sur ordinateur et sur téléphone">
+  <section class="v-duo" aria-label="Sur ordinateur, téléphone et navigateur">
     <article class="v-tile">
       <h2>Sur ton ordinateur</h2>
       <p>Colle un lien, plusieurs liens ou une liste de titres. MP3 ou MP4, la qualité que tu veux,
@@ -66,6 +66,12 @@
       <p>Vise un QR code une fois. Ensuite, partage un lien depuis YouTube : ton ordinateur le
         télécharge et te renvoie le fichier, même en 4G.</p>
       <ul class="v-tile__tags"><li>Chiffré de bout en bout</li><li>Sans compte</li></ul>
+    </article>
+    <article class="v-tile">
+      <h2>Dans ton navigateur</h2>
+      <p>Un clic sur l'icône MediaVior pendant une vidéo, et elle part dans ton coffre. L'extension
+        est fournie avec l'appli, sans Chrome Web Store.</p>
+      <ul class="v-tile__tags"><li>Chrome, Brave, Edge, Opera, Vivaldi</li></ul>
     </article>
   </section>
 
@@ -83,6 +89,7 @@
       <li><span>Windows 10 et 11</span><a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Windows.exe">Télécharger</a></li>
       <li><span>Mac avec puce Apple</span><a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Mac.dmg">Télécharger</a></li>
       <li><span>Linux (AppImage)</span><a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Linux.AppImage">Télécharger</a></li>
+      <li><span>Extension de navigateur seule (.zip)</span><a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-extension.zip">Télécharger</a></li>
       <li><span>Mac Intel, ou installation par une IA ou Pinokio</span><button type="button" class="btn btn--ghost btn--sm" id="showcasePrompt">Voir</button></li>
     </ul>
     <p class="v-note">Au premier lancement, Windows ou le Mac peuvent afficher un avertissement :
@@ -103,6 +110,12 @@
     <details>
       <summary>Et si YouTube change quelque chose ?</summary>
       <p>MediaVior s'appuie sur yt-dlp, mis à jour très souvent. L'appli récupère la dernière version toute seule.</p>
+    </details>
+    <details>
+      <summary>Pourquoi l'extension n'est pas sur le Chrome Web Store ?</summary>
+      <p>Le store demande un compte payant et une vérification à chaque mise à jour. L'appli prépare
+        donc l'extension et la tient à jour : tu l'ajoutes une fois en « mode développeur », le mode
+        prévu par Chrome pour ça.</p>
     </details>
     <details>
       <summary>Est-ce que j'ai le droit ?</summary>

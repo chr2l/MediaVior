@@ -17,6 +17,7 @@ IS_MAC = sys.platform == "darwin"
 datas = [
     (str(APP / "templates"), "templates"),  # main.py les cherche à côté de lui
     (str(APP / "static"), "static"),
+    (str(ROOT / "extension"), "extension"),  # extension de navigateur, copiée par l'appli
     (str(ROOT / "PROMPT.md"), "."),
     (str(ROOT / "PROMPT.en.md"), "."),
     (str(BUILD / "build.json"), "."),

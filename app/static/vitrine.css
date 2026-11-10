@@ -63,9 +63,9 @@ body.vitrine { display: block; padding: 0 0 40px; background: var(--ink); }
 
 /* ---------- Ordinateur / téléphone ---------- */
 
-.v-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.v-duo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 .v-tile {
-  padding: 28px;
+  padding: 24px;
   border-radius: 14px;
   background: var(--surface);
   border: 1px solid var(--hairline-soft);
@@ -125,4 +125,9 @@ body.vitrine { display: block; padding: 0 0 40px; background: var(--ink); }
   .v-tile { padding: 22px; }
   .v-why, .v-get, .v-faq { margin-top: 56px; }
   .v-why p { font-size: 1.02rem; }
+}
+
+@media (max-width: 960px) and (min-width: 761px) {
+  .v-duo { grid-template-columns: 1fr 1fr; }
+  .v-duo .v-tile:last-child { grid-column: 1 / -1; }
 }

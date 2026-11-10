@@ -46,23 +46,31 @@ Réencoder une longue vidéo en 4K peut être lent sur une petite machine.
 
 Les playlists ne sont pas prises en charge volontairement : colle les liens des vidéos.
 
-## Extension Brave / Chrome
+## Extension de navigateur (Chrome, Brave, Edge, Opera, Vivaldi)
 
-Le dossier `extension/` contient une extension (Brave, Chrome, Edge) : un clic sur son icône
-envoie la page en cours à MediaVior, en choisissant Vidéo ou Audio, la qualité et le format
-(les mêmes choix que sur le site). Aussi en clic droit sur une page ou un lien
+Un clic sur l'icône de l'extension envoie la page en cours à MediaVior, en choisissant Vidéo ou
+Audio, la qualité et le format. Aussi en clic droit sur une page ou un lien
 (« Envoyer à MediaVior… ») et au clavier avec Alt+Maj+C.
 
-Installation :
-1. Ouvre `brave://extensions` et active le **Mode développeur** (en haut à droite).
-2. **Charger l'extension non empaquetée** → choisis le dossier `extension/` (dézippé).
-3. La page de réglages s'ouvre : vérifie l'adresse de MediaVior (`http://127.0.0.1:8010`
-   par défaut, celle de la version PC ; mets l'adresse de ton serveur sinon), clique **Enregistrer et tester** et accepte la demande d'accès.
+Elle n'est pas sur le Chrome Web Store : elle est fournie avec l'appli.
+
+Installation, une seule fois :
+1. Dans MediaVior, clique sur **Navigateur**, puis sur **Préparer l'extension**. Le dossier
+   `Documents/MediaVior extension` s'ouvre.
+2. Dans le navigateur, ouvre `chrome://extensions` et active le **Mode développeur** (en haut à droite).
+3. **Charger l'extension non empaquetée** → choisis le dossier `MediaVior extension`.
 4. Épingle l'icône (pièce de puzzle → punaise).
 
+Rien à régler : l'extension trouve MediaVior toute seule sur ce PC (port 8010 ou suivant).
+L'appli recopie ce dossier à chaque lancement, donc l'extension suit ses mises à jour (elles
+s'appliquent au prochain redémarrage du navigateur). Pour viser un MediaVior installé sur un autre
+ordinateur, change l'adresse dans les réglages de l'extension (⚙).
+
+Sans l'appli : `MediaVior-extension.zip` est joint à chaque version sur la page Releases de GitHub
+(à dézipper, puis étapes 2 à 4).
+
 MediaVior accepte les appels venant d'une extension (CORS limité aux origines
-`chrome-extension://`). Pour mettre l'extension à jour : remplace le dossier puis clique sur ↻
-dans `brave://extensions`.
+`chrome-extension://`).
 
 ## Sur téléphone
 
