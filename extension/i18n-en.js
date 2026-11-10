@@ -33,21 +33,21 @@ window.I18N_EN = {
   "Analyse du lien…": "Analyzing the link…",
   "MediaVior · réglages": "MediaVior · settings",
   "Adresse de MediaVior": "MediaVior address",
-  "L'adresse que tu ouvres dans le navigateur pour aller sur MediaVior. À l'enregistrement, Brave te demande l'autorisation d'accéder à cette adresse : accepte-la.":
-    "The address you open in the browser to reach MediaVior. When you save, Brave asks for permission to access this address: accept it.",
+  "Rien à changer si MediaVior est installé sur cet ordinateur : l'extension le trouve toute seule. Change l'adresse seulement pour viser un MediaVior installé ailleurs ; le navigateur te demandera alors l'autorisation d'y accéder : accepte-la.":
+    "Nothing to change if MediaVior is installed on this computer: the extension finds it by itself. Change the address only to reach a MediaVior installed elsewhere; the browser will then ask for permission to access it: accept it.",
   "Enregistrer et tester": "Save and test",
   "Astuces": "Tips",
   "Clique sur l'icône de MediaVior dans la barre d'outils pour envoyer la page en cours.": "Click the MediaVior icon in the toolbar to send the current page.",
   "Clic droit sur une page ou un lien → « Envoyer à MediaVior… ».": "Right-click a page or a link → “Send to MediaVior…”.",
-  "Raccourci clavier : Alt+Maj+C (modifiable dans brave://extensions/shortcuts).": "Keyboard shortcut: Alt+Shift+C (change it in brave://extensions/shortcuts).",
+  "Raccourci clavier : Alt+Maj+C (modifiable dans chrome://extensions/shortcuts).": "Keyboard shortcut: Alt+Shift+C (change it in chrome://extensions/shortcuts).",
   "Tes derniers choix de format sont retenus pour la fois suivante.": "Your last format choices are remembered for next time.",
   "Adresse invalide.": "Invalid address.",
   "Enregistré, mais sans l'autorisation d'accès : l'envoi risque d'échouer. Réessaie et accepte la demande.":
     "Saved, but without access permission: sending may fail. Try again and accept the request.",
   "Test en cours…": "Testing…",
   "C'est bon : MediaVior répond.": "All good: MediaVior responds.",
-  "MediaVior ne répond pas. Vérifie l'adresse dans les options et que MediaVior est bien lancé.":
-    "MediaVior isn't responding. Check the address in the options and that MediaVior is running.",
+  "MediaVior n'est pas ouvert sur cet ordinateur. Lance-le (icône MediaVior du bureau), puis rouvre cette fenêtre.":
+    "MediaVior isn't open on this computer. Start it (MediaVior icon on the desktop), then reopen this window.",
 
   // ----- Messages du serveur (app/main.py, app/jumelage.py) -----
   "Adresse non autorisée.": "Address not allowed.",

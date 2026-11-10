@@ -29,7 +29,7 @@ MediaVior downloads media from YouTube, SoundCloud, Bandcamp, Vimeo and
 - **Right-hand panel**: what is **In progress**, and the **vault** with everything you downloaded
   (format, duration, download again, remove), with search, multi-select and an **editor** (trim,
   fades, volume, extract the audio).
-- **Brave/Chrome extension** to send the current page in one click.
+- **Chrome/Brave/Edge extension** bundled with the app (no Chrome Web Store) to send the current page in one click.
 - **Your phone linked to your PC** (like WhatsApp Web): scan a QR code once, then send links from
   your phone and get the files back on it, even on mobile data.
 - **English and French**: the app follows your computer's language; the “English / Français” link

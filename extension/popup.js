@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, api } from "./settings.js";
+import { getSettings, saveSettings, api, findServer } from "./settings.js";
 
 translatePage(); // voir i18n.js
 
@@ -204,6 +204,7 @@ async function currentUrl() {
 
 async function init() {
   settings = await getSettings();
+  settings.server = await findServer(settings.server);
   videoContainerSel.value = settings.videoContainer;
   audioContainerSel.value = settings.audioContainer;
   audioQualitySel.value = settings.audioQuality;
