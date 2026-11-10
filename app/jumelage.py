@@ -285,7 +285,7 @@ def _snapshot() -> dict:
                      "mode": p.get("mode") if j["kind"] == "download" else "archive"})
     items = []
     try:
-        dirs = [d for d in web.DOWNLOAD_DIR.iterdir() if d.is_dir() and web.ITEM_ID.match(d.name)]
+        dirs = [d for d in web.ITEMS_DIR.iterdir() if d.is_dir() and web.ITEM_ID.match(d.name)]
         dirs.sort(key=lambda d: d.stat().st_mtime, reverse=True)
         for d in dirs[: MAX_ITEMS * 2]:
             item = web._item_view(d)
