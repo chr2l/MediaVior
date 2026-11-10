@@ -28,6 +28,7 @@
     <header class="topbar">
       <div class="topbar__local">
         <button type="button" class="btn btn--quiet btn--sm" id="phoneBtn" title="Envoyer des liens depuis ton téléphone"><span data-icon="phone"></span>Téléphone</button>
+        <button type="button" class="btn btn--quiet btn--sm" id="extBtn" title="Envoyer des liens depuis ton navigateur"><span data-icon="puzzle"></span>Navigateur</button>
         <button type="button" class="btn btn--quiet btn--sm" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Ouvrir le dossier</button>
         <button type="button" class="btn-link" id="quitBtn">Quitter</button>
       </div>
@@ -48,7 +49,14 @@
         </div>
       </header>
 
-      {% if not local %}
+      {% if apercu %}
+      <!-- Aperçu (site public) : la présentation complète est sur la vitrine, à l'adresse / -->
+      <p class="apercu-bar">
+        <span>Ceci est un aperçu : rien ne se télécharge ici.</span>
+        <a href="/">← Présentation</a>
+        <button type="button" class="btn btn--ghost btn--sm" id="showcasePrompt"><span data-icon="download"></span>Avoir l'appli</button>
+      </p>
+      {% elif not local %}
       <!-- Vitrine : ce qu'est MediaVior et comment l'avoir chez soi (page web seulement) -->
       <section class="showcase" aria-label="Présentation de MediaVior">
         <p class="showcase__lead">Mets à l'abri les vidéos et les sons que tu aimes, avant qu'ils
@@ -68,7 +76,7 @@
           <li><span class="tint tint--son" data-icon="phone"></span><strong>Depuis ton téléphone</strong><small>Partage un lien, ton PC le télécharge, le fichier revient sur le téléphone.</small></li>
           <li><span class="tint tint--video" data-icon="lock"></span><strong>Chez toi, sans compte</strong><small>Rien ne passe par un serveur. Mises à jour automatiques. Code ouvert.</small></li>
         </ul>
-        <h2 class="showcase__try">{% if apercu %}Aperçu de l'appli{% else %}Ou directement ici{% endif %}</h2>
+        <h2 class="showcase__try">Ou directement ici</h2>
       </section>
       {% endif %}
 
@@ -377,6 +385,35 @@
   </div>
   <p class="hint">Ce PC doit rester allumé avec MediaVior ouvert. Les messages sont chiffrés de bout
     en bout, et les fichiers vont directement du PC au téléphone.</p>
+</dialog>
+
+<!-- Extension de navigateur, ajoutée sans le Chrome Web Store -->
+<dialog class="yt-dialog ext-dialog" id="extDialog" aria-labelledby="extTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="extTitle">Ton navigateur, relié à MediaVior</h2>
+      <p class="hint">Une petite extension pour Chrome, Brave, Edge, Opera ou Vivaldi : un clic sur son
+        icône envoie la page en cours à MediaVior, avec le choix du format. À faire une seule fois.</p>
+    </div>
+    <button type="button" class="icon-btn" id="extClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <ol class="ext-steps">
+    <li>
+      <span>Prépare le dossier de l'extension : il s'ouvre tout seul.</span>
+      <button type="button" class="btn btn--ghost btn--sm" id="extPrepare"><span data-icon="folder"></span>Préparer l'extension</button>
+      <span class="ext-steps__path" id="extPath"></span>
+    </li>
+    <li>
+      <span>Dans ton navigateur, colle cette adresse dans la barre d'adresse, puis appuie sur Entrée.</span>
+      <span class="ext-steps__copy"><code>chrome://extensions</code><button type="button" class="btn btn--quiet btn--sm" id="extCopy">Copier</button></span>
+    </li>
+    <li><span>Active le « Mode développeur » (un interrupteur en haut à droite de la page).</span></li>
+    <li><span>Clique sur « Charger l'extension non empaquetée » et choisis le dossier « MediaVior extension ».</span></li>
+    <li><span>Épingle MediaVior : clique sur la pièce de puzzle à droite de la barre d'adresse, puis sur la punaise.</span></li>
+  </ol>
+  <p class="hint">Laisse le dossier où il est : le navigateur s'en sert. MediaVior le met à jour
+    tout seul ; les nouveautés arrivent au prochain redémarrage du navigateur. Le navigateur peut
+    rappeler qu'une extension est en « mode développeur » : c'est normal, ce n'est pas un problème.</p>
 </dialog>
 {% endif %}
 

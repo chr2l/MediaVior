@@ -3,12 +3,13 @@
   --surface: #1B232E;
   --surface-raised: #212B38;
   --hairline: #3A4453;
-  --brass: #C89B4C;
-  --brass-bright: #D6AC5F;
-  --paper: #E9E4D8;
+  --brass: #3B8CC2;       /* bleu d'accent de l'appli (nom hérité de l'ancien thème doré) */
+  --brass-bright: #58A3D6;
+  --on-accent: #FFFFFF;
+  --paper: #E9ECF1;
   --paper-dim: #9BA3B0;
-  --teal: #4C9C8B;
-  --danger: #C9694F;
+  --teal: #57A98F;
+  --danger: #E0674F;
   --radius: 12px;
   --radius-sm: 8px;
   color-scheme: dark;
@@ -69,14 +70,14 @@ input:focus, select:focus { outline: 2px solid var(--brass); outline-offset: -1p
   flex: 1; border: 0; background: transparent; color: var(--paper-dim);
   padding: 6px; border-radius: 6px; font: inherit; cursor: pointer;
 }
-.mode-btn.is-active { background: var(--brass); color: var(--ink); font-weight: 600; }
+.mode-btn.is-active { background: var(--brass); color: var(--on-accent); font-weight: 600; }
 
 .btn {
   width: 100%;
   border: 0;
   border-radius: var(--radius-sm);
   background: var(--brass);
-  color: var(--ink);
+  color: var(--on-accent);
   font: inherit;
   font-weight: 600;
   padding: 10px;

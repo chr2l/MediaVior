@@ -130,6 +130,28 @@ window.I18N_EN = {
   "Copié ✓": "Copied ✓",
   "Prompt introuvable.": "Prompt not found.",
   "Télécharger pour {os}": "Download for {os}",
+  // Fenêtre « Navigateur » : extension ajoutée sans store
+  "Envoyer des liens depuis ton navigateur": "Send links from your browser",
+  "Navigateur": "Browser",
+  "Ton navigateur, relié à MediaVior": "Your browser, linked to MediaVior",
+  "Une petite extension pour Chrome, Brave, Edge, Opera ou Vivaldi : un clic sur son icône envoie la page en cours à MediaVior, avec le choix du format. À faire une seule fois.":
+    "A small extension for Chrome, Brave, Edge, Opera or Vivaldi: one click on its icon sends the current page to MediaVior, with a choice of format. You only do this once.",
+  "Prépare le dossier de l'extension : il s'ouvre tout seul.": "Prepare the extension folder: it opens by itself.",
+  "Préparer l'extension": "Prepare the extension",
+  "Dans ton navigateur, colle cette adresse dans la barre d'adresse, puis appuie sur Entrée.":
+    "In your browser, paste this address into the address bar, then press Enter.",
+  "Copier": "Copy",
+  "Active le « Mode développeur » (un interrupteur en haut à droite de la page).":
+    "Turn on “Developer mode” (a switch at the top right of the page).",
+  "Clique sur « Charger l'extension non empaquetée » et choisis le dossier « MediaVior extension ».":
+    "Click “Load unpacked” and pick the “MediaVior extension” folder.",
+  "Épingle MediaVior : clique sur la pièce de puzzle à droite de la barre d'adresse, puis sur la punaise.":
+    "Pin MediaVior: click the puzzle piece to the right of the address bar, then the pin.",
+  "Laisse le dossier où il est : le navigateur s'en sert. MediaVior le met à jour tout seul ; les nouveautés arrivent au prochain redémarrage du navigateur. Le navigateur peut rappeler qu'une extension est en « mode développeur » : c'est normal, ce n'est pas un problème.":
+    "Leave the folder where it is: the browser uses it. MediaVior keeps it up to date by itself; new features arrive the next time the browser restarts. The browser may remind you that an extension is in “developer mode”: that's normal and not a problem.",
+  "Dossier prêt : {folder}": "Folder ready: {folder}",
+  "Copie impossible : sélectionne l'adresse et copie-la à la main.": "Couldn't copy: select the address and copy it by hand.",
+  "Extension introuvable dans cette version.": "Extension not found in this version.",
   "Ton téléphone, relié à ce PC": "Your phone, linked to this PC",
   "Envoie un lien depuis ton téléphone, même en 4G : ce PC le télécharge, puis tu récupères le fichier sur le téléphone. Pas de compte, à faire une seule fois.":
     "Send a link from your phone, even on mobile data: this PC downloads it, then you get the file on your phone. No account, and you only do this once.",
@@ -387,6 +409,54 @@ window.I18N_EN = {
   "Pas de connexion au relais (Internet coupé ?).": "No connection to the relay (Internet down?).",
   "Il manque un module : relance MediaVior pour finir sa mise à jour.": "A module is missing: restart MediaVior to finish its update.",
 
+  // ----- Vitrine (site public, app/templates/vitrine.html) -----
+  "Ceci est un aperçu : rien ne se télécharge ici.": "This is a preview: nothing is downloaded here.",
+  "← Présentation": "← About",
+  "Avoir l'appli": "Get the app",
+  "MediaVior · ton propre téléchargeur de vidéos et de sons": "MediaVior · your own video and audio downloader",
+  "Questions": "Questions",
+  "L'appli MediaVior : coller un lien, choisir la qualité, retrouver ses fichiers dans le coffre.": "The MediaVior app: paste a link, pick the quality, find your files in the vault.",
+  "C'est vraiment gratuit ?": "Is it really free?",
+  "Où vont mes fichiers ?": "Where do my files go?",
+  "Et si YouTube change quelque chose ?": "What if YouTube changes something?",
+  "Est-ce que j'ai le droit ?": "Am I allowed to?",
+  "Logiciel libre (AGPL) · yt-dlp & ffmpeg": "Free software (AGPL) · yt-dlp & ffmpeg",
+  "Ton téléchargeur, chez toi.": "Your downloader, at home.",
+  "Vidéos et sons de YouTube, SoundCloud, Bandcamp et 1 000 autres sites. Sur ton ordinateur, pas sur un site partagé. Gratuit, sans compte, sans pub.": "Videos and audio from YouTube, SoundCloud, Bandcamp and 1,000 other sites. On your computer, not on a shared website. Free, no account, no ads.",
+  "Essayer l'aperçu dans le navigateur": "Try the preview in your browser",
+  "Sur ordinateur et sur téléphone": "On computer and phone",
+  "Sur ton ordinateur": "On your computer",
+  "Colle un lien, plusieurs liens ou une liste de titres. MP3 ou MP4, la qualité que tu veux, rangé dans Téléchargements.": "Paste a link, several links or a list of song titles. MP3 or MP4, the quality you want, saved to Downloads.",
+  "Lots en zip": "Batches as zip",
+  "Vise un QR code une fois. Ensuite, partage un lien depuis YouTube : ton ordinateur le télécharge et te renvoie le fichier, même en 4G.": "Scan a QR code once. Then share a link from YouTube: your computer downloads it and sends the file back, even on mobile data.",
+  "Chiffré de bout en bout": "End-to-end encrypted",
+  "Sans compte": "No account",
+  "Pourquoi chez toi ?": "Why at home?",
+  "Les sites de téléchargement font passer tout le monde par le même serveur : il sature, se fait bloquer et se paie avec de la pub. Le tien ne sert qu'à toi, et se met à jour tout seul.": "Download websites push everyone through the same server: it gets overloaded, blocked, and paid for with ads. Yours serves only you, and updates itself.",
+  "Télécharger MediaVior": "Download MediaVior",
+  "Windows 10 et 11": "Windows 10 and 11",
+  "Mac avec puce Apple": "Mac with Apple chip",
+  "Linux (AppImage)": "Linux (AppImage)",
+  "Mac Intel, ou installation par une IA ou Pinokio": "Intel Mac, or install with an AI or Pinokio",
+  "Au premier lancement, Windows ou le Mac peuvent afficher un avertissement :": "On first launch, Windows or the Mac may show a warning:",
+  "comment l'ouvrir quand même": "how to open it anyway",
+  "Oui. C'est un logiciel libre (licence AGPL) : pas de version payante, pas de pub, pas de compte.": "Yes. It's free software (AGPL licence): no paid version, no ads, no account.",
+  "Dans le dossier Téléchargements de ton ordinateur, sous MediaChest. Ils ne passent par aucun serveur.": "In your computer's Downloads folder, under MediaChest. They never go through a server.",
+  "MediaVior s'appuie sur yt-dlp, mis à jour très souvent. L'appli récupère la dernière version toute seule.": "MediaVior is built on yt-dlp, which is updated very often. The app fetches the latest version by itself.",
+  "Pour un usage personnel, avec des contenus que tu as le droit de garder. Respecte les droits d'auteur et les règles des sites.": "For personal use, with content you're allowed to keep. Respect copyright and each site's rules.",
+  "Installer avec une IA": "Install with an AI",
+
+  "Sur ordinateur, téléphone et navigateur": "On computer, phone and browser",
+  "Dans ton navigateur": "In your browser",
+  "Un clic sur l'icône MediaVior pendant une vidéo, et elle part dans ton coffre. L'extension est fournie avec l'appli, sans Chrome Web Store.": "One click on the MediaVior icon while watching a video, and it goes to your vault. The extension comes with the app, no Chrome Web Store.",
+  "Chrome, Brave, Edge, Opera, Vivaldi": "Chrome, Brave, Edge, Opera, Vivaldi",
+  "Extension de navigateur seule (.zip)": "Browser extension only (.zip)",
+  "Pourquoi l'extension n'est pas sur le Chrome Web Store ?": "Why isn't the extension on the Chrome Web Store?",
+  "Le store demande un compte payant et une vérification à chaque mise à jour. L'appli prépare donc l'extension et la tient à jour : tu l'ajoutes une fois en « mode développeur », le mode prévu par Chrome pour ça.": "The store requires a paid account and a review for every update. So the app prepares the extension and keeps it up to date: you add it once in “developer mode”, the mode Chrome provides for this.",
+
+  "Téléphone (Android, iPhone), à relier à ton ordinateur": "Phone (Android, iPhone), linked to your computer",
+  "Ouvrir": "Open",
+
   // ----- Mentions légales -----
   "Mentions légales · MediaVior": "Legal notice · MediaVior",
   "← Retour à MediaVior": "← Back to MediaVior",
@@ -491,6 +561,7 @@ window.I18N_EN_PATTERNS = [
   [/^La conversion a échoué : (.*)$/, "Conversion failed: $1"],
   [/^Le montage a échoué : (.*)$/, "Editing failed: $1"],
   [/^Mise à jour impossible : (.*)$/, "Update failed: $1"],
+  [/^Copie impossible : (.*)$/, "Copy failed: $1"],
   [/^Relais : erreur (\d+)\.$/, "Relay: error $1."],
   [/^yt-dlp (\S+) disponible : redémarrage pour mise à jour$/, "yt-dlp $1 available: restarting to update"],
 ];

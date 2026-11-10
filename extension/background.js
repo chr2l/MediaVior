@@ -1,15 +1,15 @@
 // Clic droit sur une page ou un lien : « Envoyer à MediaVior… »
 // Le lien est mis de côté, puis la fenêtre de l'extension s'ouvre dessus.
+// L'appli MediaVior de ce PC est trouvée toute seule : rien à régler après l'ajout.
 
 const MENU_ID = "lecoffre-send";
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: MENU_ID,
     title: chrome.i18n.getMessage("menuSend"),
     contexts: ["page", "link", "video", "audio"],
   });
-  if (details.reason === "install") chrome.runtime.openOptionsPage();
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {

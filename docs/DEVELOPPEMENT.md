@@ -23,8 +23,9 @@ Deux façons de lancer le même serveur :
   sites).
 - **Version serveur** : `Dockerfile` + `entrypoint.sh` lancent `uvicorn main:app` sur le port 8000
   du conteneur.
-  Avec `MEDIAVIOR_APERCU=1`, la page web devient une vitrine : les visiteurs voient l'interface,
-  mais les actions proposent de télécharger l'appli et le coffre paraît vide. Seule une requête
+  Avec `MEDIAVIOR_APERCU=1`, le site devient une vitrine : les visiteurs arrivent sur
+  `vitrine.html` (présentation, boutons d'installation, questions), et l'interface reste visible
+  en aperçu sur `/apercu` : les actions proposent de télécharger l'appli et le coffre paraît vide. Seule une requête
   avec `X-Elie-Role: admin` garde l'outil complet. À n'activer que derrière la porte d'elie.place,
   qui pose et filtre cet en-tête.
 
@@ -36,6 +37,7 @@ Deux façons de lancer le même serveur :
 | `app/templates/index.html` | La page principale : Télécharger (trois façons : un lien, plusieurs liens en zip, liste de titres) et le panneau de droite (En cours, Bibliothèque) |
 | `app/templates/editor.html` | L'éditeur (coupe, fondus, volume) |
 | `app/templates/legal.html` | Mentions légales, avec sommaire latéral |
+| `app/templates/vitrine.html`, `app/static/vitrine.css`, `app/static/vitrine.js` | Vitrine du site public (page d'accueil des visiteurs, aussi visible sur `/vitrine`). Captures de l'appli dans `app/static/vitrine/` |
 | `app/static/i18n.js`, `app/static/i18n-en.js` | Langue de l'interface (français ou anglais) et traduction anglaise : voir « Traduction » plus bas |
 | `app/static/common.js` | Outils partagés : `api()`, `h()` (création d'éléments sans `innerHTML`), icônes |
 | `app/static/shell.js` | Navigation (panneau de droite sur ordinateur, onglets du bas sur téléphone), pastilles, notifications |
@@ -82,6 +84,22 @@ L'interface s'affiche en français ou en anglais : la langue du navigateur ou du
 Même moteur, copié, pour la page du téléphone (`relais/public/i18n*.js`) et l'extension
 (`extension/i18n*.js`, plus `extension/_locales/` pour le nom et le menu clic droit). Le prompt
 d'installation existe en deux versions : `PROMPT.md` et `PROMPT.en.md`, à garder pareilles.
+
+## Vitrine (site public)
+
+`app/templates/vitrine.html` est la page d'accueil des visiteurs. Elle reste **courte**, façon page
+produit : une phrase, un bouton de téléchargement, une grande capture de l'appli, deux cartes
+(ordinateur, téléphone), une ligne « pourquoi chez toi », les liens de téléchargement en lignes,
+quatre questions. Pas de longues listes d'arguments ni de grilles d'icônes.
+
+Sites de référence pour la présenter simplement :
+
+- [Google Antigravity](https://antigravity.google/) : une phrase en titre, les produits en
+  quelques cartes courtes avec une image chacune.
+- [Claude, page Télécharger](https://claude.com/download) : un titre, un bouton, puis une ligne
+  par système avec son bouton, et une FAQ courte.
+
+La capture vient de l'appli en aperçu, remplie de médias d'exemple (`app/static/vitrine/`).
 
 ## Lancer en développement
 

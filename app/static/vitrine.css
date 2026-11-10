@@ -1,0 +1,134 @@
+/* Page vitrine (site public). Courte et sobre, façon page produit :
+   une phrase, un bouton, l'appli en grand, puis le reste en bref.
+   Reprend les couleurs et les boutons de style.css. */
+
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body.vitrine { display: block; padding: 0 0 40px; background: var(--ink); }
+.vitrine main { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+.vitrine h1, .vitrine h2 { font-family: 'Inter', -apple-system, sans-serif; }
+
+/* ---------- Barre du haut ---------- */
+
+.v-top {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 24px;
+  background: color-mix(in srgb, var(--ink) 90%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.v-top__brand {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-weight: 600; font-size: 1rem; color: var(--paper); text-decoration: none;
+}
+.v-top__brand img { border-radius: 5px; }
+.v-top__end { display: flex; align-items: center; gap: 16px; }
+.v-top__dl {
+  padding: 7px 14px; border-radius: 999px;
+  background: var(--paper); color: var(--ink);
+  font-size: 0.86rem; font-weight: 600; text-decoration: none;
+}
+.v-top__dl:hover { background: var(--brass); color: var(--on-accent); }
+
+/* ---------- Accroche ---------- */
+
+.v-hero { padding: 72px 0 0; text-align: center; }
+.v-hero__title {
+  margin: 0;
+  font-size: clamp(2.3rem, 6vw, 4rem); font-weight: 700; letter-spacing: -0.035em; line-height: 1.02;
+}
+.v-hero__lead {
+  margin: 18px auto 0; max-width: 46ch;
+  font-size: 1.1rem; line-height: 1.55; color: var(--paper-dim);
+}
+.v-hero__dl {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+  max-width: 760px; margin: 28px auto 0;
+}
+.v-hero__dl .btn { width: 100%; margin-top: 0; border-radius: 999px; padding: 13px 18px; font-size: 0.95rem; }
+.os-icon { width: 18px; height: 18px; flex: none; }
+.v-hero__alt { margin: 16px 0 0; font-size: 0.88rem; }
+.v-hero__alt a { color: var(--paper-dim); }
+.v-hero__alt a:hover { color: var(--brass); }
+
+.v-shot { margin: 48px 0 0; }
+.v-shot img {
+  display: block; width: 100%; height: auto;
+  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- Ordinateur / téléphone ---------- */
+
+.v-duo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.v-tile {
+  padding: 24px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--hairline-soft);
+}
+.v-tile h2 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; }
+.v-tile p { margin: 10px 0 0; line-height: 1.55; color: var(--paper-dim); }
+.v-tile__tags { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.v-tile__tags li {
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--hairline); font-size: 0.8rem; color: var(--paper-dim);
+}
+
+/* ---------- Pourquoi ---------- */
+
+.v-why { margin: 72px auto 0; max-width: 680px; text-align: center; }
+.v-why p { margin: 0; font-size: 1.15rem; line-height: 1.6; color: var(--paper-dim); }
+.v-why strong { color: var(--paper); font-weight: 600; }
+
+/* ---------- Téléchargement ---------- */
+
+.v-get, .v-faq { max-width: 680px; margin: 72px auto 0; }
+.v-get h2, .v-faq h2 { margin: 0 0 14px; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.015em; }
+.v-rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
+.v-rows li {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 0; border-bottom: 1px solid var(--hairline);
+}
+.v-rows .btn { margin-top: 0; flex: none; }
+.v-note { margin: 12px 0 0; font-size: 0.86rem; line-height: 1.5; color: var(--paper-dim); }
+.v-note a { color: var(--brass); }
+
+/* ---------- Questions ---------- */
+
+.v-faq details { border-bottom: 1px solid var(--hairline); }
+.v-faq details:first-of-type { border-top: 1px solid var(--hairline); }
+.v-faq summary {
+  cursor: pointer; list-style: none;
+  padding: 14px 0; font-weight: 500;
+  display: flex; justify-content: space-between; gap: 12px;
+}
+.v-faq summary::-webkit-details-marker { display: none; }
+.v-faq summary::after { content: "+"; color: var(--paper-dim); }
+.v-faq details[open] summary::after { content: "−"; }
+.v-faq p { margin: 0; padding: 0 0 14px; line-height: 1.6; color: var(--paper-dim); }
+.v-faq a { color: var(--brass); }
+
+.vitrine .app-foot { padding: 0 16px; }
+
+/* ---------- Petits écrans ---------- */
+
+@media (max-width: 760px) {
+  .vitrine main { padding: 0 16px; }
+  .v-top { padding: 10px 16px; }
+  .v-hero { padding-top: 44px; }
+  .v-hero__lead { font-size: 1rem; }
+  .v-hero__dl { grid-template-columns: 1fr 1fr; max-width: 420px; }
+  .v-duo { grid-template-columns: 1fr; }
+  .v-tile { padding: 22px; }
+  .v-why, .v-get, .v-faq { margin-top: 56px; }
+  .v-why p { font-size: 1.02rem; }
+}
+
+@media (max-width: 960px) and (min-width: 761px) {
+  .v-duo { grid-template-columns: 1fr 1fr; }
+  .v-duo .v-tile:last-child { grid-column: 1 / -1; }
+}
+.v-rows__os { display: inline-flex; align-items: center; gap: 10px; }
+.v-rows__os .os-icon { color: var(--paper-dim); }

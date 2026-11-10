@@ -163,6 +163,53 @@ if (phoneDialog) {
 }
 
 // ---------------------------------------------------------------------------
+// Extension de navigateur, sans le Chrome Web Store : voir /api/local/extension
+// ---------------------------------------------------------------------------
+
+const extDialog = document.getElementById("extDialog");
+if (extDialog) {
+  const pathEl = document.getElementById("extPath");
+  const prepareBtn = document.getElementById("extPrepare");
+  const copyBtn = document.getElementById("extCopy");
+  const showPath = (text, kind = "") => {
+    pathEl.textContent = text;
+    pathEl.className = "ext-steps__path" + (kind ? " is-" + kind : "");
+  };
+
+  document.getElementById("extClose").append(icon("close"));
+  document.getElementById("extClose").addEventListener("click", () => extDialog.close());
+  extDialog.addEventListener("click", (e) => e.target === extDialog && extDialog.close());
+  document.getElementById("extBtn").addEventListener("click", async () => {
+    extDialog.showModal();
+    try {
+      const info = await api("/api/local/extension");
+      if (info.ready) showPath(t("Dossier prêt : {folder}", { folder: info.folder }), "ok");
+    } catch (e) {
+      /* pas grave : le bouton « Préparer » refera la demande */
+    }
+  });
+  prepareBtn.addEventListener("click", async () => {
+    prepareBtn.disabled = true;
+    try {
+      const { folder } = await api("/api/local/extension", { method: "POST" });
+      showPath(t("Dossier prêt : {folder}", { folder }), "ok");
+    } catch (e) {
+      showPath(e.message, "error");
+    }
+    prepareBtn.disabled = false;
+  });
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText("chrome://extensions");
+      copyBtn.textContent = t("Copié ✓");
+      setTimeout(() => (copyBtn.textContent = t("Copier")), 2000);
+    } catch (e) {
+      showToast(t("Copie impossible : sélectionne l'adresse et copie-la à la main."));
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Nouvelle version de l'appli prête à installer (.exe, .dmg, AppImage)
 // ---------------------------------------------------------------------------
 

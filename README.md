@@ -31,7 +31,7 @@ charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp), dans la qualité et le fo
 - **Panneau à droite** : ce qui est **En cours**, et la **Bibliothèque** de tout ce que tu as
   téléchargé (format, durée, retélécharger, enlever), avec recherche, sélection multiple et un **éditeur** (coupe, fondus, volume,
   extraction de l'audio).
-- **Extension Brave/Chrome** pour envoyer la page en cours d'un clic.
+- **Extension Chrome/Brave/Edge** fournie avec l'appli (sans Chrome Web Store) pour envoyer la page en cours d'un clic.
 - **Ton téléphone relié au PC** (comme WhatsApp Web) : scanne un QR code une fois, puis envoie des
   liens depuis le téléphone et récupère les fichiers, même en 4G.
 - **Français et anglais** : l'appli suit la langue de l'ordinateur ; le lien « English / Français »
@@ -103,7 +103,7 @@ voir [docs/SERVEUR.md](docs/SERVEUR.md).
 | [`mediavior.py`](mediavior.py) | Le lanceur de la version PC : fenêtre, raccourci, mises à jour |
 | [`PROMPT.md`](PROMPT.md), [`PROMPT.en.md`](PROMPT.en.md) | Le prompt d'installation à coller dans une IA (français, anglais) |
 | [`pinokio.js`](pinokio.js), `install.js`, `start.js`, `update.js` | Les scripts Pinokio |
-| [`extension/`](extension) | L'extension Brave/Chrome |
+| [`extension/`](extension) | L'extension de navigateur (copiée par l'appli dans Documents/MediaVior extension) |
 | [`app/jumelage.py`](app/jumelage.py), [`relais/`](relais) | Le téléphone relié : côté PC, et le relais (Cloudflare Worker + page du téléphone) |
 | [`packaging/`](packaging), `.github/workflows/installeurs.yml` | La construction des installeurs Windows, Mac et Linux |
 | `Dockerfile`, `docker-compose.yml`, `entrypoint.sh` | La version serveur |

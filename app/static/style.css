@@ -1816,6 +1816,21 @@ input[type="range"] {
   .phone-dialog__qr { width: 100%; height: auto; aspect-ratio: 1; }
 }
 
+/* ---------- Fenêtre « Navigateur » : extension ajoutée sans store (version PC) ---------- */
+
+.ext-steps { margin: 16px 0 12px; padding-left: 22px; line-height: 1.55; font-size: 0.9rem; }
+.ext-steps li { margin-bottom: 10px; }
+.ext-steps li > span:first-child { display: block; }
+.ext-steps .btn { margin-top: 6px; width: auto; }
+.ext-steps__path { display: block; margin-top: 4px; font-size: 0.8rem; color: var(--teal); overflow-wrap: anywhere; }
+.ext-steps__path.is-error { color: var(--danger); }
+.ext-steps__copy { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.ext-steps__copy code {
+  padding: 4px 8px; border-radius: 6px; background: var(--surface-raised);
+  border: 1px solid var(--hairline); font-size: 0.85rem; user-select: all;
+}
+.ext-steps__copy .btn { margin-top: 0; }
+
 /* Boutons de téléchargement de l'appli PC (fenêtre « Avoir MediaVior sur ton PC ») */
 .dl-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .dl-buttons .btn.is-mine { background: var(--brass); color: var(--on-accent); border-color: var(--brass); }
@@ -1879,3 +1894,16 @@ input[type="range"] {
 .field-head .field-label { margin-bottom: 0; }
 .field-head .hint { margin: 0; }
 #batch .option-hint { max-width: none; }
+
+/* Aperçu (site public) : bandeau qui renvoie vers la vitrine */
+.apercu-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  margin: -4px 0 24px; padding: 10px 14px;
+  border: 1px solid var(--brass-dim); border-radius: var(--radius);
+  background: color-mix(in srgb, var(--brass) 8%, transparent);
+  font-size: 0.88rem; color: var(--paper);
+}
+.apercu-bar span { flex: 1 1 auto; }
+.apercu-bar a { color: var(--brass); }
+.apercu-bar .btn { margin-top: 0; }
+.apercu-bar .btn .icon { width: 15px; height: 15px; }

@@ -7,7 +7,7 @@ name: Installeurs (Windows, Mac, Linux)
 on:
   push:
     branches: [main]
-    paths-ignore: ["docs/**", "relais/**", "*.md", "extension/**"]
+    paths-ignore: ["docs/**", "relais/**", "*.md"]
   workflow_dispatch:
 
 permissions:
@@ -104,10 +104,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: extension
       - uses: actions/download-artifact@v4
         with:
           path: out
           merge-multiple: true
+      # L'extension seule, pour qui la veut sans l'appli (elle est aussi incluse dans l'appli)
+      - name: Zip de l'extension
+        run: cd extension && zip -r -q ../out/MediaVior-extension.zip .
       - name: Publier la version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
