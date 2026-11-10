@@ -141,3 +141,11 @@ input[type="url"]:focus { outline: none; border-color: var(--accent); }
   background: var(--raised); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   font-size: 0.92rem;
 }
+
+/* Petit dessin ASCII du coffre à côté du nom (le [M] est réservé à l'icône de l'onglet) */
+.ascii-logo {
+  margin: 0; flex: none;
+  font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 5.6px; font-weight: 700; line-height: 1.1; letter-spacing: 0;
+  color: var(--accent, #3B8CC2); white-space: pre; user-select: none;
+}

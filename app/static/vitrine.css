@@ -21,7 +21,7 @@ body.vitrine { display: block; padding: 0 0 40px; background: var(--ink); }
   display: inline-flex; align-items: center; gap: 9px;
   font-weight: 600; font-size: 1rem; color: var(--paper); text-decoration: none;
 }
-.v-top__brand img { border-radius: 5px; }
+.v-top__brand { gap: 12px; }
 .v-top__end { display: flex; align-items: center; gap: 16px; }
 .v-top__dl {
   padding: 7px 14px; border-radius: 999px;
@@ -132,3 +132,11 @@ body.vitrine { display: block; padding: 0 0 40px; background: var(--ink); }
 }
 .v-rows__os { display: inline-flex; align-items: center; gap: 10px; }
 .v-rows__os .os-icon { color: var(--paper-dim); }
+
+/* Petit dessin ASCII du coffre à côté du nom (le [M] est réservé à l'icône de l'onglet) */
+.ascii-logo {
+  margin: 0; flex: none;
+  font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 5.6px; font-weight: 700; line-height: 1.1; letter-spacing: 0;
+  color: var(--brass, #3B8CC2); white-space: pre; user-select: none;
+}
