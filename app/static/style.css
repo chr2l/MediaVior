@@ -92,8 +92,10 @@ body.shell {
 
 .main {
   margin-right: var(--side-w);
-  padding: max(28px, env(safe-area-inset-top)) 48px 64px;
+  padding: max(28px, env(safe-area-inset-top)) 48px 24px;
 }
+/* Pied de page moins haut : « Plusieurs liens » tient sans barre de défilement (écran 1080p à 125 %) */
+.main > .app-foot:not(.app-foot--small) { margin-top: 32px; }
 .main > .view, .topbar {
   max-width: 720px;
   margin: 0 auto;
