@@ -24,18 +24,6 @@
 
   <main class="main">
 
-    {% if local %}
-    <!-- En-tête : boutons de la version PC -->
-    <header class="topbar">
-      <div class="topbar__local">
-        <button type="button" class="btn btn--quiet btn--sm" id="phoneBtn" title="Envoyer des liens depuis ton téléphone"><span data-icon="phone"></span>Téléphone</button>
-        <button type="button" class="btn btn--quiet btn--sm" id="extBtn" title="Envoyer des liens depuis ton navigateur"><span data-icon="puzzle"></span>Navigateur</button>
-        <button type="button" class="btn btn--quiet btn--sm" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Ouvrir le dossier</button>
-        <button type="button" class="btn-link" id="quitBtn">Quitter</button>
-      </div>
-    </header>
-    {% endif %}
-
     <!-- ===== Télécharger : trois façons ===== -->
     <section class="view" data-view="telecharger" aria-labelledby="viewTelecharger">
       <header class="hero">
@@ -192,7 +180,7 @@
       <a href="{{ github }}" target="_blank" rel="noopener">Code source</a>
       <button type="button" class="btn-link" data-lang-switch></button>
     </footer>
-    <p class="app-foot app-foot--small">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg · <span id="updated" data-ts="{{ updated }}"></span></p>
+    <p class="app-foot app-foot--small">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg · {% if version %}<span id="appVersion">Version {{ version }}</span>{% else %}<span id="updated" data-ts="{{ updated }}"></span>{% endif %}</p>
   </main>
 
   <!-- ===== Panneau fixe à droite : En cours / Bibliothèque ===== -->
@@ -240,6 +228,19 @@
         <button type="button" class="btn btn--danger btn--sm" id="selDelete"></button>
       </div>
     </section>
+
+    {% if local %}
+    <!-- Boutons de la version PC, en bas du panneau -->
+    <footer class="side__foot">
+      <div class="side__tools">
+        <button type="button" class="side-tool" id="phoneBtn" title="Envoyer des liens depuis ton téléphone"><span data-icon="phone"></span>Téléphone</button>
+        <button type="button" class="side-tool" id="extBtn" title="Envoyer des liens depuis ton navigateur"><span data-icon="puzzle"></span>Navigateur</button>
+        <button type="button" class="side-tool" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Dossier</button>
+        <button type="button" class="side-tool" id="settingsBtn"><span data-icon="settings"></span>Réglages</button>
+      </div>
+      <button type="button" class="btn-link side__quit" id="quitBtn">Quitter MediaVior</button>
+    </footer>
+    {% endif %}
   </aside>
 
   <!-- Téléphone : onglets en bas -->
@@ -389,15 +390,46 @@
 </dialog>
 
 <!-- Extension de navigateur, ajoutée sans le Chrome Web Store -->
+<dialog class="yt-dialog settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="settingsTitle">Réglages</h2>
+    </div>
+    <button type="button" class="icon-btn" id="settingsClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <section class="settings-row">
+    <h3 class="field-label">Dossier des médias</h3>
+    <p class="hint">Là où arrivent tes vidéos et tes sons une fois téléchargés.</p>
+    <code class="settings-path" id="settingsFolder"></code>
+    <div class="settings-actions">
+      <button type="button" class="btn btn--ghost btn--sm" id="settingsPick"><span data-icon="folder"></span>Choisir un autre dossier</button>
+      <label class="settings-check"><input type="checkbox" id="settingsMove" checked> Y déplacer aussi les médias déjà rangés</label>
+    </div>
+  </section>
+  <section class="settings-row" id="settingsAutostartRow">
+    <label class="settings-check settings-check--big"><input type="checkbox" id="settingsAutostart"> Lancer MediaVior au démarrage de l'ordinateur</label>
+    <p class="hint">Il démarre en arrière-plan, sans ouvrir de fenêtre : le téléphone et l'extension du navigateur marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.</p>
+  </section>
+  <p class="hint settings-version" id="settingsVersion"></p>
+</dialog>
+
 <dialog class="yt-dialog ext-dialog" id="extDialog" aria-labelledby="extTitle">
   <div class="yt-dialog__head">
     <div class="yt-dialog__heading">
       <h2 class="panel__title" id="extTitle">Ton navigateur, relié à MediaVior</h2>
-      <p class="hint">Une petite extension pour Chrome, Brave, Edge, Opera ou Vivaldi : un clic sur son
-        icône envoie la page en cours à MediaVior, avec le choix du format. À faire une seule fois.</p>
+      <p class="hint">Une petite extension pour Chrome, Brave, Edge, Opera, Vivaldi ou Firefox : un clic
+        sur son icône envoie la page en cours à MediaVior, avec le choix du format. Sur YouTube,
+        SoundCloud, Vimeo, Bandcamp, Dailymotion, Spotify et Deezer, un bouton MediaVior apparaît
+        directement sur la page. À faire une seule fois.</p>
     </div>
     <button type="button" class="icon-btn" id="extClose" aria-label="Fermer" title="Fermer"></button>
   </div>
+  <div class="ext-firefox">
+    <p><strong>Sur Firefox</strong>, un clic suffit, sans mode développeur. Accepte ensuite les deux
+      demandes de Firefox ; l'extension se met à jour toute seule.</p>
+    <a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Firefox.xpi" target="_blank" rel="noopener"><span data-icon="download"></span>Installer pour Firefox</a>
+  </div>
+  <p class="ext-subtitle">Chrome, Brave, Edge, Opera, Vivaldi</p>
   <ol class="ext-steps">
     <li>
       <span>Prépare le dossier de l'extension : il s'ouvre tout seul.</span>

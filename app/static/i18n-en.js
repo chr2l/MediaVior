@@ -134,8 +134,12 @@ window.I18N_EN = {
   "Envoyer des liens depuis ton navigateur": "Send links from your browser",
   "Navigateur": "Browser",
   "Ton navigateur, relié à MediaVior": "Your browser, linked to MediaVior",
-  "Une petite extension pour Chrome, Brave, Edge, Opera ou Vivaldi : un clic sur son icône envoie la page en cours à MediaVior, avec le choix du format. À faire une seule fois.":
-    "A small extension for Chrome, Brave, Edge, Opera or Vivaldi: one click on its icon sends the current page to MediaVior, with a choice of format. You only do this once.",
+  "Une petite extension pour Chrome, Brave, Edge, Opera, Vivaldi ou Firefox : un clic sur son icône envoie la page en cours à MediaVior, avec le choix du format. Sur YouTube, SoundCloud, Vimeo, Bandcamp, Dailymotion, Spotify et Deezer, un bouton MediaVior apparaît directement sur la page. À faire une seule fois.":
+    "A small extension for Chrome, Brave, Edge, Opera, Vivaldi or Firefox: one click on its icon sends the current page to MediaVior, with a choice of format. On YouTube, SoundCloud, Vimeo, Bandcamp, Dailymotion, Spotify and Deezer, a MediaVior button shows up right on the page. You only do this once.",
+  "Sur Firefox": "On Firefox",
+  ", un clic suffit, sans mode développeur. Accepte ensuite les deux demandes de Firefox ; l'extension se met à jour toute seule.":
+    ", one click is enough, no developer mode. Then accept Firefox's two prompts; the extension updates by itself.",
+  "Installer pour Firefox": "Install for Firefox",
   "Prépare le dossier de l'extension : il s'ouvre tout seul.": "Prepare the extension folder: it opens by itself.",
   "Préparer l'extension": "Prepare the extension",
   "Dans ton navigateur, colle cette adresse dans la barre d'adresse, puis appuie sur Entrée.":
@@ -448,11 +452,15 @@ window.I18N_EN = {
 
   "Sur ordinateur, téléphone et navigateur": "On computer, phone and browser",
   "Dans ton navigateur": "In your browser",
-  "Un clic sur l'icône MediaVior pendant une vidéo, et elle part dans ton coffre. L'extension est fournie avec l'appli, sans Chrome Web Store.": "One click on the MediaVior icon while watching a video, and it goes to your vault. The extension comes with the app, no Chrome Web Store.",
   "Chrome, Brave, Edge, Opera, Vivaldi": "Chrome, Brave, Edge, Opera, Vivaldi",
   "Extension de navigateur seule (.zip)": "Browser extension only (.zip)",
   "Pourquoi l'extension n'est pas sur le Chrome Web Store ?": "Why isn't the extension on the Chrome Web Store?",
-  "Le store demande un compte payant et une vérification à chaque mise à jour. L'appli prépare donc l'extension et la tient à jour : tu l'ajoutes une fois en « mode développeur », le mode prévu par Chrome pour ça.": "The store requires a paid account and a review for every update. So the app prepares the extension and keeps it up to date: you add it once in “developer mode”, the mode Chrome provides for this.",
+  "Le store demande un compte payant et une vérification à chaque mise à jour. L'appli prépare donc l'extension et la tient à jour : tu l'ajoutes une fois en « mode développeur », le mode prévu par Chrome pour ça. Sur Firefox, elle est signée par Mozilla et s'installe en un clic.": "The store requires a paid account and a review for every update. So the app prepares the extension and keeps it up to date: you add it once in “developer mode”, the mode Chrome provides for this. On Firefox, it's signed by Mozilla and installs in one click.",
+  "Un bouton MediaVior directement sur YouTube, SoundCloud, Vimeo, Bandcamp, Dailymotion, et même Spotify et Deezer : choisis le format, c'est dans ton coffre. Sans Chrome Web Store.":
+    "A MediaVior button right on YouTube, SoundCloud, Vimeo, Bandcamp, Dailymotion, and even Spotify and Deezer: pick the format and it's in your vault. No Chrome Web Store.",
+  "Firefox": "Firefox",
+  "Extension pour Firefox (un clic pour l'installer)": "Firefox extension (one click to install)",
+  "Installer": "Install",
 
   "Téléphone (Android, iPhone), à relier à ton ordinateur": "Phone (Android, iPhone), linked to your computer",
   "Ouvrir": "Open",
@@ -548,6 +556,25 @@ window.I18N_EN = {
   "Cette page peut évoluer avec l'appli. La version à jour est toujours celle du dépôt GitHub, avec l'historique de chaque changement.":
     "This page may change along with the app. The up-to-date version is always the one in the GitHub repository, with the history of every change. The French version is the reference.",
   "Dernière mise à jour : 8 novembre 2026.": "Last updated: November 8, 2026.",
+  // Réglages (version PC)
+  "Dossier": "Folder",
+  "Quitter MediaVior": "Quit MediaVior",
+  "Réglages": "Settings",
+  "Dossier des médias": "Media folder",
+  "Là où arrivent tes vidéos et tes sons une fois téléchargés.": "Where your videos and sounds land once downloaded.",
+  "Choisir un autre dossier": "Choose another folder",
+  "Y déplacer aussi les médias déjà rangés": "Also move the media you already saved",
+  "Lancer MediaVior au démarrage de l'ordinateur": "Start MediaVior when the computer starts",
+  "Il démarre en arrière-plan, sans ouvrir de fenêtre : le téléphone et l'extension du navigateur marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.": "It starts in the background, without opening a window: the phone and the browser extension work right away. Double-click the icon to show the app.",
+  "MediaVior version {v}": "MediaVior version {v}",
+  "Chemin complet du dossier où ranger les médias :": "Full path of the folder where media should go:",
+  "Les prochains médias arriveront dans ce dossier.": "New media will land in this folder.",
+  "Le lancement au démarrage n'est pas possible ici.": "Starting with the computer isn't possible here.",
+  "Donne le chemin complet du dossier.": "Give the full path of the folder.",
+  "Ce dossier est introuvable.": "This folder can't be found.",
+  "Choisis un autre dossier.": "Choose another folder.",
+  "Attends la fin des téléchargements en cours.": "Wait for the current downloads to finish.",
+  "Impossible d'écrire dans ce dossier.": "Can't write to this folder.",
 };
 
 // Phrases qui contiennent un nombre ou un nom (titres de zips, erreurs détaillées…)

@@ -42,5 +42,58 @@
   },
   "ytMore": {
     "message": "Plus de choix…"
+  },
+  "ytSearching": {
+    "message": "Recherche sur YouTube et envoi à MediaVior…"
+  },
+  "ytSentFound": {
+    "message": "Envoyé à MediaVior ✓ (trouvé sur YouTube : $DETAIL$)",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "ytNotFound": {
+    "message": "Rien trouvé sur YouTube pour ce titre. Corrige-le et réessaie."
+  },
+  "ytReload": {
+    "message": "l'extension a été mise à jour, rafraîchis la page"
+  },
+  "ytQuery": {
+    "message": "Titre cherché sur YouTube"
+  },
+  "ytDrmHint": {
+    "message": "Ce site protège ses morceaux : MediaVior télécharge la même chanson depuis YouTube."
+  },
+  "ytQuality": {
+    "message": "Qualité"
+  },
+  "ytFormat": {
+    "message": "Format"
+  },
+  "ytBitrate": {
+    "message": "Débit MP3"
+  },
+  "ytDownload": {
+    "message": "Télécharger"
+  },
+  "fmtOriginal": {
+    "message": "Original"
+  },
+  "fmtMp4": {
+    "message": "MP4"
+  },
+  "fmtMov": {
+    "message": "MOV"
+  },
+  "fmtMp3": {
+    "message": "MP3"
+  },
+  "fmtFlac": {
+    "message": "FLAC (sans perte)"
+  },
+  "fmtWav": {
+    "message": "WAV"
   }
 }

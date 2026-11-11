@@ -672,10 +672,10 @@ function libraryRow(item, isNew) {
         meta,
         isNew ? h("span", { class: "item__stored" }, icon("lock"), t("rangé")) : null)),
     h("div", { class: "item__actions" },
-      h("a", {
+      h("button", {
+        type: "button",
         class: "icon-btn",
-        href: `/api/file/${item.id}`,
-        download: true,
+        onclick: () => downloadFile(`/api/file/${item.id}`),
         title: t("Retélécharger le fichier"),
         "aria-label": t("Retélécharger le fichier"),
       }, icon("download")),
@@ -782,7 +782,7 @@ selDownload.addEventListener("click", () => {
   if (!ids.length) return;
   // Un seul fichier : tel quel. Plusieurs : un zip (un seul téléchargement, aussi sur téléphone)
   const href = ids.length === 1 ? `/api/file/${ids[0]}` : `/api/files.zip?ids=${ids.join(",")}`;
-  h("a", { href, download: true }).click();
+  downloadFile(href);
   if (ids.length > 1) showToast(t("Préparation du zip ({n} fichiers)… le téléchargement va démarrer.", { n: ids.length }));
   setSelecting(false);
 });

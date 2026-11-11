@@ -116,6 +116,26 @@ body.shell {
 }
 .topbar__local .btn { margin-top: 0; }
 
+/* Version PC : boutons en bas du panneau de droite */
+.side__foot {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 20px max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--hairline-soft);
+}
+.side__tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.side-tool {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 4px; border: 1px solid transparent; border-radius: 10px;
+  background: none; color: var(--paper-dim); font: inherit; font-size: 0.76rem; cursor: pointer;
+}
+.side-tool .icon { width: 20px; height: 20px; }
+.side-tool:hover, .side-tool:focus-visible { color: var(--paper); background: var(--surface); border-color: var(--hairline); }
+.side__quit { align-self: center; font-size: 0.78rem; }
+.side__foot #updateBtn { margin: 0; width: 100%; }
+@media (max-width: 960px) {
+  .side__foot { padding: 16px 0 0; margin-top: 24px; }
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -1820,6 +1840,13 @@ input[type="range"] {
 
 /* ---------- Fenêtre « Navigateur » : extension ajoutée sans store (version PC) ---------- */
 
+.ext-firefox {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding: 10px 12px;
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm); font-size: 0.88rem;
+}
+.ext-firefox p { flex: 1 1 260px; margin: 0; line-height: 1.5; }
+.ext-firefox .btn { margin-top: 0; width: auto; }
+.ext-subtitle { margin: 16px 0 0; font-weight: 600; font-size: 0.9rem; }
 .ext-steps { margin: 16px 0 12px; padding-left: 22px; line-height: 1.55; font-size: 0.9rem; }
 .ext-steps li { margin-bottom: 10px; }
 .ext-steps li > span:first-child { display: block; }
@@ -1832,6 +1859,23 @@ input[type="range"] {
   border: 1px solid var(--hairline); font-size: 0.85rem; user-select: all;
 }
 .ext-steps__copy .btn { margin-top: 0; }
+
+/* ---------- Fenêtre « Réglages » (version PC) ---------- */
+
+.settings-row { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--hairline-soft); }
+.settings-row .field-label { margin: 0 0 4px; }
+.settings-row .hint { margin: 4px 0 0; }
+.settings-path {
+  display: block; margin-top: 10px; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;
+  background: var(--surface-raised); border: 1px solid var(--hairline); overflow-wrap: anywhere;
+}
+.settings-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.settings-actions .btn { width: auto; }
+.settings-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+.settings-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--brass); }
+.settings-check--big { font-size: 0.95rem; font-weight: 500; }
+.settings-check[hidden] { display: none; }
+.settings-version { margin: 18px 0 0; font-variant-numeric: tabular-nums; }
 
 /* Boutons de téléchargement de l'appli PC (fenêtre « Avoir MediaVior sur ton PC ») */
 .dl-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }

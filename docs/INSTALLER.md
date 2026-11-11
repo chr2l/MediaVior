@@ -31,7 +31,9 @@ Il faut donc dire une fois à ton ordinateur que tu lui fais confiance. Ensuite,
    icône est ajoutée au bureau et au menu Démarrer.
 
 L'appli s'installe dans le dossier `MediaVior` de ton dossier personnel (`C:\Users\<ton nom>\MediaVior`,
-modifiable à l'installation). Tes médias arrivent juste à côté, dans `MediaVior\MediaChest`.
+modifiable à l'installation). Tes médias arrivent juste à côté, dans `MediaVior\MediaChest`. À la
+fin de l'installation, une case ouvre ce dossier. Le fichier `MediaVior-Windows.exe` resté dans
+Téléchargements n'est que l'installeur : tu peux le supprimer.
 
 Si ton antivirus bloque le fichier, c'est pour la même raison (appli non signée qui télécharge des
 choses). Tu peux l'autoriser dans ton antivirus, ou passer par [le prompt](../README.md#en-un-prompt).

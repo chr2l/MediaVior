@@ -35,9 +35,9 @@ async function openPopupOn(url) {
 }
 
 // ---------------------------------------------------------------------------
-// Bouton MediaVior dans le lecteur YouTube (youtube.js) : la page ne peut pas parler à
-// l'appli elle-même (127.0.0.1), alors elle passe par ici avec le lien et Vidéo ou Audio.
-// Les formats sont ceux choisis la dernière fois dans la fenêtre de l'extension.
+// Bouton MediaVior sur les sites (page.js) : la page ne peut pas parler à l'appli elle-même
+// (127.0.0.1), alors elle passe par ici avec le lien (ou, pour Spotify et Deezer, le titre à
+// chercher sur YouTube) et les choix faits dans le menu : Vidéo ou Audio, qualité, format.
 // ---------------------------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
@@ -50,24 +50,35 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   return true; // réponse envoyée plus tard
 });
 
-async function sendToApp({ url, mode, title }) {
+const MAX_SEARCH_DURATION = 15 * 60; // écarte les mix et albums entiers trouvés sur YouTube
+
+async function sendToApp({ url, query, mode, quality, container, audio_quality, title }) {
   const settings = await getSettings();
   const server = await findServer(settings.server);
-  const audio = mode === "audio";
-  const body = {
-    url,
-    mode: audio ? "audio" : "video",
-    quality: audio ? null : settings.quality || null,
-    container: audio ? settings.audioContainer : settings.videoContainer,
-    audio_quality: audio && settings.audioContainer === "mp3" ? settings.audioQuality : null,
-    title: title || null,
-    thumbnail: null,
-  };
   try {
     await fetch(server + "/api/ping", { signal: AbortSignal.timeout(2000) });
   } catch {
     return { ok: false, offline: true };
   }
+  let found = null;
+  if (query) {
+    // Morceau protégé (Spotify, Deezer) : la même chanson, trouvée sur YouTube par l'appli
+    const results = await api(server, "/api/sons/search?q=" + encodeURIComponent(query));
+    const pick = (results || []).find((r) => !r.duration || r.duration <= MAX_SEARCH_DURATION);
+    if (!pick) return { ok: false, notFound: true };
+    url = `https://www.youtube.com/watch?v=${pick.id}`;
+    found = pick.title;
+  }
+  const audio = mode === "audio";
+  const body = {
+    url,
+    mode: audio ? "audio" : "video",
+    quality: audio ? null : quality || null,
+    container: container || (audio ? settings.audioContainer : settings.videoContainer),
+    audio_quality: audio ? audio_quality || null : null,
+    title: title || null,
+    thumbnail: null,
+  };
   const { job_id } = await api(server, "/api/download", { method: "POST", body });
-  return { ok: true, job_id };
+  return { ok: true, job_id, found };
 }

@@ -292,7 +292,7 @@ function showZip(job) {
     ? " " + t(job.missing > 1 ? "{n} sons introuvables, signalés dans la liste." : "{n} son introuvable, signalé dans la liste.", { n: job.missing })
     : "";
   sonsZip.replaceChildren(
-    h("a", { class: "btn btn--success btn--sm", href: `/api/file/${job.id}`, download: true },
+    h("button", { type: "button", class: "btn btn--success btn--sm", onclick: () => downloadFile(`/api/file/${job.id}`) },
       icon("download"), t("Télécharger le zip")),
     h("span", { class: "hint" }, t(job.found > 1 ? "{n} sons dans le zip." : "{n} son dans le zip.", { n: job.found }) + missing)
   );

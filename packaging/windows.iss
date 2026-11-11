@@ -47,6 +47,8 @@ fr.Bureau=Créer une icône sur le bureau
 en.Bureau=Create a desktop icon
 fr.Ouvrir=Ouvrir MediaVior
 en.Ouvrir=Open MediaVior
+fr.VoirDossier=Montrer le dossier MediaVior (l'appli et MediaChest, où arrivent tes médias)
+en.VoirDossier=Show the MediaVior folder (the app and MediaChest, where your media lands)
 
 [Tasks]
 Name: "bureau"; Description: "{cm:Bureau}"; Flags: checkedonce
@@ -54,11 +56,19 @@ Name: "bureau"; Description: "{cm:Bureau}"; Flags: checkedonce
 [Files]
 Source: "..\dist\MediaVior\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Dirs]
+; Dossier des médias, à côté de l'appli : jamais effacé, même à la désinstallation
+Name: "{app}\MediaChest"; Flags: uninsneveruninstall
+
 [InstallDelete]
 ; Une mise à jour remplace les fichiers de l'appli (les médias de MediaChest ne sont pas touchés)
 Type: filesandordirs; Name: "{app}\_internal"
 ; Ancien emplacement caché (avant novembre 2026) : l'appli déménage dans le dossier visible
 Type: filesandordirs; Name: "{localappdata}\Programs\MediaVior"
+
+[Registry]
+; Lancement au démarrage (réglage dans l'appli) : retiré à la désinstallation
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "MediaVior"; Flags: uninsdeletevalue
 
 [Icons]
 Name: "{userprograms}\MediaVior"; Filename: "{app}\MediaVior.exe"
@@ -66,6 +76,8 @@ Name: "{userdesktop}\MediaVior"; Filename: "{app}\MediaVior.exe"; Tasks: bureau
 
 [Run]
 Filename: "{app}\MediaVior.exe"; Description: "{cm:Ouvrir}"; Flags: nowait postinstall
+; Première installation : montre où l'appli et MediaChest sont rangés (pas lors des mises à jour)
+Filename: "{app}"; Description: "{cm:VoirDossier}"; Flags: shellexec nowait postinstall skipifsilent
 
 [Code]
 const
