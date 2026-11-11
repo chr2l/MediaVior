@@ -557,6 +557,8 @@ window.I18N_EN = {
     "This page may change along with the app. The up-to-date version is always the one in the GitHub repository, with the history of every change. The French version is the reference.",
   "Dernière mise à jour : 8 novembre 2026.": "Last updated: November 8, 2026.",
   // Réglages (version PC)
+  "Dossier": "Folder",
+  "Quitter MediaVior": "Quit MediaVior",
   "Réglages": "Settings",
   "Dossier des médias": "Media folder",
   "Là où arrivent tes vidéos et tes sons une fois téléchargés.": "Where your videos and sounds land once downloaded.",

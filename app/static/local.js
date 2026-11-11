@@ -213,7 +213,7 @@ if (extDialog) {
 // Nouvelle version de l'appli prête à installer (.exe, .dmg, AppImage)
 // ---------------------------------------------------------------------------
 
-const localBar = document.querySelector(".topbar__local");
+const localBar = document.querySelector(".side__foot");
 if (localBar) {
   const checkUpdate = async () => {
     let rel;
