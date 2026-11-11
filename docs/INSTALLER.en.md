@@ -31,7 +31,9 @@ So you need to tell your computer once that you trust it. After that, it doesn't
    added to the desktop and the Start menu.
 
 The app installs into the `MediaVior` folder of your user folder (`C:\Users\<your name>\MediaVior`,
-can be changed during setup). Your media lands right next to it, in `MediaVior\MediaChest`.
+can be changed during setup). Your media lands right next to it, in `MediaVior\MediaChest`. At the end
+of setup, a checkbox opens this folder. The `MediaVior-Windows.exe` file left in Downloads is only
+the installer: you can delete it.
 
 If your antivirus blocks the file, it's for the same reason (an unsigned app that downloads things).
 You can allow it in your antivirus, or use [the prompt](../README.en.md#with-one-prompt).
