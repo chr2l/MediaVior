@@ -1833,6 +1833,23 @@ input[type="range"] {
 }
 .ext-steps__copy .btn { margin-top: 0; }
 
+/* ---------- Fenêtre « Réglages » (version PC) ---------- */
+
+.settings-row { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--hairline-soft); }
+.settings-row .field-label { margin: 0 0 4px; }
+.settings-row .hint { margin: 4px 0 0; }
+.settings-path {
+  display: block; margin-top: 10px; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;
+  background: var(--surface-raised); border: 1px solid var(--hairline); overflow-wrap: anywhere;
+}
+.settings-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.settings-actions .btn { width: auto; }
+.settings-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+.settings-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--brass); }
+.settings-check--big { font-size: 0.95rem; font-weight: 500; }
+.settings-check[hidden] { display: none; }
+.settings-version { margin: 18px 0 0; font-variant-numeric: tabular-nums; }
+
 /* Boutons de téléchargement de l'appli PC (fenêtre « Avoir MediaVior sur ton PC ») */
 .dl-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .dl-buttons .btn.is-mine { background: var(--brass); color: var(--on-accent); border-color: var(--brass); }

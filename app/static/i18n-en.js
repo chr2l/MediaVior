@@ -548,6 +548,23 @@ window.I18N_EN = {
   "Cette page peut évoluer avec l'appli. La version à jour est toujours celle du dépôt GitHub, avec l'historique de chaque changement.":
     "This page may change along with the app. The up-to-date version is always the one in the GitHub repository, with the history of every change. The French version is the reference.",
   "Dernière mise à jour : 8 novembre 2026.": "Last updated: November 8, 2026.",
+  // Réglages (version PC)
+  "Réglages": "Settings",
+  "Dossier des médias": "Media folder",
+  "Là où arrivent tes vidéos et tes sons une fois téléchargés.": "Where your videos and sounds land once downloaded.",
+  "Choisir un autre dossier": "Choose another folder",
+  "Y déplacer aussi les médias déjà rangés": "Also move the media you already saved",
+  "Lancer MediaVior au démarrage de l'ordinateur": "Start MediaVior when the computer starts",
+  "Il démarre en arrière-plan, sans ouvrir de fenêtre : le téléphone et l'extension du navigateur marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.": "It starts in the background, without opening a window: the phone and the browser extension work right away. Double-click the icon to show the app.",
+  "MediaVior version {v}": "MediaVior version {v}",
+  "Chemin complet du dossier où ranger les médias :": "Full path of the folder where media should go:",
+  "Les prochains médias arriveront dans ce dossier.": "New media will land in this folder.",
+  "Le lancement au démarrage n'est pas possible ici.": "Starting with the computer isn't possible here.",
+  "Donne le chemin complet du dossier.": "Give the full path of the folder.",
+  "Ce dossier est introuvable.": "This folder can't be found.",
+  "Choisis un autre dossier.": "Choose another folder.",
+  "Attends la fin des téléchargements en cours.": "Wait for the current downloads to finish.",
+  "Impossible d'écrire dans ce dossier.": "Can't write to this folder.",
 };
 
 // Phrases qui contiennent un nombre ou un nom (titres de zips, erreurs détaillées…)

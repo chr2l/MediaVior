@@ -60,6 +60,10 @@ Type: filesandordirs; Name: "{app}\_internal"
 ; Ancien emplacement caché (avant novembre 2026) : l'appli déménage dans le dossier visible
 Type: filesandordirs; Name: "{localappdata}\Programs\MediaVior"
 
+[Registry]
+; Lancement au démarrage (réglage dans l'appli) : retiré à la désinstallation
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "MediaVior"; Flags: uninsdeletevalue
+
 [Icons]
 Name: "{userprograms}\MediaVior"; Filename: "{app}\MediaVior.exe"
 Name: "{userdesktop}\MediaVior"; Filename: "{app}\MediaVior.exe"; Tasks: bureau

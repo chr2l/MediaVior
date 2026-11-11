@@ -450,7 +450,7 @@ async function trackRender(jobId) {
     fill.style.width = "100%";
     text.textContent = t("Terminé");
     $("cancelBtn").classList.add("hidden");
-    $("resultLink").href = `/api/file/${jobId}`;
+    $("resultLink").onclick = () => downloadFile(`/api/file/${jobId}`);
     $("resultLink").textContent = t("Récupérer : {name}", { name: job.filename });
     $("resultEdit").href = `/edit/${jobId}`;
     $("renderActions").classList.remove("hidden");

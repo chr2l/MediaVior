@@ -246,3 +246,64 @@ if (localBar) {
   setTimeout(checkUpdate, 8000);
   setInterval(checkUpdate, 30 * 60 * 1000);
 }
+
+// ---------------------------------------------------------------------------
+// Réglages : dossier des médias, lancement au démarrage de l'ordinateur
+// ---------------------------------------------------------------------------
+
+const settingsDialog = document.getElementById("settingsDialog");
+if (settingsDialog) {
+  const folderEl = document.getElementById("settingsFolder");
+  const pickBtn = document.getElementById("settingsPick");
+  const moveBox = document.getElementById("settingsMove");
+  const autoBox = document.getElementById("settingsAutostart");
+  const autoRow = document.getElementById("settingsAutostartRow");
+  const versionEl = document.getElementById("settingsVersion");
+
+  const show = (s) => {
+    folderEl.textContent = s.folder;
+    if (openFolderBtn) openFolderBtn.title = s.folder;
+    moveBox.parentElement.hidden = !s.count;
+    autoRow.hidden = s.autostart === null;
+    autoBox.checked = !!s.autostart;
+    versionEl.textContent = s.version ? t("MediaVior version {v}", { v: s.version }) : "";
+  };
+  const save = async (body) => show(await api("/api/local/settings", { method: "POST", body }));
+
+  document.getElementById("settingsClose").append(icon("close"));
+  document.getElementById("settingsClose").addEventListener("click", () => settingsDialog.close());
+  settingsDialog.addEventListener("click", (e) => e.target === settingsDialog && settingsDialog.close());
+  document.getElementById("settingsBtn").addEventListener("click", async () => {
+    settingsDialog.showModal();
+    try {
+      show(await api("/api/local/settings"));
+    } catch (e) {
+      showToast(e.message);
+    }
+  });
+
+  pickBtn.addEventListener("click", async () => {
+    pickBtn.disabled = true;
+    try {
+      let { path, manual } = await api("/api/local/pick-folder", { method: "POST" });
+      if (manual) path = prompt(t("Chemin complet du dossier où ranger les médias :"), folderEl.textContent);
+      if (path) {
+        await save({ folder: path.trim(), move: moveBox.checked });
+        showToast(t("Les prochains médias arriveront dans ce dossier."));
+        if (moveBox.checked && typeof loadLibrary === "function") loadLibrary();
+      }
+    } catch (e) {
+      showToast(e.message);
+    }
+    pickBtn.disabled = false;
+  });
+
+  autoBox.addEventListener("change", async () => {
+    try {
+      await save({ autostart: autoBox.checked });
+    } catch (e) {
+      autoBox.checked = !autoBox.checked;
+      showToast(e.message);
+    }
+  });
+}

@@ -6,7 +6,8 @@
     python mediavior.py --verifier    vérifie l'installation (Python, ffmpeg, dossier) et quitte
 
 Options : --port 8010, --dossier CHEMIN (dossier des téléchargements, retenu pour la suite),
---sans-fenetre (n'ouvre pas le navigateur, utilisé par Pinokio), --sans-maj (pas de mise à jour).
+--sans-fenetre (n'ouvre pas le navigateur, utilisé par Pinokio), --sans-maj (pas de mise à jour),
+--demarrage (lancé au démarrage de l'ordinateur : en arrière-plan, sans fenêtre).
 
 Les fichiers vont par défaut dans le dossier « MediaChest », à côté de l'appli installée
 (Windows, Linux) ou dans Téléchargements (Mac, version Python). Les réglages et le journal
@@ -14,6 +15,7 @@ sont dans ~/.mediavior/.
 """
 import argparse
 import hashlib
+import html
 import importlib.abc
 import importlib.machinery
 import json
@@ -428,6 +430,74 @@ def open_window(url: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Lancement au démarrage de l'ordinateur (en arrière-plan, sans fenêtre)
+# ---------------------------------------------------------------------------
+
+AUTOSTART_NAME = "MediaVior"
+MAC_AGENT = Path.home() / "Library" / "LaunchAgents" / "io.github.chr2l.mediavior.plist"
+LINUX_AUTOSTART = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "autostart" / "mediavior.desktop"
+
+
+def _launch_command() -> list:
+    """Commande qui lance MediaVior au démarrage, sans ouvrir de fenêtre."""
+    if FROZEN:
+        return [str(Path(os.environ.get("APPIMAGE") or sys.executable)), "--demarrage"]
+    py = Path(sys.executable)
+    if IS_WIN and py.with_name("pythonw.exe").is_file():
+        py = py.with_name("pythonw.exe")  # pas de fenêtre noire
+    return [str(py), str(ROOT / "mediavior.py"), "--demarrage"]
+
+
+def autostart(enable: Optional[bool] = None) -> bool:
+    """Sans argument : MediaVior se lance-t-il au démarrage ? Avec True/False : active ou coupe."""
+    cmd = _launch_command()
+    if IS_WIN:
+        import winreg
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0,
+                            winreg.KEY_READ | winreg.KEY_SET_VALUE) as key:
+            if enable is True:
+                winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ,
+                                  subprocess.list2cmdline(cmd))
+            elif enable is False:
+                try:
+                    winreg.DeleteValue(key, AUTOSTART_NAME)
+                except FileNotFoundError:
+                    pass
+            try:
+                winreg.QueryValueEx(key, AUTOSTART_NAME)
+                return True
+            except FileNotFoundError:
+                return False
+    target = MAC_AGENT if IS_MAC else LINUX_AUTOSTART
+    if enable is True:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if IS_MAC:
+            args = "".join(f"<string>{html.escape(a)}</string>" for a in cmd)
+            target.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>io.github.chr2l.mediavior</string>
+  <key>ProgramArguments</key><array>{args}</array>
+  <key>RunAtLoad</key><true/>
+</dict></plist>
+""", encoding="utf-8")
+        else:
+            exec_line = " ".join(f'"{a}"' for a in cmd)
+            target.write_text(f"""[Desktop Entry]
+Type=Application
+Name=MediaVior
+Comment=Sauvegarde tes médias (lancement au démarrage)
+Exec={exec_line}
+X-GNOME-Autostart-enabled=true
+NoDisplay=true
+""", encoding="utf-8")
+    elif enable is False:
+        target.unlink(missing_ok=True)
+    return target.is_file()
+
+
+# ---------------------------------------------------------------------------
 # Raccourci sur le bureau
 # ---------------------------------------------------------------------------
 
@@ -563,6 +633,8 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--dossier", help="dossier des téléchargements (retenu pour les prochaines fois)")
     parser.add_argument("--sans-fenetre", action="store_true", help="ne pas ouvrir le navigateur")
+    parser.add_argument("--demarrage", action="store_true",
+                        help="lancé au démarrage de l'ordinateur (sans fenêtre)")
     parser.add_argument("--sans-maj", action="store_true", help="ne pas chercher de mise à jour")
     parser.add_argument("--raccourci", action="store_true", help="créer le raccourci sur le bureau")
     parser.add_argument("--verifier", action="store_true", help="vérifier l'installation")
@@ -590,7 +662,7 @@ def main() -> int:
     port = args.port or cfg.get("port") or DEFAULT_PORT
     # Déjà ouvert ? On montre simplement la fenêtre.
     if is_mediavior(port):
-        if not args.sans_fenetre:
+        if not (args.sans_fenetre or args.demarrage):
             open_window(f"http://127.0.0.1:{port}/")
         print(f"MediaVior tourne déjà : http://127.0.0.1:{port}/")
         return 0
@@ -620,6 +692,20 @@ def main() -> int:
 
     server = uvicorn.Server(uvicorn.Config(web.app, host="127.0.0.1", port=port, log_level="warning"))
     web.QUIT_HOOK = lambda: setattr(server, "should_exit", True)
+    web.APP_VERSION = build_info().get("version") if FROZEN else None
+
+    def remember_folder(path: str) -> None:
+        cfg["folder"] = path
+        save_config(cfg)
+
+    web.FOLDER_HOOK = remember_folder
+    if not args.sans_fenetre or args.demarrage:  # Pinokio (--sans-fenetre) gère seul le lancement
+        web.AUTOSTART_HOOK = autostart
+        try:
+            if autostart():
+                autostart(True)  # l'appli a pu changer de dossier (mise à jour) : chemin rafraîchi
+        except Exception as exc:
+            print(f"Lancement au démarrage : {exc}", file=sys.stderr)
     if FROZEN:
         web.APP_UPDATE = STATE  # « release » est rempli en arrière-plan s'il y a du nouveau
         web.APP_UPDATE_HOOK = lambda: install_app_update(STATE["release"], web.QUIT_HOOK)
@@ -629,7 +715,7 @@ def main() -> int:
         for _ in range(100):
             if server.started:
                 print(f"MediaVior est prêt : {url}", flush=True)
-                if not args.sans_fenetre:
+                if not (args.sans_fenetre or args.demarrage):
                     open_window(url)
                 return
             time.sleep(0.1)
