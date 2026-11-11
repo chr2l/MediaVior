@@ -36,13 +36,19 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # Les médias finis sont rangés directement dans DOWNLOAD_DIR. Leurs fiches (titre, pochette…)
 # et les fichiers en cours de téléchargement vont dans ce sous-dossier caché.
 ITEMS_DIR = DOWNLOAD_DIR / ".mediavior"
-ITEMS_DIR.mkdir(exist_ok=True)
-if os.name == "nt":
-    try:
-        import ctypes
-        ctypes.windll.kernel32.SetFileAttributesW(str(ITEMS_DIR), 0x2)  # dossier caché
-    except Exception:
-        pass
+
+
+def _prepare_items_dir(d: Path) -> None:
+    d.mkdir(exist_ok=True)
+    if os.name == "nt":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.SetFileAttributesW(str(d), 0x2)  # dossier caché
+        except Exception:
+            pass
+
+
+_prepare_items_dir(ITEMS_DIR)
 FFMPEG = os.environ.get("FFMPEG_BIN", "ffmpeg")
 FFPROBE = os.environ.get("FFPROBE_BIN", "ffprobe")
 
@@ -56,6 +62,10 @@ QUIT_HOOK = None  # fourni par mediavior.py pour arrêter le serveur proprement
 # Appli prête à installer (.exe, .dmg, AppImage) : nouvelle version publiée et installation
 APP_UPDATE: Optional[dict] = None
 APP_UPDATE_HOOK = None
+# Version PC : numéro de version de l'appli installée, réglages gardés par mediavior.py
+APP_VERSION: Optional[str] = None
+FOLDER_HOOK = None  # retient le nouveau dossier des médias (config de mediavior.py)
+AUTOSTART_HOOK = None  # lancement au démarrage du PC : AUTOSTART_HOOK() lit, AUTOSTART_HOOK(True/False) règle
 
 # Change à chaque démarrage : force le navigateur à recharger CSS/JS après une mise à jour
 ASSET_VERSION = str(int(time.time()))
@@ -275,7 +285,7 @@ async def _ytdlp_updater() -> None:
 def _app_page(request: Request):
     return templates.TemplateResponse(request, "index.html", {
         "v": ASSET_VERSION, "ytdlp": yt_dlp.version.__version__, "updated": UPDATED_AT,
-        "local": LOCAL_MODE, "github": GITHUB_URL, "folder": str(DOWNLOAD_DIR),
+        "version": APP_VERSION, "local": LOCAL_MODE, "github": GITHUB_URL, "folder": str(DOWNLOAD_DIR),
         "apercu": is_apercu(request),
     })
 
@@ -358,6 +368,141 @@ async def open_folder():
     _local_only()
     _show_in_explorer(DOWNLOAD_DIR)
     return {"ok": True}
+
+
+# Réglages de la version PC : dossier des médias, lancement au démarrage
+class SettingsRequest(BaseModel):
+    folder: Optional[str] = None
+    move: bool = True  # déplacer aussi les médias déjà rangés vers le nouveau dossier
+    autostart: Optional[bool] = None
+
+
+def _autostart_state() -> Optional[bool]:
+    """None : réglage impossible ici (version serveur, Pinokio…)."""
+    if not AUTOSTART_HOOK:
+        return None
+    try:
+        return bool(AUTOSTART_HOOK())
+    except Exception:
+        return None
+
+
+def _settings() -> dict:
+    return {"folder": str(DOWNLOAD_DIR), "autostart": _autostart_state(), "version": APP_VERSION,
+            "count": sum(1 for d in ITEMS_DIR.iterdir() if d.is_dir() and ITEM_ID.match(d.name))}
+
+
+def _change_folder(new: Path, move: bool) -> None:
+    """Change le dossier des médias pendant que l'appli tourne. Avec move, les médias déjà rangés
+    (et leurs fiches) suivent ; sinon ils restent dans l'ancien dossier, hors de l'appli."""
+    global DOWNLOAD_DIR, ITEMS_DIR, SONS_FILE
+    new_items = new / ".mediavior"
+    _prepare_items_dir(new_items)
+    if move:
+        for d in list(ITEMS_DIR.iterdir()):
+            if not (d.is_dir() and ITEM_ID.match(d.name)) or (new_items / d.name).exists():
+                continue
+            meta = _read_meta(d)
+            media = _media_file(d, meta)
+            if media and meta.get("file"):
+                target = _free_name(media.name, new)
+                shutil.move(str(media), str(target))
+                meta["file"] = target.name
+                _write_meta(d, meta)
+            shutil.move(str(d), str(new_items / d.name))
+        new_sons = new_items / SONS_FILE.name
+        if SONS_FILE.is_file() and not new_sons.exists():
+            shutil.move(str(SONS_FILE), str(new_sons))
+        try:
+            ITEMS_DIR.rmdir()  # ancien dossier caché, vide : on ne laisse rien traîner
+        except OSError:
+            pass
+    DOWNLOAD_DIR, ITEMS_DIR, SONS_FILE = new, new_items, new_items / SONS_FILE.name
+
+
+@app.get("/api/local/settings")
+async def get_settings():
+    _local_only()
+    return _settings()
+
+
+@app.post("/api/local/settings")
+async def save_settings(payload: SettingsRequest):
+    _local_only()
+    if payload.autostart is not None:
+        if not AUTOSTART_HOOK:
+            raise HTTPException(status_code=400, detail="Le lancement au démarrage n'est pas possible ici.")
+        try:
+            AUTOSTART_HOOK(payload.autostart)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
+    if payload.folder:
+        new = Path(payload.folder).expanduser()
+        if not new.is_absolute():
+            raise HTTPException(status_code=400, detail="Donne le chemin complet du dossier.")
+        try:
+            new = new.resolve()
+        except OSError:
+            raise HTTPException(status_code=400, detail="Ce dossier est introuvable.")
+        if new != DOWNLOAD_DIR.resolve():
+            if new == ITEMS_DIR.resolve() or ITEMS_DIR.resolve() in new.parents:
+                raise HTTPException(status_code=400, detail="Choisis un autre dossier.")
+            if any(j["status"] in ACTIVE_STATUSES for j in JOBS.values()):
+                raise HTTPException(status_code=409, detail="Attends la fin des téléchargements en cours.")
+            try:
+                new.mkdir(parents=True, exist_ok=True)
+                probe = new / ".mediavior-test"
+                probe.write_text("ok", encoding="utf-8")
+                probe.unlink()
+            except OSError:
+                raise HTTPException(status_code=400, detail="Impossible d'écrire dans ce dossier.")
+            try:
+                await asyncio.get_running_loop().run_in_executor(None, _change_folder, new, payload.move)
+            except OSError as exc:
+                raise HTTPException(status_code=500, detail=f"Déplacement interrompu : {exc}")
+            if FOLDER_HOOK:
+                FOLDER_HOOK(str(new))
+    return _settings()
+
+
+def _pick_folder_sync(start: str) -> Optional[str]:
+    """Ouvre la fenêtre « Choisir un dossier » du système. None si annulé ou impossible."""
+    if sys.platform.startswith("win"):
+        start_ps = start.replace("'", "''")
+        ps = ("[Console]::OutputEncoding = [Text.Encoding]::UTF8; "
+              "Add-Type -AssemblyName System.Windows.Forms; "
+              "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
+              "$d.Description = 'Dossier des médias MediaVior'; "
+              f"$d.SelectedPath = '{start_ps}'; $d.ShowNewFolderButton = $true; "
+              "$f = New-Object System.Windows.Forms.Form -Property @{TopMost = $true}; "
+              "if ($d.ShowDialog($f) -eq 'OK') { $d.SelectedPath }")
+        cmd = ["powershell", "-NoProfile", "-STA", "-Command", ps]
+        flags = 0x08000000  # CREATE_NO_WINDOW : pas de fenêtre noire
+    elif sys.platform == "darwin":
+        cmd = ["osascript", "-e", 'POSIX path of (choose folder with prompt "Dossier des médias MediaVior")']
+        flags = 0
+    elif shutil.which("zenity"):
+        cmd = ["zenity", "--file-selection", "--directory", f"--filename={start}/"]
+        flags = 0
+    elif shutil.which("kdialog"):
+        cmd = ["kdialog", "--getexistingdirectory", start]
+        flags = 0
+    else:
+        raise FileNotFoundError("aucune fenêtre de choix")
+    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=600,
+                         creationflags=flags)
+    path = out.stdout.strip()
+    return path or None
+
+
+@app.post("/api/local/pick-folder")
+async def pick_folder():
+    _local_only()
+    try:
+        path = await asyncio.get_running_loop().run_in_executor(None, _pick_folder_sync, str(DOWNLOAD_DIR))
+    except (OSError, subprocess.SubprocessError):
+        return {"path": None, "manual": True}  # pas de fenêtre de choix : on demande le chemin
+    return {"path": path}
 
 
 # Extension de navigateur (dossier extension/), ajoutée sans passer par le Chrome Web Store :
@@ -577,11 +722,12 @@ def _item_view(d: Path) -> Optional[dict]:
     }
 
 
-def _free_name(name: str) -> Path:
+def _free_name(name: str, folder: Optional[Path] = None) -> Path:
     """Nom libre dans le dossier principal : « Titre.mp3 », sinon « Titre (2).mp3 »…"""
-    target, n = DOWNLOAD_DIR / name, 2
+    folder = folder or DOWNLOAD_DIR
+    target, n = folder / name, 2
     while target.exists():
-        target = DOWNLOAD_DIR / f"{Path(name).stem} ({n}){Path(name).suffix}"
+        target = folder / f"{Path(name).stem} ({n}){Path(name).suffix}"
         n += 1
     return target
 

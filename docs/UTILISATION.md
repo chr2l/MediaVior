@@ -125,6 +125,16 @@ prévenir.
 
 La version de yt-dlp utilisée est affichée en bas de la barre latérale.
 
+## Réglages (version PC)
+
+Bouton **Réglages** en haut de l'appli :
+
+- **Dossier des médias** : choisis où arrivent les fichiers téléchargés. Les médias déjà rangés
+  peuvent suivre (case cochée par défaut).
+- **Lancer MediaVior au démarrage de l'ordinateur** : il démarre en arrière-plan, sans fenêtre.
+  Le téléphone et l'extension du navigateur marchent tout de suite.
+- Le numéro de version de l'appli est affiché en bas de la fenêtre des réglages et de l'appli.
+
 ## Fermer, désinstaller
 
 - **Fermer** : bouton « Quitter MediaVior » en bas de la barre latérale. Fermer la fenêtre seule

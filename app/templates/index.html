@@ -31,6 +31,7 @@
         <button type="button" class="btn btn--quiet btn--sm" id="phoneBtn" title="Envoyer des liens depuis ton téléphone"><span data-icon="phone"></span>Téléphone</button>
         <button type="button" class="btn btn--quiet btn--sm" id="extBtn" title="Envoyer des liens depuis ton navigateur"><span data-icon="puzzle"></span>Navigateur</button>
         <button type="button" class="btn btn--quiet btn--sm" id="openFolderBtn" title="{{ folder }}"><span data-icon="folder"></span>Ouvrir le dossier</button>
+        <button type="button" class="btn btn--quiet btn--sm" id="settingsBtn"><span data-icon="settings"></span>Réglages</button>
         <button type="button" class="btn-link" id="quitBtn">Quitter</button>
       </div>
     </header>
@@ -192,7 +193,7 @@
       <a href="{{ github }}" target="_blank" rel="noopener">Code source</a>
       <button type="button" class="btn-link" data-lang-switch></button>
     </footer>
-    <p class="app-foot app-foot--small">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg · <span id="updated" data-ts="{{ updated }}"></span></p>
+    <p class="app-foot app-foot--small">Usage personnel · yt-dlp {{ ytdlp }} &amp; ffmpeg · {% if version %}<span id="appVersion">Version {{ version }}</span>{% else %}<span id="updated" data-ts="{{ updated }}"></span>{% endif %}</p>
   </main>
 
   <!-- ===== Panneau fixe à droite : En cours / Bibliothèque ===== -->
@@ -389,6 +390,29 @@
 </dialog>
 
 <!-- Extension de navigateur, ajoutée sans le Chrome Web Store -->
+<dialog class="yt-dialog settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="settingsTitle">Réglages</h2>
+    </div>
+    <button type="button" class="icon-btn" id="settingsClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <section class="settings-row">
+    <h3 class="field-label">Dossier des médias</h3>
+    <p class="hint">Là où arrivent tes vidéos et tes sons une fois téléchargés.</p>
+    <code class="settings-path" id="settingsFolder"></code>
+    <div class="settings-actions">
+      <button type="button" class="btn btn--ghost btn--sm" id="settingsPick"><span data-icon="folder"></span>Choisir un autre dossier</button>
+      <label class="settings-check"><input type="checkbox" id="settingsMove" checked> Y déplacer aussi les médias déjà rangés</label>
+    </div>
+  </section>
+  <section class="settings-row" id="settingsAutostartRow">
+    <label class="settings-check settings-check--big"><input type="checkbox" id="settingsAutostart"> Lancer MediaVior au démarrage de l'ordinateur</label>
+    <p class="hint">Il démarre en arrière-plan, sans ouvrir de fenêtre : le téléphone et l'extension du navigateur marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.</p>
+  </section>
+  <p class="hint settings-version" id="settingsVersion"></p>
+</dialog>
+
 <dialog class="yt-dialog ext-dialog" id="extDialog" aria-labelledby="extTitle">
   <div class="yt-dialog__head">
     <div class="yt-dialog__heading">
