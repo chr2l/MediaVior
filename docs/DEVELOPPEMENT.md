@@ -50,7 +50,8 @@ Deux façons de lancer le même serveur :
 | `app/jumelage.py` | Téléphone relié (version PC) : QR code, connexion au relais, messages chiffrés, envoi des fichiers en WebRTC (aiortc) |
 | `relais/` | Relais Cloudflare (`src/worker.js`, un Durable Object par paire PC + téléphones) et page du téléphone (`public/`). Voir `relais/README.md` |
 | `packaging/` | Installeurs : recette PyInstaller, installeur Windows (Inno Setup), AppImage. Construits par `.github/workflows/installeurs.yml` à chaque push sur `main` |
-| `extension/` | Extension Manifest V3, sans dépendance |
+| `extension/` | Extension Manifest V3, sans dépendance. `page.js` : bouton sur YouTube, SoundCloud, Vimeo, Bandcamp, Dailymotion, Spotify, Deezer |
+| `packaging/extension_firefox.py` | Manifest Firefox (même code), signé par Mozilla dans `installeurs.yml` (secrets `AMO_JWT_ISSUER` / `AMO_JWT_SECRET`) |
 | `pinokio.js`, `install.js`, `start.js`, `update.js` | Scripts [Pinokio](https://pinokio.co) |
 
 ## Principes
@@ -86,7 +87,7 @@ L'interface s'affiche en français ou en anglais : la langue du navigateur ou du
 - Une phrase absente du dictionnaire reste en français : rien ne casse.
 
 Même moteur, copié, pour la page du téléphone (`relais/public/i18n*.js`) et l'extension
-(`extension/i18n*.js`, plus `extension/_locales/` pour le nom et le menu clic droit). Le prompt
+(`extension/i18n*.js`, plus `extension/_locales/` pour le nom, le menu clic droit et les boutons sur les sites). Le prompt
 d'installation existe en deux versions : `PROMPT.md` et `PROMPT.en.md`, à garder pareilles.
 
 ## Vitrine (site public)

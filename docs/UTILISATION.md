@@ -46,11 +46,28 @@ Réencoder une longue vidéo en 4K peut être lent sur une petite machine.
 
 Les playlists ne sont pas prises en charge volontairement : colle les liens des vidéos.
 
-## Extension de navigateur (Chrome, Brave, Edge, Opera, Vivaldi)
+## Extension de navigateur (Chrome, Brave, Edge, Opera, Vivaldi, Firefox)
 
 Un clic sur l'icône de l'extension envoie la page en cours à MediaVior, en choisissant Vidéo ou
 Audio, la qualité et le format. Aussi en clic droit sur une page ou un lien
 (« Envoyer à MediaVior… ») et au clavier avec Alt+Maj+C.
+
+Bouton directement sur les sites (même menu : Vidéo ou Audio, qualité, format, retenus pour la
+fois suivante) :
+- **YouTube** : dans la barre du lecteur, à côté de la roue des réglages.
+- **SoundCloud, Vimeo, Bandcamp, Dailymotion** : bouton rond bleu en bas à droite, sur la page
+  d'un morceau ou d'une vidéo.
+- **Spotify, Deezer** : leurs morceaux sont protégés. Le bouton lit le titre en cours
+  (« Artiste - Titre », modifiable), et MediaVior télécharge la même chanson trouvée sur YouTube.
+  Ce peut être une autre version (live, clip) : vérifie le titre trouvé dans le message.
+
+### Firefox
+
+Un clic sur `MediaVior-Firefox.xpi` (bouton « Installer pour Firefox » dans la fenêtre
+**Navigateur** de l'appli, ou sur la page Releases), puis accepte les deux demandes de Firefox.
+L'extension est signée par Mozilla en « non listée » (hors catalogue) et se met à jour toute seule.
+
+### Chrome, Brave, Edge, Opera, Vivaldi
 
 Elle n'est pas sur le Chrome Web Store : elle est fournie avec l'appli.
 
@@ -70,7 +87,7 @@ Sans l'appli : `MediaVior-extension.zip` est joint à chaque version sur la page
 (à dézipper, puis étapes 2 à 4).
 
 MediaVior accepte les appels venant d'une extension (CORS limité aux origines
-`chrome-extension://`).
+`chrome-extension://` et `moz-extension://`).
 
 ## Sur téléphone
 
