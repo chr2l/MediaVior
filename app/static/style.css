@@ -1820,6 +1820,13 @@ input[type="range"] {
 
 /* ---------- Fenêtre « Navigateur » : extension ajoutée sans store (version PC) ---------- */
 
+.ext-firefox {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding: 10px 12px;
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm); font-size: 0.88rem;
+}
+.ext-firefox p { flex: 1 1 260px; margin: 0; line-height: 1.5; }
+.ext-firefox .btn { margin-top: 0; width: auto; }
+.ext-subtitle { margin: 16px 0 0; font-weight: 600; font-size: 0.9rem; }
 .ext-steps { margin: 16px 0 12px; padding-left: 22px; line-height: 1.55; font-size: 0.9rem; }
 .ext-steps li { margin-bottom: 10px; }
 .ext-steps li > span:first-child { display: block; }

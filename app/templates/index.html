@@ -417,11 +417,19 @@
   <div class="yt-dialog__head">
     <div class="yt-dialog__heading">
       <h2 class="panel__title" id="extTitle">Ton navigateur, relié à MediaVior</h2>
-      <p class="hint">Une petite extension pour Chrome, Brave, Edge, Opera ou Vivaldi : un clic sur son
-        icône envoie la page en cours à MediaVior, avec le choix du format. À faire une seule fois.</p>
+      <p class="hint">Une petite extension pour Chrome, Brave, Edge, Opera, Vivaldi ou Firefox : un clic
+        sur son icône envoie la page en cours à MediaVior, avec le choix du format. Sur YouTube,
+        SoundCloud, Vimeo, Bandcamp, Dailymotion, Spotify et Deezer, un bouton MediaVior apparaît
+        directement sur la page. À faire une seule fois.</p>
     </div>
     <button type="button" class="icon-btn" id="extClose" aria-label="Fermer" title="Fermer"></button>
   </div>
+  <div class="ext-firefox">
+    <p><strong>Sur Firefox</strong>, un clic suffit, sans mode développeur. Accepte ensuite les deux
+      demandes de Firefox ; l'extension se met à jour toute seule.</p>
+    <a class="btn btn--ghost btn--sm" href="{{ github }}/releases/latest/download/MediaVior-Firefox.xpi" target="_blank" rel="noopener"><span data-icon="download"></span>Installer pour Firefox</a>
+  </div>
+  <p class="ext-subtitle">Chrome, Brave, Edge, Opera, Vivaldi</p>
   <ol class="ext-steps">
     <li>
       <span>Prépare le dossier de l'extension : il s'ouvre tout seul.</span>

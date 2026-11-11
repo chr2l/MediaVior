@@ -31,7 +31,7 @@ charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp), dans la qualité et le fo
 - **Panneau à droite** : ce qui est **En cours**, et la **Bibliothèque** de tout ce que tu as
   téléchargé (format, durée, retélécharger, enlever), avec recherche, sélection multiple et un **éditeur** (coupe, fondus, volume,
   extraction de l'audio).
-- **Extension Chrome/Brave/Edge** fournie avec l'appli (sans Chrome Web Store) pour envoyer la page en cours d'un clic.
+- **Extension Chrome/Brave/Edge/Firefox** (sans Chrome Web Store), avec un bouton directement sur YouTube, SoundCloud, Vimeo, Bandcamp, Dailymotion, Spotify et Deezer.
 - **Ton téléphone relié au PC** (comme WhatsApp Web) : scanne un QR code une fois, puis envoie des
   liens depuis le téléphone et récupère les fichiers, même en 4G.
 - **Français et anglais** : l'appli suit la langue de l'ordinateur ; le lien « English / Français »

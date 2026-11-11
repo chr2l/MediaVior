@@ -2,7 +2,9 @@ name: Installeurs (Windows, Mac, Linux)
 # Construit l'appli prête à installer : Python, yt-dlp, ffmpeg et deno sont inclus.
 # - À chaque mise en ligne (push sur main) : publie une version dans « Releases », avec
 #   MediaVior-Windows.exe, MediaVior-Mac.dmg et MediaVior-Linux.AppImage. Les appli installées
-#   la voient et proposent la mise à jour.
+#   la voient et proposent la mise à jour. Aussi MediaVior-extension.zip (Chrome, Brave, Edge…)
+#   et MediaVior-Firefox.xpi, l'extension Firefox signée par Mozilla (« non listée », hors
+#   catalogue), avec firefox-updates.json pour ses mises à jour automatiques.
 # - Lancé à la main (onglet Actions → Run workflow) : construit seulement, pour essayer.
 on:
   push:
@@ -97,9 +99,46 @@ jobs:
           path: dist/${{ matrix.asset }}
           if-no-files-found: error
 
+  # Extension Firefox : signée par Mozilla en « non listée » (pas dans le catalogue, gratuit et
+  # automatique). Il faut les secrets AMO_JWT_ISSUER et AMO_JWT_SECRET du dépôt (clés d'API du
+  # compte addons.mozilla.org). Sans eux, ou si Mozilla refuse, la version sort sans le .xpi.
+  firefox:
+    needs: version
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Préparer et faire signer l'extension Firefox
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+          V: ${{ needs.version.outputs.v }}
+        run: |
+          python3 packaging/extension_firefox.py "$V" build
+          npx --yes web-ext@8 lint --self-hosted --source-dir build/firefox
+          if [ -z "$AMO_JWT_ISSUER" ] || [ -z "$AMO_JWT_SECRET" ]; then
+            echo "::warning::Secrets AMO_JWT_ISSUER / AMO_JWT_SECRET absents : pas d'extension Firefox signée."
+            exit 0
+          fi
+          npx --yes web-ext@8 sign --channel unlisted --source-dir build/firefox \
+            --artifacts-dir build/signed --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
+          mkdir -p dist
+          mv build/signed/*.xpi dist/MediaVior-Firefox.xpi
+          mv build/firefox-updates.json dist/
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firefox
+          path: dist/
+          if-no-files-found: warn
+
   release:
-    if: github.event_name == 'push'
-    needs: [version, build]
+    # Publie même si l'extension Firefox n'a pas pu être signée
+    if: github.event_name == 'push' && !cancelled() && needs.build.result == 'success'
+    needs: [version, build, firefox]
     runs-on: ubuntu-latest
     permissions:
       contents: write
