@@ -1912,10 +1912,15 @@ async def fetch_sons(payload: SonsFetchRequest):
     sons = _load_sons()
     if not sons:
         raise HTTPException(status_code=400, detail="La liste est vide.")
-    n = len(sons)
+    entries = [{"id": s["id"], "query": s["query"], "video_id": (s.get("pick") or {}).get("id")} for s in sons]
+    return await queue_sons(entries, payload)
+
+
+async def queue_sons(entries: list, payload: SonsFetchRequest) -> dict:
+    """Lance la recherche de ces titres sur YouTube. Aussi utilisé par le téléphone (jumelage.py)."""
+    n = len(entries)
     title = f"Liste de sons · {n} titre{'s' if n > 1 else ''}"
-    data = {"sons": [{"id": s["id"], "query": s["query"], "video_id": (s.get("pick") or {}).get("id")}
-                     for s in sons], **payload.model_dump()}
+    data = {"sons": entries, **payload.model_dump()}
     job = _new_job("sons", title, None, data)
     job.update(step=None, found=0, missing=0)
     job_dir = ITEMS_DIR / job["id"]

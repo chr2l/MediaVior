@@ -29,8 +29,6 @@ window.I18N_EN = {
   "Lien de la vidéo ou de la musique": "Link to the video or song",
   "Coller": "Paste",
   "Type": "Type",
-  "Vidéo (MP4)": "Video (MP4)",
-  "Audio (MP3)": "Audio (MP3)",
   "Mettre au coffre": "Put in the vault",
   "Le PC télécharge le fichier. Tu pourras ensuite le récupérer ici.": "The PC downloads the file. You can then get it here.",
   "Allume le PC et ouvre MediaVior : le bouton se réactive tout seul.": "Turn on the PC and open MediaVior: the button comes back by itself.",
@@ -117,8 +115,72 @@ window.I18N_EN = {
   "Le disque du serveur est plein.": "The PC's disk is full.",
   "ffmpeg est introuvable sur le serveur.": "ffmpeg isn't installed on the PC.",
   "La conversion a échoué (ffmpeg).": "Conversion failed (ffmpeg).",
+  // ----- Réglages (mêmes que l'appli PC) -----
+  "Liens": "Links",
+  "Liste de titres": "List of titles",
+  "Vidéo": "Video",
+  "Audio": "Audio",
+  "Un lien, ou plusieurs (un par ligne).": "One link, or several (one per line).",
+  "{n} liens trouvés. Mêmes réglages pour tous.": "{n} links found. Same settings for all.",
+  "Mettre les {n} liens au coffre": "Put the {n} links in the vault",
+  "Mettre les {n} liens au coffre (zip)": "Put the {n} links in the vault (zip)",
+  "Tout dans un seul zip": "Everything in a single zip",
+  "Titres à retrouver sur YouTube": "Titles to find on YouTube",
+  "Artiste - Titre": "Artist - Title",
+  "Un titre par ligne. Le PC cherche chaque son sur YouTube et range tout dans un zip.": "One title per line. The PC finds each song on YouTube and puts them all in a zip.",
+  "{n} titres. Le PC cherche chaque son sur YouTube et range tout dans un zip.": "{n} titles. The PC finds each song on YouTube and puts them all in a zip.",
+  "{n} titre. Le PC le cherche sur YouTube et le range dans un zip.": "{n} title. The PC finds it on YouTube and puts it in a zip.",
+  "Chercher les {n} titres": "Find the {n} titles",
+  "Chercher sur YouTube": "Find on YouTube",
+  "Écris au moins un titre.": "Write at least one title.",
+  "100 titres maximum à la fois.": "100 titles at most at once.",
+  "100 liens maximum à la fois.": "100 links at most at once.",
+  "Mets à jour MediaVior sur le PC pour utiliser la liste de titres.": "Update MediaVior on the PC to use the list of titles.",
+  "Pour avoir tous les réglages, mets à jour MediaVior sur le PC.": "To get all the settings, update MediaVior on the PC.",
+  "Analyse du lien…": "Checking the link…",
+  "Le PC regarde les qualités disponibles.": "The PC is looking up the available qualities.",
+  "Tu peux quand même l'envoyer.": "You can still send it.",
+  "Le PC ne répond pas.": "The PC isn't answering.",
+  "Analyse impossible sur le PC.": "The PC couldn't check this link.",
+  "C'est parti : le PC télécharge {n} liens ✓": "On its way: the PC is downloading {n} links ✓",
+  "Annuler": "Cancel",
+  "Annuler « {titre} » ?": "Cancel “{titre}”?",
+  "Titres refusés par le PC.": "Titles refused by the PC.",
+  "Aucun lien.": "No link.",
+  "Une recherche de la liste est déjà en cours.": "A list search is already running.",
+  "Qualité": "Quality",
+  "Qualité maximale": "Maximum quality",
+  "Meilleure disponible": "Best available",
+  "Format": "Format",
+  "Original · meilleure qualité": "Original · best quality",
+  "MP4 · lisible partout": "MP4 · plays everywhere",
+  "MOV · Apple et montage": "MOV · Apple and editing",
+  "MP3 · le plus compatible": "MP3 · most compatible",
+  "FLAC · sans perte": "FLAC · lossless",
+  "WAV · non compressé": "WAV · uncompressed",
+  "Débit MP3": "MP3 bitrate",
+  "Meilleure qualité possible : la vidéo est gardée telle que le site la fournit, sans conversion (souvent WebM en VP9 ou AV1). Parfait sur ordinateur ou avec VLC, mais pas toujours lu par un iPhone ou Photos Windows.":
+    "Best possible quality: the video is kept exactly as the site provides it, without conversion (often WebM in VP9 or AV1). Perfect on a computer or with VLC, but not always playable on an iPhone or in Windows Photos.",
+  "Lisible partout : téléphones, TV, logiciels de montage (H.264 + AAC). Si le site ne fournit pas ce format à la qualité choisie (souvent au-delà du 1080p), le serveur convertit la vidéo, ce qui peut être long.":
+    "Plays everywhere: phones, TVs, editing software (H.264 + AAC). If the site doesn't offer this format at the chosen quality (often above 1080p), the video is converted, which can take a while.",
+  "Comme le MP4, mais dans le format préféré des logiciels Apple (Final Cut, iMovie).":
+    "Like MP4, but in the format Apple software prefers (Final Cut, iMovie).",
+  "Meilleure qualité possible : la piste est gardée telle que le site la fournit, sans réencodage (souvent Opus ou M4A). Lue par la plupart des appareils récents.":
+    "Best possible quality: the track is kept exactly as the site provides it, without re-encoding (often Opus or M4A). Plays on most recent devices.",
+  "Le format le plus compatible, partout. Réencodé depuis la source : à 320 kb/s, la différence est inaudible.":
+    "The most compatible format, everywhere. Re-encoded from the source: at 320 kb/s, the difference is inaudible.",
+  "Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. Utile pour l'archivage ou les logiciels qui demandent du FLAC.":
+    "Lossless, but no better than the original: sites already stream compressed audio. Useful for archiving or for software that requires FLAC.",
+  "Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio.":
+    "Uncompressed, very large (≈ 10 MB per minute). For audio editing software.",
 };
 
+const plural = (n, one, many) => (Number(n) === 1 ? one : many);
 window.I18N_EN_PATTERNS = [
+  [/^Plusieurs liens · (\d+) liens?$/, (m, n) => `Several links · ${n} ${plural(n, "link", "links")}`],
+  [/^Plusieurs liens · (\d+) fichiers?(?: \((\d+) ratés?\))?$/, (m, n, bad) =>
+    `Several links · ${n} ${plural(n, "file", "files")}${bad ? ` (${bad} failed)` : ""}`],
+  [/^Liste de sons · (\d+) titres?$/, (m, n) => `Song list · ${n} ${plural(n, "title", "titles")}`],
+  [/^(\d+) liens refusés par le PC\. (.*)$/, "$1 links refused by the PC. $2"],
   [/^La conversion a échoué : (.*)$/, "Conversion failed: $1"],
 ];
