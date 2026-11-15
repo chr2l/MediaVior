@@ -75,7 +75,9 @@ Name: "{userprograms}\MediaVior"; Filename: "{app}\MediaVior.exe"
 Name: "{userdesktop}\MediaVior"; Filename: "{app}\MediaVior.exe"; Tasks: bureau
 
 [Run]
-Filename: "{app}\MediaVior.exe"; Description: "{cm:Ouvrir}"; Flags: nowait postinstall
+Filename: "{app}\MediaVior.exe"; Description: "{cm:Ouvrir}"; Flags: nowait postinstall; Check: not ApresMaj
+; Mise à jour lancée depuis l'appli (/APRESMAJ=1) : relance sans nouvelle fenêtre, la page se recharge
+Filename: "{app}\MediaVior.exe"; Parameters: "--apres-maj"; Description: "{cm:Ouvrir}"; Flags: nowait postinstall; Check: ApresMaj
 ; Première installation : montre où l'appli et MediaChest sont rangés (pas lors des mises à jour)
 Filename: "{app}"; Description: "{cm:VoirDossier}"; Flags: shellexec nowait postinstall skipifsilent
 
@@ -94,4 +96,10 @@ begin
     if CompareText(RemoveBackslashUnlessRoot(Precedent),
                    ExpandConstant('{localappdata}\Programs\MediaVior')) <> 0 then
       Result := Precedent;
+end;
+
+// Vrai quand l'installeur est lancé par le bouton « Mettre à jour » de l'appli
+function ApresMaj: Boolean;
+begin
+  Result := ExpandConstant('{param:APRESMAJ|0}') = '1';
 end;

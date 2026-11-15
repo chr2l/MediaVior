@@ -187,7 +187,12 @@ window.I18N_EN = {
   "Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.":
     "Download the new version? Then open the file and drag MediaVior into Applications.",
   "Mise à jour…": "Updating…",
-  "Installation en cours : MediaVior va se rouvrir.": "Installing: MediaVior will reopen.",
+  "Mise à jour vers MediaVior {version}": "Updating to MediaVior {version}",
+  "Téléchargement de la nouvelle version…": "Downloading the new version…",
+  "Installation… MediaVior se ferme puis se rouvre tout seul.": "Installing… MediaVior closes and reopens by itself.",
+  "C'est fait ! MediaVior redémarre…": "Done! MediaVior is restarting…",
+  "C'est plus long que prévu. Si rien ne bouge, rouvre MediaVior depuis l'icône du bureau.":
+    "This is taking longer than expected. If nothing happens, reopen MediaVior from the desktop icon.",
 
   // ----- File d'attente et coffre -----
   "Le serveur a renvoyé une erreur.": "The server returned an error.",
@@ -567,6 +572,12 @@ window.I18N_EN = {
   "Lancer MediaVior au démarrage de l'ordinateur": "Start MediaVior when the computer starts",
   "Il démarre en arrière-plan, sans ouvrir de fenêtre : le téléphone et l'extension du navigateur marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.": "It starts in the background, without opening a window: the phone and the browser extension work right away. Double-click the icon to show the app.",
   "MediaVior version {v}": "MediaVior version {v}",
+  "Mise à jour": "Update",
+  "Rechercher une mise à jour": "Check for updates",
+  "Recherche…": "Checking…",
+  "Nouvelle version disponible : {version}.": "New version available: {version}.",
+  "MediaVior est à jour.": "MediaVior is up to date.",
+  "Recherche de mise à jour indisponible ici.": "Update check isn't available here.",
   "Chemin complet du dossier où ranger les médias :": "Full path of the folder where media should go:",
   "Les prochains médias arriveront dans ce dossier.": "New media will land in this folder.",
   "Ranger les sons et les vidéos dans des dossiers différents": "Keep songs and videos in different folders",
@@ -596,6 +607,7 @@ window.I18N_EN_PATTERNS = [
   [/^La conversion a échoué : (.*)$/, "Conversion failed: $1"],
   [/^Le montage a échoué : (.*)$/, "Editing failed: $1"],
   [/^Mise à jour impossible : (.*)$/, "Update failed: $1"],
+  [/^Vérification impossible : (.*)$/, "Check failed: $1"],
   [/^Copie impossible : (.*)$/, "Copy failed: $1"],
   [/^Relais : erreur (\d+)\.$/, "Relay: error $1."],
   [/^yt-dlp (\S+) disponible : redémarrage pour mise à jour$/, "yt-dlp $1 available: restarting to update"],
