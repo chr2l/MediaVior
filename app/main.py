@@ -200,6 +200,7 @@ if LOCAL_MODE:
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates.env.globals["local"] = LOCAL_MODE  # version PC : toutes les pages le savent (liens.js)
 
 
 # ---------------------------------------------------------------------------
@@ -385,6 +386,22 @@ def _show_in_explorer(target: Path) -> None:
 async def open_folder():
     _local_only()
     _show_in_explorer(DOWNLOAD_DIR)
+    return {"ok": True}
+
+
+class OpenLinkRequest(BaseModel):
+    url: str
+
+
+@app.post("/api/local/open-link")
+async def open_link(req: OpenLinkRequest):
+    """Ouvre un lien dans le navigateur par défaut de l'ordinateur.
+    La fenêtre de l'appli tourne dans Edge/Chrome : sans ça, ses liens s'ouvriraient dans ce navigateur-là."""
+    _local_only()
+    if urlparse(req.url).scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="Lien non pris en charge.")
+    import webbrowser
+    await asyncio.get_running_loop().run_in_executor(None, webbrowser.open, req.url)
     return {"ok": True}
 
 

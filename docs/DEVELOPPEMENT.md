@@ -45,6 +45,7 @@ Deux façons de lancer le même serveur :
 | `app/static/sons.js` | Liste de sons, captures d'écran, fenêtre de choix YouTube |
 | `app/static/editor.js` | Forme d'onde et commandes de l'éditeur |
 | `app/static/local.js` | Boutons de la version PC et fenêtre « Copier le prompt » |
+| `app/static/liens.js` | Version PC seulement : ouvre les liens vers d'autres sites dans le navigateur par défaut de l'ordinateur (et non dans la fenêtre Edge/Chrome de l'appli) |
 | `app/static/sw.js` | Service worker (appli installable). Change `CACHE` quand tu modifies l'interface |
 | `mediavior.py` | Lanceur PC : options, ffmpeg de secours, mises à jour, fenêtre, raccourci bureau |
 | `app/jumelage.py` | Téléphone relié (version PC) : QR code, connexion au relais, messages chiffrés, envoi des fichiers en WebRTC (aiortc) |
