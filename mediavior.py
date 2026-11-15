@@ -680,6 +680,11 @@ def main() -> int:
             print(f"Raccourci impossible : {exc}", file=sys.stderr)
     os.environ["MEDIAVIOR_LOCAL"] = "1"
     os.environ["LECOFFRE_DOWNLOAD_DIR"] = str(folder)
+    # Dossiers à part pour les sons et les vidéos (Réglages), et historique des stats du coffre
+    for kind in ("audio", "video"):
+        if cfg.get(f"{kind}_folder"):
+            os.environ[f"LECOFFRE_{kind.upper()}_DIR"] = cfg[f"{kind}_folder"]
+    os.environ["MEDIAVIOR_STATE_DIR"] = str(HOME_DIR)
     os.environ["LECOFFRE_AUTO_UPDATE"] = "0"  # en local, c'est ce lanceur qui met à jour
     if not args.sans_maj:
         update_in_background(cfg)
@@ -699,6 +704,15 @@ def main() -> int:
         save_config(cfg)
 
     web.FOLDER_HOOK = remember_folder
+
+    def remember_kind_folder(kind: str, path: Optional[str]) -> None:
+        if path:
+            cfg[f"{kind}_folder"] = path
+        else:
+            cfg.pop(f"{kind}_folder", None)
+        save_config(cfg)
+
+    web.KIND_FOLDER_HOOK = remember_kind_folder
     if not args.sans_fenetre or args.demarrage:  # Pinokio (--sans-fenetre) gère seul le lancement
         web.AUTOSTART_HOOK = autostart
         try:
