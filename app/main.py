@@ -77,6 +77,7 @@ QUIT_HOOK = None  # fourni par mediavior.py pour arrêter le serveur proprement
 # Appli prête à installer (.exe, .dmg, AppImage) : nouvelle version publiée et installation
 APP_UPDATE: Optional[dict] = None
 APP_UPDATE_HOOK = None
+APP_UPDATE_CHECK = None  # relance la vérification sur GitHub (bouton des Réglages)
 # Version PC : numéro de version de l'appli installée, réglages gardés par mediavior.py
 APP_VERSION: Optional[str] = None
 FOLDER_HOOK = None  # retient le nouveau dossier des médias (config de mediavior.py)
@@ -607,6 +608,19 @@ async def app_update_info():
     """Nouvelle version de l'appli prête à installer, s'il y en a une."""
     _local_only()
     return (APP_UPDATE or {}).get("release") or {}
+
+
+@app.post("/api/local/maj/verifier")
+async def app_update_check():
+    """Bouton « Rechercher une mise à jour » : redemande à GitHub la dernière version."""
+    _local_only()
+    if not APP_UPDATE_CHECK:
+        raise HTTPException(status_code=404, detail="Recherche de mise à jour indisponible ici.")
+    try:
+        await asyncio.get_running_loop().run_in_executor(None, APP_UPDATE_CHECK)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Vérification impossible : {exc}")
+    return {"version": APP_VERSION, "release": (APP_UPDATE or {}).get("release") or {}}
 
 
 @app.post("/api/local/maj")

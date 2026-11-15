@@ -424,7 +424,15 @@
     <label class="settings-check settings-check--big"><input type="checkbox" id="settingsAutostart"> Lancer MediaVior au démarrage de l'ordinateur</label>
     <p class="hint">Il démarre en arrière-plan, sans ouvrir de fenêtre : le téléphone et l'extension du navigateur marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.</p>
   </section>
-  <p class="hint settings-version" id="settingsVersion"></p>
+  <section class="settings-row" id="settingsUpdateRow" hidden>
+    <h3 class="field-label">Mise à jour</h3>
+    <p class="hint settings-version" id="settingsVersion"></p>
+    <div class="settings-actions">
+      <button type="button" class="btn btn--ghost btn--sm" id="settingsCheck">Rechercher une mise à jour</button>
+      <button type="button" class="btn btn--solid btn--sm" id="settingsInstall" hidden></button>
+    </div>
+    <p class="hint" id="settingsUpdateMsg" role="status" hidden></p>
+  </section>
 </dialog>
 
 <dialog class="yt-dialog ext-dialog" id="extDialog" aria-labelledby="extTitle">

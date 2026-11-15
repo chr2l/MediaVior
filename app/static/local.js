@@ -214,34 +214,46 @@ if (extDialog) {
 // ---------------------------------------------------------------------------
 
 const localBar = document.querySelector(".side__foot");
+
+// Installe la nouvelle version (même chose depuis le panneau ou depuis les Réglages)
+async function installUpdate(rel, btn) {
+  const msg = rel.auto
+    ? t("Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).")
+    : t("Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.");
+  if (!confirm(msg)) return;
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t("Mise à jour…");
+  try {
+    await api("/api/local/maj", { method: "POST" });
+    if (rel.auto) showToast(t("Installation en cours : MediaVior va se rouvrir."));
+  } catch (e) {
+    showToast(e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = label;
+}
+
+// Bouton « Mettre à jour » en bas du panneau
+function showUpdateButton(rel) {
+  if (!localBar || !rel.version) return;
+  let btn = document.getElementById("updateBtn");
+  if (!btn) {
+    btn = h("button", { type: "button", class: "btn btn--ghost btn--sm", id: "updateBtn" });
+    btn.addEventListener("click", () => installUpdate(btn._rel, btn));
+    localBar.prepend(btn);
+  }
+  btn._rel = rel;
+  btn.textContent = t("Mettre à jour ({version})", { version: rel.version });
+}
+
 if (localBar) {
   const checkUpdate = async () => {
-    let rel;
     try {
-      rel = await api("/api/local/maj");
+      showUpdateButton(await api("/api/local/maj"));
     } catch (e) {
-      return;
+      /* pas de réponse : on réessaiera plus tard */
     }
-    if (!rel.version || document.getElementById("updateBtn")) return;
-    const btn = h("button", { type: "button", class: "btn btn--ghost btn--sm", id: "updateBtn" },
-      t("Mettre à jour ({version})", { version: rel.version }));
-    btn.addEventListener("click", async () => {
-      const msg = rel.auto
-        ? t("Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).")
-        : t("Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.");
-      if (!confirm(msg)) return;
-      btn.disabled = true;
-      btn.textContent = t("Mise à jour…");
-      try {
-        await api("/api/local/maj", { method: "POST" });
-        if (rel.auto) showToast(t("Installation en cours : MediaVior va se rouvrir."));
-      } catch (e) {
-        showToast(e.message);
-      }
-      btn.disabled = false;
-      btn.textContent = t("Mettre à jour ({version})", { version: rel.version });
-    });
-    localBar.prepend(btn);
   };
   setTimeout(checkUpdate, 8000);
   setInterval(checkUpdate, 30 * 60 * 1000);
@@ -271,6 +283,7 @@ if (settingsDialog) {
     autoRow.hidden = s.autostart === null;
     autoBox.checked = !!s.autostart;
     versionEl.textContent = s.version ? t("MediaVior version {v}", { v: s.version }) : "";
+    updateRow.hidden = !s.version; // seulement l'appli installée (.exe, .dmg, AppImage)
     const split = Boolean(s.audio_folder || s.video_folder);
     if (split || !kindsBox.hidden) {
       splitBox.checked = true;
@@ -280,6 +293,37 @@ if (settingsDialog) {
     videoEl.textContent = s.video_folder || s.folder;
   };
   const save = async (body) => show(await api("/api/local/settings", { method: "POST", body }));
+
+  // « Rechercher une mise à jour » : redemande tout de suite à GitHub
+  const updateRow = document.getElementById("settingsUpdateRow");
+  const checkBtn = document.getElementById("settingsCheck");
+  const installBtn = document.getElementById("settingsInstall");
+  const updateMsg = document.getElementById("settingsUpdateMsg");
+  let foundRel = null;
+  checkBtn.addEventListener("click", async () => {
+    checkBtn.disabled = true;
+    checkBtn.textContent = t("Recherche…");
+    updateMsg.hidden = true;
+    installBtn.hidden = true;
+    try {
+      const res = await api("/api/local/maj/verifier", { method: "POST" });
+      foundRel = res.release && res.release.version ? res.release : null;
+      if (foundRel) {
+        updateMsg.textContent = t("Nouvelle version disponible : {version}.", { version: foundRel.version });
+        installBtn.textContent = t("Mettre à jour ({version})", { version: foundRel.version });
+        installBtn.hidden = false;
+        showUpdateButton(foundRel);
+      } else {
+        updateMsg.textContent = t("MediaVior est à jour.");
+      }
+    } catch (e) {
+      updateMsg.textContent = e.message;
+    }
+    updateMsg.hidden = false;
+    checkBtn.disabled = false;
+    checkBtn.textContent = t("Rechercher une mise à jour");
+  });
+  installBtn.addEventListener("click", () => foundRel && installUpdate(foundRel, installBtn));
 
   document.getElementById("settingsClose").append(icon("close"));
   document.getElementById("settingsClose").addEventListener("click", () => settingsDialog.close());
