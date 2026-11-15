@@ -234,9 +234,17 @@ async function installUpdate(rel, btn) {
   btn.textContent = label;
 }
 
-// Bouton « Mettre à jour » en bas du panneau
+// Bouton « Mettre à jour » en bas du panneau, et petit rond « ! » sur « Réglages »
+let pendingRelease = null;
 function showUpdateButton(rel) {
   if (!localBar || !rel.version) return;
+  pendingRelease = rel;
+  const gear = document.getElementById("settingsBtn");
+  if (gear && !gear.querySelector(".side-tool__badge")) {
+    gear.classList.add("side-tool--alert");
+    gear.title = t("Nouvelle version disponible : {version}.", { version: rel.version });
+    gear.append(h("span", { class: "side-tool__badge", "aria-hidden": "true" }, "!"));
+  }
   let btn = document.getElementById("updateBtn");
   if (!btn) {
     btn = h("button", { type: "button", class: "btn btn--ghost btn--sm", id: "updateBtn" });
@@ -284,6 +292,7 @@ if (settingsDialog) {
     autoBox.checked = !!s.autostart;
     versionEl.textContent = s.version ? t("MediaVior version {v}", { v: s.version }) : "";
     updateRow.hidden = !s.version; // seulement l'appli installée (.exe, .dmg, AppImage)
+    if (pendingRelease && !foundRel) showFound(pendingRelease); // déjà détectée en arrière-plan
     const split = Boolean(s.audio_folder || s.video_folder);
     if (split || !kindsBox.hidden) {
       splitBox.checked = true;
@@ -300,6 +309,13 @@ if (settingsDialog) {
   const installBtn = document.getElementById("settingsInstall");
   const updateMsg = document.getElementById("settingsUpdateMsg");
   let foundRel = null;
+  const showFound = (rel) => {
+    foundRel = rel;
+    updateMsg.textContent = t("Nouvelle version disponible : {version}.", { version: rel.version });
+    updateMsg.hidden = false;
+    installBtn.textContent = t("Mettre à jour ({version})", { version: rel.version });
+    installBtn.hidden = false;
+  };
   checkBtn.addEventListener("click", async () => {
     checkBtn.disabled = true;
     checkBtn.textContent = t("Recherche…");
@@ -307,12 +323,10 @@ if (settingsDialog) {
     installBtn.hidden = true;
     try {
       const res = await api("/api/local/maj/verifier", { method: "POST" });
-      foundRel = res.release && res.release.version ? res.release : null;
-      if (foundRel) {
-        updateMsg.textContent = t("Nouvelle version disponible : {version}.", { version: foundRel.version });
-        installBtn.textContent = t("Mettre à jour ({version})", { version: foundRel.version });
-        installBtn.hidden = false;
-        showUpdateButton(foundRel);
+      foundRel = null;
+      if (res.release && res.release.version) {
+        showFound(res.release);
+        showUpdateButton(res.release);
       } else {
         updateMsg.textContent = t("MediaVior est à jour.");
       }
