@@ -45,10 +45,24 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     openPopupOn(msg.url);
     return false;
   }
+  if (msg && msg.type === "mediavior-prefs") {
+    prefsFromApp(msg).then(reply, (err) => reply({ ok: false, detail: err.message }));
+    return true;
+  }
   if (!msg || msg.type !== "mediavior-send") return false;
   sendToApp(msg).then(reply, (err) => reply({ ok: false, detail: err.message }));
   return true; // réponse envoyée plus tard
 });
+
+// Format préféré (signet), gardé par l'appli : lu, ou changé avec set
+async function prefsFromApp({ set, kind, container }) {
+  const settings = await getSettings();
+  const server = await findServer(settings.server);
+  const prefs = set
+    ? await api(server, "/api/preferences", { method: "POST", body: { kind, container: container || null } })
+    : await api(server, "/api/preferences");
+  return { ok: true, prefs };
+}
 
 const MAX_SEARCH_DURATION = 15 * 60; // écarte les mix et albums entiers trouvés sur YouTube
 

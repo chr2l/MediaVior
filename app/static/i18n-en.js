@@ -596,6 +596,11 @@ window.I18N_EN = {
   "Choisis un autre dossier.": "Choose another folder.",
   "Attends la fin des téléchargements en cours.": "Wait for the current downloads to finish.",
   "Impossible d'écrire dans ce dossier.": "Can't write to this folder.",
+  // Format préféré (signet dans la liste des formats)
+  "Préféré": "Favorite",
+  "Choisir comme format préféré": "Make this my favorite format",
+  "Ne plus en faire le format préféré": "Remove as favorite format",
+  "Format inconnu.": "Unknown format.",
 };
 
 // Phrases qui contiennent un nombre ou un nom (titres de zips, erreurs détaillées…)

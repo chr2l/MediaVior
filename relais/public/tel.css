@@ -110,6 +110,12 @@ textarea { display: block; width: 100%; resize: none; line-height: 1.4; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field-label { font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dim); }
+/* Liste des formats avec le signet « préféré » (formats.js) */
+.mvf {
+  --mvf-bg: var(--ink); --mvf-raised: var(--raised); --mvf-line: var(--line); --mvf-text: var(--paper);
+  --mvf-dim: var(--dim); --mvf-accent: var(--accent); --mvf-accent-text: var(--accent-bright);
+  --mvf-hover: color-mix(in srgb, var(--accent) 14%, transparent); --mvf-pad: 10px; --mvf-size: 16px;
+}
 select {
   font: inherit; font-size: 16px; width: 100%; min-width: 0; padding: 10px 30px 10px 10px; color: var(--paper);
   background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%239BA3B0' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;

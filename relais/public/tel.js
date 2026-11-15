@@ -254,6 +254,7 @@ document.addEventListener("visibilitychange", () => {
 async function onMessage(msg) {
   if (msg.t === "etat") {
     state = { taches: msg.taches || [], fichiers: msg.fichiers || [] };
+    if (msg.prefs) applyFavorites(msg.prefs);
     const before = pcVersion;
     pcVersion = Number(msg.v) || 0;
     $("majPc").hidden = pcVersion >= 2;
@@ -712,6 +713,51 @@ $("coller").addEventListener("click", async () => {
 $("oublier").addEventListener("click", () => {
   if (confirm("Oublier ce PC ? Il faudra rescanner son QR code pour le retrouver.")) forget();
 });
+
+// --- Format préféré (signet dans la liste des formats) ---
+// Gardé par le PC : le même que dans l'appli et l'extension. Un PC trop ancien n'en envoie pas :
+// la liste reste alors sans signet.
+let favorites = null; // { video, audio } reçu du PC
+const FAV_TEXTS = {
+  favorite: t("Préféré"),
+  mark: t("Choisir comme format préféré"),
+  unmark: t("Ne plus en faire le format préféré"),
+};
+const pickers = {
+  video: MediaViorFormats.enhance($("format"), {
+    texts: FAV_TEXTS, canFavorite: false, alignRight: true, onFavorite: (v) => sendFavorite("video", v),
+  }),
+  audio: MediaViorFormats.enhance($("formatAudio"), {
+    texts: FAV_TEXTS, canFavorite: false, onFavorite: (v) => sendFavorite("audio", v),
+  }),
+};
+
+async function sendFavorite(kind, container) {
+  favorites = { ...favorites, [kind]: container };
+  try {
+    await send({ t: "pref", kind, container });
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+// Préférés reçus du PC : un préféré nouveau ou changé devient le format choisi
+function applyFavorites(prefs) {
+  const before = favorites || { video: null, audio: null };
+  let changed = favorites === null;
+  ["video", "audio"].forEach((kind) => {
+    const value = prefs[kind] || null;
+    const differs = value !== before[kind];
+    if (differs) changed = true;
+    pickers[kind].setCanFavorite(true);
+    pickers[kind].setFavorite(value, differs);
+  });
+  favorites = { video: prefs.video || null, audio: prefs.audio || null };
+  if (changed) {
+    saveOptions();
+    refreshForm();
+  }
+}
 
 restoreOptions();
 refreshAll();

@@ -188,6 +188,8 @@ if APERCU:
                 return JSONResponse([])  # coffre vide pour les visiteurs
             if request.method == "GET" and path == "/api/stats":
                 return JSONResponse({"total": 0})
+            if request.method == "GET" and path == "/api/preferences":
+                return JSONResponse({"video": None, "audio": None})
             if path.startswith("/api/"):
                 return JSONResponse({"detail": APERCU_MSG, "apercu": True}, status_code=403)
             if path.startswith("/edit/"):
@@ -684,6 +686,63 @@ async def service_worker():
         media_type="application/javascript",
         headers={"Cache-Control": "no-cache"},
     )
+
+
+# ---------------------------------------------------------------------------
+# Format préféré (signet dans le choix du format), un pour le son, un pour la vidéo.
+# Gardé par l'appli : la page, l'extension et le téléphone relié voient le même.
+# ---------------------------------------------------------------------------
+
+PREFS_FILE = STATE_DIR / "preferences.json"
+PREFS_LOCK = threading.Lock()
+
+
+class PreferenceRequest(BaseModel):
+    kind: Literal["video", "audio"]
+    container: Optional[str] = None  # None = plus de format préféré pour ce type
+
+
+def _prefs() -> dict:
+    try:
+        data = json.loads(PREFS_FILE.read_text("utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    video, audio = data.get("video"), data.get("audio")
+    return {"video": video if video in VIDEO_CONTAINERS else None,
+            "audio": audio if audio in AUDIO_CONTAINERS else None}
+
+
+def set_preference(kind: str, container: Optional[str]) -> dict:
+    """Retient (ou enlève, avec None) le format préféré d'un type. Renvoie les deux préférés."""
+    allowed = VIDEO_CONTAINERS if kind == "video" else AUDIO_CONTAINERS
+    if kind not in ("video", "audio") or (container is not None and container not in allowed):
+        raise ValueError("Format inconnu.")
+    with PREFS_LOCK:
+        prefs = _prefs()
+        prefs[kind] = container
+        try:
+            STATE_DIR.mkdir(parents=True, exist_ok=True)
+            tmp = PREFS_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps(prefs), "utf-8")
+            tmp.replace(PREFS_FILE)
+        except OSError as exc:
+            raise ValueError(f"Réglage impossible : {exc}")
+    return prefs
+
+
+@app.get("/api/preferences")
+async def get_preferences():
+    return JSONResponse(_prefs(), headers={"Cache-Control": "no-cache"})
+
+
+@app.post("/api/preferences")
+async def save_preference(payload: PreferenceRequest):
+    try:
+        return set_preference(payload.kind, payload.container)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 # ---------------------------------------------------------------------------

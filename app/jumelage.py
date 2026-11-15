@@ -250,6 +250,13 @@ async def _on_phone(phone: str, msg: dict) -> None:
         await _start_links(phone, msg)
     elif t == "titres":
         await _start_titles(phone, msg)
+    elif t == "pref":
+        # Format préféré marqué sur le téléphone : le même que dans l'appli et l'extension
+        container = msg.get("container")
+        try:
+            web.set_preference(str(msg.get("kind") or ""), container if isinstance(container, str) else None)
+        except ValueError as exc:
+            await _send({"t": "erreur", "texte": str(exc)}, phone)
     elif t == "annuler":
         try:
             await web.cancel_job(str(msg.get("id") or ""))
@@ -395,7 +402,8 @@ def _snapshot() -> dict:
                 break
     except OSError:
         pass
-    return {"t": "etat", "v": VERSION, "taches": jobs, "fichiers": items}
+    # prefs : formats préférés (signet), envoyés à nouveau quand ils changent
+    return {"t": "etat", "v": VERSION, "taches": jobs, "fichiers": items, "prefs": web._prefs()}
 
 
 async def _pusher() -> None:
