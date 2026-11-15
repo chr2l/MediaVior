@@ -1,0 +1,49 @@
+/* Liste des formats avec le signet « préféré » (formats.js).
+   Mêmes fichiers dans app/static/, relais/public/ et extension/ : garder les trois copies identiques. */
+.mvf { position: relative; min-width: 0; }
+.mvf__native { display: none !important; }
+.mvf__trigger {
+  display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; margin: 0;
+  padding: var(--mvf-pad, 10px 12px); border: 1px solid var(--mvf-line, #3A4453);
+  border-radius: var(--mvf-radius, 8px); background: var(--mvf-bg, #121821); color: var(--mvf-text, #E9ECF1);
+  font: inherit; font-size: var(--mvf-size, inherit); text-align: left; cursor: pointer;
+}
+.mvf__trigger:hover:not(:disabled) { border-color: var(--mvf-accent, #3B8CC2); }
+.mvf__trigger:focus-visible { outline: 2px solid var(--mvf-accent, #3B8CC2); outline-offset: 1px; }
+.mvf__trigger:disabled { opacity: 0.5; cursor: not-allowed; }
+.mvf__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mvf__chev { flex: none; width: 12px; height: 8px; color: var(--mvf-dim, #9BA3B0); transition: transform 0.15s ease; }
+.mvf.is-open .mvf__chev { transform: rotate(180deg); }
+.mvf__mark { flex: none; width: 14px; height: 14px; color: var(--mvf-accent, #3B8CC2); }
+.mvf__list {
+  position: var(--mvf-list-position, absolute); left: 0; top: calc(100% + 4px); z-index: 50;
+  min-width: 100%; width: max-content; max-width: min(92vw, 360px); box-sizing: border-box;
+  margin: 0; padding: 4px; list-style: none; border: 1px solid var(--mvf-line, #3A4453);
+  border-radius: var(--mvf-radius, 8px); background: var(--mvf-raised, #212B38); color: var(--mvf-text, #E9ECF1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.mvf__list[hidden] { display: none; }
+.mvf--right .mvf__list { left: auto; right: 0; }
+.mvf__opt {
+  display: flex; align-items: center; gap: 8px; padding: 7px 6px 7px 10px; border-radius: 6px;
+  cursor: pointer; outline: none; font-size: var(--mvf-size, inherit); line-height: 1.3;
+}
+.mvf__opt:hover, .mvf__opt:focus-visible { background: var(--mvf-hover, rgba(59, 140, 194, 0.16)); }
+.mvf__opt.is-selected { color: var(--mvf-accent-text, var(--mvf-accent, #58A3D6)); font-weight: 600; }
+.mvf__label { flex: 1; min-width: 0; }
+.mvf__tag {
+  flex: none; padding: 1px 7px; border-radius: 999px; font-size: 0.78em; font-weight: 600;
+  color: var(--mvf-accent, #3B8CC2); background: var(--mvf-hover, rgba(59, 140, 194, 0.16));
+}
+.mvf__star {
+  flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin: -4px 0;
+  padding: 0; border: 0; border-radius: 6px; background: none; color: var(--mvf-dim, #9BA3B0);
+  cursor: pointer; opacity: 0; transition: opacity 0.12s ease, color 0.12s ease;
+}
+.mvf__star svg { width: 16px; height: 16px; }
+.mvf__opt:hover .mvf__star, .mvf__opt:focus-visible .mvf__star, .mvf__opt.is-selected .mvf__star,
+.mvf__star:focus-visible, .mvf__opt.is-fav .mvf__star { opacity: 1; }
+.mvf__star:hover { color: var(--mvf-accent, #3B8CC2); }
+.mvf__star:focus-visible { outline: 2px solid var(--mvf-accent, #3B8CC2); outline-offset: -2px; }
+.mvf__opt.is-fav .mvf__star { color: var(--mvf-accent, #3B8CC2); }
+@media (hover: none) { .mvf__star { opacity: 0.55; } }

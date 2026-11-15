@@ -57,6 +57,16 @@ input, select {
 }
 input:focus, select:focus { outline: 2px solid var(--brass); outline-offset: -1px; }
 
+/* Liste des formats avec le signet « préféré » (formats.js) : la liste s'ouvre dans la fenêtre */
+.mvf {
+  --mvf-list-position: static;
+  --mvf-bg: var(--surface-raised); --mvf-raised: var(--surface); --mvf-line: var(--hairline);
+  --mvf-text: var(--paper); --mvf-dim: var(--paper-dim); --mvf-accent: var(--brass);
+  --mvf-accent-text: var(--brass-bright); --mvf-hover: color-mix(in srgb, var(--brass) 16%, transparent);
+  --mvf-pad: 8px 10px;
+}
+.mvf__list { margin-top: 4px; max-width: none; width: auto; }
+
 .grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
 
 .media { display: flex; gap: 10px; margin-top: 10px; align-items: center; }

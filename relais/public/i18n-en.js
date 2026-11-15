@@ -173,6 +173,11 @@ window.I18N_EN = {
     "Lossless, but no better than the original: sites already stream compressed audio. Useful for archiving or for software that requires FLAC.",
   "Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio.":
     "Uncompressed, very large (≈ 10 MB per minute). For audio editing software.",
+  // Format préféré (signet dans la liste des formats)
+  "Préféré": "Favorite",
+  "Choisir comme format préféré": "Make this my favorite format",
+  "Ne plus en faire le format préféré": "Remove as favorite format",
+  "Format inconnu.": "Unknown format.",
 };
 
 const plural = (n, one, many) => (Number(n) === 1 ? one : many);

@@ -119,6 +119,11 @@ window.I18N_EN = {
   "Relais saturé, nouvel essai bientôt.": "Relay overloaded, retrying soon.",
   "Pas de connexion au relais (Internet coupé ?).": "No connection to the relay (Internet down?).",
   "Il manque un module : relance MediaVior pour finir sa mise à jour.": "A module is missing: restart MediaVior to finish its update.",
+  // Format préféré (signet dans la liste des formats)
+  "Préféré": "Favorite",
+  "Choisir comme format préféré": "Make this my favorite format",
+  "Ne plus en faire le format préféré": "Remove as favorite format",
+  "Format inconnu.": "Unknown format.",
 };
 
 window.I18N_EN_PATTERNS = [];

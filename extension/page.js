@@ -239,6 +239,25 @@
     const audioRows = el("div", { class: "mediavior-grid" }, field(msg("ytFormat"), audioFmt), bitrateField);
     menu.append(videoRows, audioRows);
 
+    // Format préféré (signet) : gardé par l'appli, le même que dans l'appli et le téléphone
+    const favTexts = { favorite: msg("favFormat"), mark: msg("favMark"), unmark: msg("favUnmark") };
+    const pickers = {};
+    [["video", videoFmt, true], ["audio", audioFmt, false]].forEach(([kind, sel, alignRight]) => {
+      pickers[kind] = window.MediaViorFormats.enhance(sel, {
+        texts: favTexts, canFavorite: false, alignRight,
+        onFavorite: (container) => chrome.runtime.sendMessage({ type: "mediavior-prefs", kind, container, set: true })
+          .then((res) => { if (!res || !res.ok) showToast(msg("ytFailed", [(res && res.detail) || "?"]), "error"); })
+          .catch(() => {}),
+      });
+    });
+    chrome.runtime.sendMessage({ type: "mediavior-prefs" }).then((res) => {
+      if (!res || !res.ok || !menu) return; // appli fermée ou trop ancienne : pas de signet
+      ["video", "audio"].forEach((kind) => {
+        pickers[kind].setCanFavorite(true);
+        pickers[kind].setFavorite(res.prefs[kind], true);
+      });
+    }).catch(() => {});
+
     const go = el("button", { type: "button", class: "mediavior-go", text: msg("ytDownload") });
     menu.append(go);
     if (!tgt.query) {

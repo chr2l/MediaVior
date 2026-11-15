@@ -559,6 +559,20 @@ input[type="text"]:focus, input[type="search"]:focus, textarea:focus, select:foc
 
 select:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Liste des formats avec le signet « préféré » (formats.js) : couleurs de l'appli */
+.mvf {
+  --mvf-bg: var(--ink);
+  --mvf-raised: var(--surface-raised);
+  --mvf-line: var(--hairline);
+  --mvf-text: var(--paper);
+  --mvf-dim: var(--paper-dim);
+  --mvf-accent: var(--brass);
+  --mvf-accent-text: var(--brass-bright);
+  --mvf-hover: color-mix(in srgb, var(--brass) 14%, transparent);
+  --mvf-pad: 12px 14px;
+  --mvf-size: 0.95rem;
+}
+
 button:focus-visible, a:focus-visible, [role="slider"]:focus-visible {
   outline: 2px solid var(--brass);
   outline-offset: 2px;
