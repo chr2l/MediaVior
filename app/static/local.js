@@ -214,88 +214,110 @@ if (extDialog) {
 // ---------------------------------------------------------------------------
 
 const localBar = document.querySelector(".side__foot");
-if (localBar) {
-  const checkUpdate = async () => {
-    let rel;
+
+// Écran d'installation dans la fenêtre de l'appli (plus de fenêtre d'installeur Windows) :
+// téléchargement avec pourcentage, puis installation ; MediaVior s'arrête pendant ce temps,
+// et la page se recharge toute seule dès que la nouvelle version répond.
+function showInstall(version) {
+  document.querySelectorAll("dialog[open]").forEach((d) => d.close()); // ex. les Réglages
+  const fill = h("div", { class: "progress__fill" });
+  const pct = h("span", { class: "progress__text" }, "0 %");
+  const bar = h("div", { class: "progress" }, h("div", { class: "progress__track" }, fill), pct);
+  const status = h("p", { class: "hint" }, t("Téléchargement de la nouvelle version…"));
+  const help = h("p", { class: "hint", hidden: true },
+    t("C'est plus long que prévu. Si rien ne bouge, rouvre MediaVior depuis l'icône du bureau."));
+  const box = h("div", { class: "install-box" },
+    h("h2", {}, t("Mise à jour vers MediaVior {version}", { version })),
+    bar, status, help);
+  const screen = h("div", { class: "install-screen", role: "status", "aria-live": "polite" }, box);
+  document.body.append(screen);
+  const started = Date.now();
+  let restarting = false;
+  const tick = async () => {
+    let r = null;
     try {
-      rel = await api("/api/local/maj");
+      r = await api("/api/local/maj");
     } catch (e) {
+      /* MediaVior est arrêté pendant l'installation : on attend qu'il revienne */
+    }
+    const ins = r && r.install;
+    if (r && (r.current === version || (restarting && !ins))) {
+      status.textContent = t("C'est fait ! MediaVior redémarre…");
+      fill.style.width = "100%";
+      bar.classList.add("is-done");
+      setTimeout(() => location.reload(), 800);
       return;
     }
-    if (!rel.version || document.getElementById("updateBtn")) return;
-    const btn = h("button", { type: "button", class: "btn btn--ghost btn--sm", id: "updateBtn" },
-      t("Mettre à jour ({version})", { version: rel.version }));
-    btn.addEventListener("click", async () => {
-      const msg = rel.auto
-        ? t("Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).")
-        : t("Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.");
-      if (!confirm(msg)) return;
-      btn.disabled = true;
-      btn.textContent = t("Mise à jour…");
-      try {
-        await api("/api/local/maj", { method: "POST" });
-        if (rel.auto) return showInstall(rel.version);
-      } catch (e) {
-        showToast(e.message);
-      }
-      btn.disabled = false;
-      btn.textContent = t("Mettre à jour ({version})", { version: rel.version });
-    });
-    localBar.prepend(btn);
+    if (ins && ins.phase === "error") {
+      status.textContent = t("Mise à jour impossible : {error}", { error: ins.error });
+      const close = h("button", { type: "button", class: "btn btn--ghost btn--sm" }, t("Fermer"));
+      close.addEventListener("click", () => location.reload());
+      box.append(close);
+      return;
+    }
+    if (ins && ins.phase === "download") {
+      fill.style.width = ins.percent + "%";
+      pct.textContent = ins.percent + " %";
+    } else {
+      restarting = true;
+      bar.classList.add("is-busy");
+      fill.style.width = "100%";
+      pct.textContent = "";
+      status.textContent = t("Installation… MediaVior se ferme puis se rouvre tout seul.");
+    }
+    help.hidden = Date.now() - started < 3 * 60 * 1000;
+    setTimeout(tick, 700);
   };
-  // Écran d'installation dans la fenêtre de l'appli (plus de fenêtre d'installeur Windows) :
-  // téléchargement avec pourcentage, puis installation ; MediaVior s'arrête pendant ce temps,
-  // et la page se recharge toute seule dès que la nouvelle version répond.
-  const showInstall = (version) => {
-    const fill = h("div", { class: "progress__fill" });
-    const pct = h("span", { class: "progress__text" }, "0 %");
-    const bar = h("div", { class: "progress" }, h("div", { class: "progress__track" }, fill), pct);
-    const status = h("p", { class: "hint" }, t("Téléchargement de la nouvelle version…"));
-    const help = h("p", { class: "hint", hidden: true },
-      t("C'est plus long que prévu. Si rien ne bouge, rouvre MediaVior depuis l'icône du bureau."));
-    const box = h("div", { class: "install-box" },
-      h("h2", {}, t("Mise à jour vers MediaVior {version}", { version })),
-      bar, status, help);
-    const screen = h("div", { class: "install-screen", role: "status", "aria-live": "polite" }, box);
-    document.body.append(screen);
-    const started = Date.now();
-    let restarting = false;
-    const tick = async () => {
-      let r = null;
-      try {
-        r = await api("/api/local/maj");
-      } catch (e) {
-        /* MediaVior est arrêté pendant l'installation : on attend qu'il revienne */
-      }
-      const ins = r && r.install;
-      if (r && (r.current === version || (restarting && !ins))) {
-        status.textContent = t("C'est fait ! MediaVior redémarre…");
-        fill.style.width = "100%";
-        bar.classList.add("is-done");
-        setTimeout(() => location.reload(), 800);
-        return;
-      }
-      if (ins && ins.phase === "error") {
-        status.textContent = t("Mise à jour impossible : {error}", { error: ins.error });
-        const close = h("button", { type: "button", class: "btn btn--ghost btn--sm" }, t("Fermer"));
-        close.addEventListener("click", () => location.reload());
-        box.append(close);
-        return;
-      }
-      if (ins && ins.phase === "download") {
-        fill.style.width = ins.percent + "%";
-        pct.textContent = ins.percent + " %";
-      } else {
-        restarting = true;
-        bar.classList.add("is-busy");
-        fill.style.width = "100%";
-        pct.textContent = "";
-        status.textContent = t("Installation… MediaVior se ferme puis se rouvre tout seul.");
-      }
-      help.hidden = Date.now() - started < 3 * 60 * 1000;
-      setTimeout(tick, 700);
-    };
-    tick();
+  tick();
+}
+
+// Installe la nouvelle version (même chose depuis le panneau ou depuis les Réglages)
+async function installUpdate(rel, btn) {
+  const msg = rel.auto
+    ? t("Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).")
+    : t("Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.");
+  if (!confirm(msg)) return;
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t("Mise à jour…");
+  try {
+    await api("/api/local/maj", { method: "POST" });
+    if (rel.auto) return showInstall(rel.version);
+  } catch (e) {
+    showToast(e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = label;
+}
+
+// Bouton « Mettre à jour » en bas du panneau, et petit rond « ! » sur « Réglages »
+let pendingRelease = null;
+function showUpdateButton(rel) {
+  if (!localBar || !rel.version) return;
+  pendingRelease = rel;
+  const gear = document.getElementById("settingsBtn");
+  if (gear && !gear.querySelector(".side-tool__badge")) {
+    gear.classList.add("side-tool--alert");
+    gear.title = t("Nouvelle version disponible : {version}.", { version: rel.version });
+    gear.append(h("span", { class: "side-tool__badge", "aria-hidden": "true" }, "!"));
+  }
+  let btn = document.getElementById("updateBtn");
+  if (!btn) {
+    btn = h("button", { type: "button", class: "btn btn--ghost btn--sm", id: "updateBtn" });
+    btn.addEventListener("click", () => installUpdate(btn._rel, btn));
+    localBar.prepend(btn);
+  }
+  btn._rel = rel;
+  btn.textContent = t("Mettre à jour ({version})", { version: rel.version });
+}
+
+if (localBar) {
+  const checkUpdate = async () => {
+    try {
+      showUpdateButton(await api("/api/local/maj"));
+    } catch (e) {
+      /* pas de réponse : on réessaiera plus tard */
+    }
   };
   setTimeout(checkUpdate, 8000);
   setInterval(checkUpdate, 30 * 60 * 1000);
@@ -325,6 +347,8 @@ if (settingsDialog) {
     autoRow.hidden = s.autostart === null;
     autoBox.checked = !!s.autostart;
     versionEl.textContent = s.version ? t("MediaVior version {v}", { v: s.version }) : "";
+    updateRow.hidden = !s.version; // seulement l'appli installée (.exe, .dmg, AppImage)
+    if (pendingRelease && !foundRel) showFound(pendingRelease); // déjà détectée en arrière-plan
     const split = Boolean(s.audio_folder || s.video_folder);
     if (split || !kindsBox.hidden) {
       splitBox.checked = true;
@@ -334,6 +358,42 @@ if (settingsDialog) {
     videoEl.textContent = s.video_folder || s.folder;
   };
   const save = async (body) => show(await api("/api/local/settings", { method: "POST", body }));
+
+  // « Rechercher une mise à jour » : redemande tout de suite à GitHub
+  const updateRow = document.getElementById("settingsUpdateRow");
+  const checkBtn = document.getElementById("settingsCheck");
+  const installBtn = document.getElementById("settingsInstall");
+  const updateMsg = document.getElementById("settingsUpdateMsg");
+  let foundRel = null;
+  const showFound = (rel) => {
+    foundRel = rel;
+    updateMsg.textContent = t("Nouvelle version disponible : {version}.", { version: rel.version });
+    updateMsg.hidden = false;
+    installBtn.textContent = t("Mettre à jour ({version})", { version: rel.version });
+    installBtn.hidden = false;
+  };
+  checkBtn.addEventListener("click", async () => {
+    checkBtn.disabled = true;
+    checkBtn.textContent = t("Recherche…");
+    updateMsg.hidden = true;
+    installBtn.hidden = true;
+    try {
+      const res = await api("/api/local/maj/verifier", { method: "POST" });
+      foundRel = null;
+      if (res.release && res.release.version) {
+        showFound(res.release);
+        showUpdateButton(res.release);
+      } else {
+        updateMsg.textContent = t("MediaVior est à jour.");
+      }
+    } catch (e) {
+      updateMsg.textContent = e.message;
+    }
+    updateMsg.hidden = false;
+    checkBtn.disabled = false;
+    checkBtn.textContent = t("Rechercher une mise à jour");
+  });
+  installBtn.addEventListener("click", () => foundRel && installUpdate(foundRel, installBtn));
 
   document.getElementById("settingsClose").append(icon("close"));
   document.getElementById("settingsClose").addEventListener("click", () => settingsDialog.close());

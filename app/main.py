@@ -77,6 +77,7 @@ QUIT_HOOK = None  # fourni par mediavior.py pour arrêter le serveur proprement
 # Appli prête à installer (.exe, .dmg, AppImage) : nouvelle version publiée et installation
 APP_UPDATE: Optional[dict] = None
 APP_UPDATE_HOOK = None
+APP_UPDATE_CHECK = None  # relance la vérification sur GitHub (bouton des Réglages)
 PAGE_SEEN = False  # la page a demandé l'état de la mise à jour (après une relance : pas de 2e fenêtre)
 # Version PC : numéro de version de l'appli installée, réglages gardés par mediavior.py
 APP_VERSION: Optional[str] = None
@@ -201,6 +202,7 @@ if LOCAL_MODE:
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates.env.globals["local"] = LOCAL_MODE  # version PC : toutes les pages le savent (liens.js)
 
 
 # ---------------------------------------------------------------------------
@@ -386,6 +388,22 @@ def _show_in_explorer(target: Path) -> None:
 async def open_folder():
     _local_only()
     _show_in_explorer(DOWNLOAD_DIR)
+    return {"ok": True}
+
+
+class OpenLinkRequest(BaseModel):
+    url: str
+
+
+@app.post("/api/local/open-link")
+async def open_link(req: OpenLinkRequest):
+    """Ouvre un lien dans le navigateur par défaut de l'ordinateur.
+    La fenêtre de l'appli tourne dans Edge/Chrome : sans ça, ses liens s'ouvriraient dans ce navigateur-là."""
+    _local_only()
+    if urlparse(req.url).scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="Lien non pris en charge.")
+    import webbrowser
+    await asyncio.get_running_loop().run_in_executor(None, webbrowser.open, req.url)
     return {"ok": True}
 
 
@@ -612,6 +630,19 @@ async def app_update_info():
     PAGE_SEEN = True
     state = APP_UPDATE or {}
     return {**(state.get("release") or {}), "current": APP_VERSION, "install": state.get("install")}
+
+
+@app.post("/api/local/maj/verifier")
+async def app_update_check():
+    """Bouton « Rechercher une mise à jour » : redemande à GitHub la dernière version."""
+    _local_only()
+    if not APP_UPDATE_CHECK:
+        raise HTTPException(status_code=404, detail="Recherche de mise à jour indisponible ici.")
+    try:
+        await asyncio.get_running_loop().run_in_executor(None, APP_UPDATE_CHECK)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Vérification impossible : {exc}")
+    return {"version": APP_VERSION, "release": (APP_UPDATE or {}).get("release") or {}}
 
 
 @app.post("/api/local/maj")
