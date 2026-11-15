@@ -69,6 +69,7 @@ Deux façons de lancer le même serveur :
   par `h()`.
 - **Liens filtrés** : `_safe_url()` refuse les adresses locales ou internes.
 - **yt-dlp jamais figé** : il se met à jour seul (`entrypoint.sh`, vérification PyPI, lanceur PC).
+- **Erreur 403** : `_run_ytdlp` (app/main.py) réessaie une fois, cache de yt-dlp vidé et autres clients YouTube (`RETRY_403_CLIENTS`). L'appli PC cherche un nouveau yt-dlp à chaque lancement puis toutes les 6 h ; s'il attend d'être chargé, le message d'erreur demande de relancer MediaVior.
 
 ## Traduction (français / anglais)
 

@@ -405,6 +405,8 @@ window.I18N_EN = {
   "Le site limite les requêtes : réessaie dans quelques minutes.": "The site is limiting requests: try again in a few minutes.",
   "Le site a refusé l'accès (403). yt-dlp se met à jour tout seul : réessaie plus tard.":
     "The site refused access (403). yt-dlp updates itself: try again later.",
+  "Le site a refusé l'accès (403). Une version plus récente de yt-dlp est prête : ferme puis relance MediaVior, et réessaie.":
+    "The site refused access (403). A newer yt-dlp is ready: close and reopen MediaVior, then try again.",
   "Le site a changé sa structure. yt-dlp se met à jour tout seul : réessaie plus tard.":
     "The site changed its structure. yt-dlp updates itself: try again later.",
   "Ce format n'est pas disponible pour ce média : essaie une autre qualité.": "This format isn't available for this item: try another quality.",

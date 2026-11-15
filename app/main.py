@@ -750,10 +750,25 @@ ERROR_PATTERNS = [
 ]
 
 
+YTDLP_RESTART_MSG = ("Le site a refusé l'accès (403). Une version plus récente de yt-dlp est prête : "
+                     "ferme puis relance MediaVior, et réessaie.")
+
+
+def _ytdlp_waiting() -> bool:
+    """Appli PC : une version plus récente de yt-dlp est téléchargée mais pas encore chargée."""
+    try:
+        cur = json.loads((STATE_DIR / "yt-dlp" / "actuel.json").read_text("utf-8"))
+        return _version_tuple(cur.get("version", "0")) > _version_tuple(yt_dlp.version.__version__)
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def _humanize_error(exc: Exception) -> str:
     raw = re.sub(r"\x1b\[[0-9;]*m", "", str(exc))
     for pattern, message in ERROR_PATTERNS:
         if re.search(pattern, raw, re.IGNORECASE):
+            if pattern.startswith("http error 403") and LOCAL_MODE and _ytdlp_waiting():
+                return YTDLP_RESTART_MSG
             return message
     # Cas inconnu : on garde la première ligne, sans les préfixes techniques de yt-dlp
     line = next((l for l in raw.splitlines() if l.strip()), "Erreur inconnue.")
@@ -1094,6 +1109,35 @@ async def waveform(item_id: str):
 # Analyse
 # ---------------------------------------------------------------------------
 
+# Erreur 403 : souvent un cache yt-dlp périmé, ou YouTube qui bloque un « client » précis.
+# On réessaie alors une fois, cache vidé, avec d'autres clients YouTube (sans effet ailleurs).
+# Un nom de client inconnu d'une future version de yt-dlp est simplement ignoré.
+RETRY_403_CLIENTS = ["tv", "web_safari", "android_vr", "web_embedded"]
+
+
+def _is_403(exc: Exception) -> bool:
+    return bool(re.search(r"http error 403|403:? forbidden", str(exc), re.IGNORECASE))
+
+
+def _run_ytdlp(opts: dict, run, clean: Optional[Path] = None):
+    """Lance run(ydl) ; après un refus 403, réessaie une fois. clean : dossier où effacer les .part."""
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            return run(ydl)
+    except JobCancelled:
+        raise
+    except Exception as exc:
+        if not _is_403(exc):
+            raise
+    if clean:  # morceaux du premier essai : leurs adresses ne sont plus valables
+        for f in clean.glob("*.part*"):
+            f.unlink(missing_ok=True)
+    retry = {**opts, "extractor_args": {"youtube": {"player_client": RETRY_403_CLIENTS}}}
+    with yt_dlp.YoutubeDL(retry) as ydl:
+        ydl.cache.remove()
+        return run(ydl)
+
+
 def _extract_info(url: str) -> dict:
     ydl_opts = {
         "quiet": True,
@@ -1102,8 +1146,7 @@ def _extract_info(url: str) -> dict:
         "noplaylist": True,
         "extract_flat": "in_playlist",  # une playlist répond vite au lieu d'analyser chaque vidéo
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        return ydl.extract_info(url, download=False)
+    return _run_ytdlp(ydl_opts, lambda ydl: ydl.extract_info(url, download=False))
 
 
 def _format_size(f: dict, duration: Optional[float]) -> Optional[float]:
@@ -1548,11 +1591,13 @@ def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, co
     # En vidéo convertie, la pochette est ajoutée après la conversion en MP4/MOV
     converted = p["mode"] == "video" and container != "original"
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    def run(ydl):
         ydl.add_post_processor(_FileTags(ydl, music=p["mode"] == "audio"), when="pre_process")
         if ydl_opts.get("writethumbnail") and not converted:
             ydl.add_post_processor(_CoverArt(ydl), when="post_process")
-        info = ydl.extract_info(url, download=True) or {}
+        return ydl.extract_info(url, download=True) or {}
+
+    info = _run_ytdlp(ydl_opts, run, clean=job_dir)
 
     if job["_cancel"]:
         raise JobCancelled()
@@ -2185,11 +2230,13 @@ def _sons_sync(job: dict) -> None:
                     else _search_son(son["query"]))
             for url in urls:
                 try:
-                    with yt_dlp.YoutubeDL(opts) as ydl:
+                    def run(ydl, url=url):
                         ydl.add_post_processor(_FileTags(ydl, music=True), when="pre_process")
                         if opts.get("writethumbnail"):
                             ydl.add_post_processor(_CoverArt(ydl), when="post_process")
                         ydl.extract_info(url, download=True)
+
+                    _run_ytdlp(opts, run, clean=target)
                     media = _media_file(target)
                     if media:
                         found[son["id"]] = media

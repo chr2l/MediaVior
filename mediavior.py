@@ -46,6 +46,7 @@ CONFIG = HOME_DIR / "config.json"
 LOG = HOME_DIR / "mediavior.log"
 DEFAULT_PORT = 8010
 UPDATE_EVERY = 24 * 3600
+YTDLP_CHECK_EVERY = 6 * 3600  # appli installée : nouvelle version de yt-dlp ?
 IS_WIN = sys.platform.startswith("win")
 IS_MAC = sys.platform == "darwin"
 
@@ -404,14 +405,16 @@ def update_frozen(cfg: dict) -> None:
         STATE["release"] = check_app_release()
     except Exception as exc:
         print(f"Vérification de la version impossible : {exc}", file=sys.stderr)
-    if time.time() - cfg.get("last_update", 0) < UPDATE_EVERY:
-        return
-    try:
-        update_ytdlp_wheel()
-        cfg["last_update"] = time.time()
-        save_config(cfg)
-    except Exception as exc:
-        print(f"Mise à jour de yt-dlp impossible : {exc}", file=sys.stderr)
+    # yt-dlp : vérifié à chaque lancement puis toutes les 6 h (l'appli peut rester ouverte des
+    # jours si elle démarre avec l'ordinateur). Une version trop ancienne donne des erreurs 403.
+    while True:
+        try:
+            update_ytdlp_wheel()
+            cfg["last_update"] = time.time()
+            save_config(cfg)
+        except Exception as exc:
+            print(f"Mise à jour de yt-dlp impossible : {exc}", file=sys.stderr)
+        time.sleep(YTDLP_CHECK_EVERY)
 
 
 STATE: dict = {"release": None, "install": None}
