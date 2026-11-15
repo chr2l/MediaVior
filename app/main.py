@@ -78,6 +78,7 @@ QUIT_HOOK = None  # fourni par mediavior.py pour arrêter le serveur proprement
 APP_UPDATE: Optional[dict] = None
 APP_UPDATE_HOOK = None
 APP_UPDATE_CHECK = None  # relance la vérification sur GitHub (bouton des Réglages)
+PAGE_SEEN = False  # la page a demandé l'état de la mise à jour (après une relance : pas de 2e fenêtre)
 # Version PC : numéro de version de l'appli installée, réglages gardés par mediavior.py
 APP_VERSION: Optional[str] = None
 FOLDER_HOOK = None  # retient le nouveau dossier des médias (config de mediavior.py)
@@ -622,9 +623,13 @@ async def extension_prepare():
 
 @app.get("/api/local/maj")
 async def app_update_info():
-    """Nouvelle version de l'appli prête à installer, s'il y en a une."""
+    """Nouvelle version de l'appli prête à installer, s'il y en a une, version installée
+    (« current ») et avancement de l'installation en cours (« install »)."""
+    global PAGE_SEEN
     _local_only()
-    return (APP_UPDATE or {}).get("release") or {}
+    PAGE_SEEN = True
+    state = APP_UPDATE or {}
+    return {**(state.get("release") or {}), "current": APP_VERSION, "install": state.get("install")}
 
 
 @app.post("/api/local/maj/verifier")

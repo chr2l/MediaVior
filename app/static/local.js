@@ -215,6 +215,62 @@ if (extDialog) {
 
 const localBar = document.querySelector(".side__foot");
 
+// Écran d'installation dans la fenêtre de l'appli (plus de fenêtre d'installeur Windows) :
+// téléchargement avec pourcentage, puis installation ; MediaVior s'arrête pendant ce temps,
+// et la page se recharge toute seule dès que la nouvelle version répond.
+function showInstall(version) {
+  document.querySelectorAll("dialog[open]").forEach((d) => d.close()); // ex. les Réglages
+  const fill = h("div", { class: "progress__fill" });
+  const pct = h("span", { class: "progress__text" }, "0 %");
+  const bar = h("div", { class: "progress" }, h("div", { class: "progress__track" }, fill), pct);
+  const status = h("p", { class: "hint" }, t("Téléchargement de la nouvelle version…"));
+  const help = h("p", { class: "hint", hidden: true },
+    t("C'est plus long que prévu. Si rien ne bouge, rouvre MediaVior depuis l'icône du bureau."));
+  const box = h("div", { class: "install-box" },
+    h("h2", {}, t("Mise à jour vers MediaVior {version}", { version })),
+    bar, status, help);
+  const screen = h("div", { class: "install-screen", role: "status", "aria-live": "polite" }, box);
+  document.body.append(screen);
+  const started = Date.now();
+  let restarting = false;
+  const tick = async () => {
+    let r = null;
+    try {
+      r = await api("/api/local/maj");
+    } catch (e) {
+      /* MediaVior est arrêté pendant l'installation : on attend qu'il revienne */
+    }
+    const ins = r && r.install;
+    if (r && (r.current === version || (restarting && !ins))) {
+      status.textContent = t("C'est fait ! MediaVior redémarre…");
+      fill.style.width = "100%";
+      bar.classList.add("is-done");
+      setTimeout(() => location.reload(), 800);
+      return;
+    }
+    if (ins && ins.phase === "error") {
+      status.textContent = t("Mise à jour impossible : {error}", { error: ins.error });
+      const close = h("button", { type: "button", class: "btn btn--ghost btn--sm" }, t("Fermer"));
+      close.addEventListener("click", () => location.reload());
+      box.append(close);
+      return;
+    }
+    if (ins && ins.phase === "download") {
+      fill.style.width = ins.percent + "%";
+      pct.textContent = ins.percent + " %";
+    } else {
+      restarting = true;
+      bar.classList.add("is-busy");
+      fill.style.width = "100%";
+      pct.textContent = "";
+      status.textContent = t("Installation… MediaVior se ferme puis se rouvre tout seul.");
+    }
+    help.hidden = Date.now() - started < 3 * 60 * 1000;
+    setTimeout(tick, 700);
+  };
+  tick();
+}
+
 // Installe la nouvelle version (même chose depuis le panneau ou depuis les Réglages)
 async function installUpdate(rel, btn) {
   const msg = rel.auto
@@ -226,7 +282,7 @@ async function installUpdate(rel, btn) {
   btn.textContent = t("Mise à jour…");
   try {
     await api("/api/local/maj", { method: "POST" });
-    if (rel.auto) showToast(t("Installation en cours : MediaVior va se rouvrir."));
+    if (rel.auto) return showInstall(rel.version);
   } catch (e) {
     showToast(e.message);
   }

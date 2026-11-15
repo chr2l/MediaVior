@@ -1561,6 +1561,30 @@ input[type="range"] {
   padding: 24px;
 }
 
+/* Mise à jour de l'appli : l'avancement s'affiche par-dessus la page (pas de fenêtre d'installeur) */
+.install-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--ink) 80%, transparent);
+  backdrop-filter: blur(4px);
+}
+.install-box {
+  width: min(440px, 100%);
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius);
+}
+.install-box h2 { margin: 0; font-size: 1.1rem; }
+.install-box .progress { margin-top: 18px; }
+.install-box .hint { margin: 10px 0 0; }
+.install-box .btn { margin-top: 14px; }
+
 /* ---------- Panneau de droite : listes plus serrées ---------- */
 
 .item-day {

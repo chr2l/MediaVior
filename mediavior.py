@@ -233,13 +233,19 @@ def _get_json(url: str):
         return json.load(resp)
 
 
-def _download(url: str, dest: Path, sha256: Optional[str] = None) -> None:
+def _download(url: str, dest: Path, sha256: Optional[str] = None, progress=None) -> None:
+    """Télécharge url dans dest. progress(pourcentage) est appelé au fil du téléchargement."""
     tmp = dest.with_name(dest.name + ".part")
     digest = hashlib.sha256()
     with urlopen(Request(url, headers={"User-Agent": "MediaVior"}), timeout=60) as resp, tmp.open("wb") as f:
+        total = int(resp.headers.get("Content-Length") or 0)
+        done = 0
         while chunk := resp.read(1 << 16):
             digest.update(chunk)
             f.write(chunk)
+            done += len(chunk)
+            if progress and total:
+                progress(min(100, done * 100 // total))
     if sha256 and digest.hexdigest() != sha256:
         tmp.unlink(missing_ok=True)
         raise ValueError(f"empreinte incorrecte pour {dest.name}")
@@ -335,30 +341,62 @@ def check_app_release() -> Optional[dict]:
 
 
 def install_app_update(info: dict, quit_hook) -> None:
-    """Windows : lance l'installeur en silencieux puis quitte (il relance l'appli).
-    Linux : remplace le fichier AppImage, puis relance. Mac : ouvre la page de téléchargement."""
+    """Windows : lance l'installeur sans fenêtre puis quitte (il relance l'appli).
+    Linux : remplace le fichier AppImage, puis relance. Mac : ouvre la page de téléchargement.
+    La progression va dans STATE["install"] : la page de l'appli l'affiche elle-même."""
     if IS_MAC:
         webbrowser.open(info["url"])
         return
+
+    def step(phase: str, percent: int = 0) -> None:
+        STATE["install"] = {"phase": phase, "percent": percent, "version": info["version"]}
+
+    step("download")
     tmpdir = Path(tempfile.mkdtemp(prefix="mediavior-maj-"))
     if IS_WIN:
         setup = tmpdir / RELEASE_ASSETS["win"]
-        _download(info["url"], setup)
-        subprocess.Popen([str(setup), "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART"],
+        _download(info["url"], setup, progress=lambda pc: step("download", pc))
+        step("install", 100)
+        time.sleep(1.5)  # la page a le temps de voir « Installation… » avant l'arrêt
+        # /VERYSILENT : aucune fenêtre d'installeur, la page de l'appli montre l'avancement.
+        # /APRESMAJ=1 : l'installeur relance MediaVior sans rouvrir de fenêtre (la page se recharge).
+        subprocess.Popen([str(setup), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/APRESMAJ=1"],
                          creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
         quit_hook()
         return
     appimage = os.environ.get("APPIMAGE")
     if not appimage:
+        STATE["install"] = None
         webbrowser.open(info["url"])
         return
     new = Path(appimage).with_name(Path(appimage).name + ".nouveau")
-    _download(info["url"], new)
+    _download(info["url"], new, progress=lambda pc: step("download", pc))
+    step("install", 100)
     new.chmod(0o755)
     new.replace(appimage)
-    subprocess.Popen([appimage], start_new_session=True,
+    time.sleep(1.5)
+    subprocess.Popen([appimage, "--apres-maj"], start_new_session=True,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     quit_hook()
+
+
+def start_app_update(info: dict, quit_hook) -> None:
+    """Démarre la mise à jour en arrière-plan (la page suit l'avancement)."""
+    if (STATE.get("install") or {}).get("phase") in ("download", "install"):
+        return  # déjà en cours
+    if IS_MAC:
+        install_app_update(info, quit_hook)
+        return
+
+    def run():
+        try:
+            install_app_update(info, quit_hook)
+        except Exception as exc:
+            print(f"Mise à jour impossible : {exc}", file=sys.stderr)
+            STATE["install"] = {"phase": "error", "error": str(exc), "version": info["version"]}
+
+    STATE["install"] = {"phase": "download", "percent": 0, "version": info["version"]}
+    threading.Thread(target=run, daemon=True).start()
 
 
 def update_frozen(cfg: dict) -> None:
@@ -376,7 +414,7 @@ def update_frozen(cfg: dict) -> None:
         print(f"Mise à jour de yt-dlp impossible : {exc}", file=sys.stderr)
 
 
-STATE: dict = {"release": None}
+STATE: dict = {"release": None, "install": None}
 
 
 # ---------------------------------------------------------------------------
@@ -636,6 +674,7 @@ def main() -> int:
     parser.add_argument("--demarrage", action="store_true",
                         help="lancé au démarrage de l'ordinateur (sans fenêtre)")
     parser.add_argument("--sans-maj", action="store_true", help="ne pas chercher de mise à jour")
+    parser.add_argument("--apres-maj", action="store_true", help=argparse.SUPPRESS)  # relancé par la mise à jour
     parser.add_argument("--raccourci", action="store_true", help="créer le raccourci sur le bureau")
     parser.add_argument("--verifier", action="store_true", help="vérifier l'installation")
     args = parser.parse_args()
@@ -662,7 +701,7 @@ def main() -> int:
     port = args.port or cfg.get("port") or DEFAULT_PORT
     # Déjà ouvert ? On montre simplement la fenêtre.
     if is_mediavior(port):
-        if not (args.sans_fenetre or args.demarrage):
+        if not (args.sans_fenetre or args.demarrage or args.apres_maj):
             open_window(f"http://127.0.0.1:{port}/")
         print(f"MediaVior tourne déjà : http://127.0.0.1:{port}/")
         return 0
@@ -722,7 +761,7 @@ def main() -> int:
             print(f"Lancement au démarrage : {exc}", file=sys.stderr)
     if FROZEN:
         web.APP_UPDATE = STATE  # « release » est rempli en arrière-plan s'il y a du nouveau
-        web.APP_UPDATE_HOOK = lambda: install_app_update(STATE["release"], web.QUIT_HOOK)
+        web.APP_UPDATE_HOOK = lambda: start_app_update(STATE["release"], web.QUIT_HOOK)
         web.APP_UPDATE_CHECK = lambda: STATE.update(release=check_app_release())
     url = f"http://127.0.0.1:{port}/"
 
@@ -730,7 +769,15 @@ def main() -> int:
         for _ in range(100):
             if server.started:
                 print(f"MediaVior est prêt : {url}", flush=True)
-                if not (args.sans_fenetre or args.demarrage):
+                if args.apres_maj:
+                    # Après une mise à jour, l'ancienne fenêtre se recharge seule. Si elle a été
+                    # fermée entre-temps (aucune visite en 20 s), on en rouvre une.
+                    for _ in range(200):
+                        if web.PAGE_SEEN:
+                            return
+                        time.sleep(0.1)
+                    open_window(url)
+                elif not (args.sans_fenetre or args.demarrage):
                     open_window(url)
                 return
             time.sleep(0.1)

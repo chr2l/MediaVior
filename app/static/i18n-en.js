@@ -187,7 +187,12 @@ window.I18N_EN = {
   "Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.":
     "Download the new version? Then open the file and drag MediaVior into Applications.",
   "Mise à jour…": "Updating…",
-  "Installation en cours : MediaVior va se rouvrir.": "Installing: MediaVior will reopen.",
+  "Mise à jour vers MediaVior {version}": "Updating to MediaVior {version}",
+  "Téléchargement de la nouvelle version…": "Downloading the new version…",
+  "Installation… MediaVior se ferme puis se rouvre tout seul.": "Installing… MediaVior closes and reopens by itself.",
+  "C'est fait ! MediaVior redémarre…": "Done! MediaVior is restarting…",
+  "C'est plus long que prévu. Si rien ne bouge, rouvre MediaVior depuis l'icône du bureau.":
+    "This is taking longer than expected. If nothing happens, reopen MediaVior from the desktop icon.",
 
   // ----- File d'attente et coffre -----
   "Le serveur a renvoyé une erreur.": "The server returned an error.",
