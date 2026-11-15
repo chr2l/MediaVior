@@ -1870,12 +1870,12 @@ input[type="range"] {
   background: var(--surface-raised); border: 1px solid var(--hairline); overflow-wrap: anywhere;
 }
 .settings-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
-.settings-actions .btn { width: auto; }
+.settings-actions .btn { width: auto; margin-top: 0; }
 .settings-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
 .settings-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--brass); }
 .settings-check--big { font-size: 0.95rem; font-weight: 500; }
 .settings-check[hidden] { display: none; }
-.settings-version { margin: 18px 0 0; font-variant-numeric: tabular-nums; }
+.settings-version { font-variant-numeric: tabular-nums; }
 
 /* Boutons de téléchargement de l'appli PC (fenêtre « Avoir MediaVior sur ton PC ») */
 .dl-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }

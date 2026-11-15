@@ -723,6 +723,7 @@ def main() -> int:
     if FROZEN:
         web.APP_UPDATE = STATE  # « release » est rempli en arrière-plan s'il y a du nouveau
         web.APP_UPDATE_HOOK = lambda: install_app_update(STATE["release"], web.QUIT_HOOK)
+        web.APP_UPDATE_CHECK = lambda: STATE.update(release=check_app_release())
     url = f"http://127.0.0.1:{port}/"
 
     def when_ready():
