@@ -36,6 +36,21 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # Les médias finis sont rangés directement dans DOWNLOAD_DIR. Leurs fiches (titre, pochette…)
 # et les fichiers en cours de téléchargement vont dans ce sous-dossier caché.
 ITEMS_DIR = DOWNLOAD_DIR / ".mediavior"
+# Dossiers à part pour les sons et pour les vidéos (version PC, réglages). Vide = dossier principal.
+AUDIO_DIR: "Optional[Path]" = Path(os.environ["LECOFFRE_AUDIO_DIR"]) if os.environ.get("LECOFFRE_AUDIO_DIR") else None
+VIDEO_DIR: "Optional[Path]" = Path(os.environ["LECOFFRE_VIDEO_DIR"]) if os.environ.get("LECOFFRE_VIDEO_DIR") else None
+for _d in (AUDIO_DIR, VIDEO_DIR):
+    if _d:
+        try:
+            _d.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+# Historique des téléchargements pour les stats du coffre : il garde tout ce qui a été téléchargé,
+# même si les fichiers sont ensuite déplacés ailleurs. Hors du dossier des médias (version PC :
+# ~/.mediavior), pour survivre aussi à un changement de dossier.
+STATE_DIR = Path(os.environ.get("MEDIAVIOR_STATE_DIR") or ITEMS_DIR)
+HISTORY_FILE = STATE_DIR / "historique.json"
+HISTORY_LOCK = threading.Lock()
 
 
 def _prepare_items_dir(d: Path) -> None:
@@ -65,6 +80,7 @@ APP_UPDATE_HOOK = None
 # Version PC : numéro de version de l'appli installée, réglages gardés par mediavior.py
 APP_VERSION: Optional[str] = None
 FOLDER_HOOK = None  # retient le nouveau dossier des médias (config de mediavior.py)
+KIND_FOLDER_HOOK = None  # retient le dossier à part des sons / des vidéos (kind, chemin ou None)
 AUTOSTART_HOOK = None  # lancement au démarrage du PC : AUTOSTART_HOOK() lit, AUTOSTART_HOOK(True/False) règle
 
 # Change à chaque démarrage : force le navigateur à recharger CSS/JS après une mise à jour
@@ -168,6 +184,8 @@ if APERCU:
                 return await call_next(request)
             if request.method == "GET" and path in ("/api/library", "/api/jobs", "/api/sons"):
                 return JSONResponse([])  # coffre vide pour les visiteurs
+            if request.method == "GET" and path == "/api/stats":
+                return JSONResponse({"total": 0})
             if path.startswith("/api/"):
                 return JSONResponse({"detail": APERCU_MSG, "apercu": True}, status_code=403)
             if path.startswith("/edit/"):
@@ -375,6 +393,9 @@ class SettingsRequest(BaseModel):
     folder: Optional[str] = None
     move: bool = True  # déplacer aussi les médias déjà rangés vers le nouveau dossier
     autostart: Optional[bool] = None
+    # Dossier à part pour les sons / pour les vidéos ; "" = revenir au dossier principal
+    audio_folder: Optional[str] = None
+    video_folder: Optional[str] = None
 
 
 def _autostart_state() -> Optional[bool]:
@@ -389,6 +410,8 @@ def _autostart_state() -> Optional[bool]:
 
 def _settings() -> dict:
     return {"folder": str(DOWNLOAD_DIR), "autostart": _autostart_state(), "version": APP_VERSION,
+            "audio_folder": str(AUDIO_DIR) if AUDIO_DIR else None,
+            "video_folder": str(VIDEO_DIR) if VIDEO_DIR else None,
             "count": sum(1 for d in ITEMS_DIR.iterdir() if d.is_dir() and ITEM_ID.match(d.name))}
 
 
@@ -404,7 +427,7 @@ def _change_folder(new: Path, move: bool) -> None:
                 continue
             meta = _read_meta(d)
             media = _media_file(d, meta)
-            if media and meta.get("file"):
+            if media and meta.get("file") and not meta.get("dir"):  # sons / vidéos à part : restent
                 target = _free_name(media.name, new)
                 shutil.move(str(media), str(target))
                 meta["file"] = target.name
@@ -426,8 +449,30 @@ async def get_settings():
     return _settings()
 
 
+def _writable_folder(raw: str) -> Path:
+    """Chemin donné par la personne → dossier existant où l'appli peut écrire, sinon erreur claire."""
+    new = Path(raw.strip()).expanduser()
+    if not new.is_absolute():
+        raise HTTPException(status_code=400, detail="Donne le chemin complet du dossier.")
+    try:
+        new = new.resolve()
+    except OSError:
+        raise HTTPException(status_code=400, detail="Ce dossier est introuvable.")
+    if new == ITEMS_DIR.resolve() or ITEMS_DIR.resolve() in new.parents:
+        raise HTTPException(status_code=400, detail="Choisis un autre dossier.")
+    try:
+        new.mkdir(parents=True, exist_ok=True)
+        probe = new / ".mediavior-test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+    except OSError:
+        raise HTTPException(status_code=400, detail="Impossible d'écrire dans ce dossier.")
+    return new
+
+
 @app.post("/api/local/settings")
 async def save_settings(payload: SettingsRequest):
+    global AUDIO_DIR, VIDEO_DIR
     _local_only()
     if payload.autostart is not None:
         if not AUTOSTART_HOOK:
@@ -436,6 +481,19 @@ async def save_settings(payload: SettingsRequest):
             AUTOSTART_HOOK(payload.autostart)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
+    for kind in ("audio", "video"):
+        raw = getattr(payload, f"{kind}_folder")
+        if raw is None:
+            continue
+        target = _writable_folder(raw) if raw.strip() else None
+        if target and target == DOWNLOAD_DIR.resolve():
+            target = None  # même dossier que le principal : rien de spécial
+        if kind == "audio":
+            AUDIO_DIR = target
+        else:
+            VIDEO_DIR = target
+        if KIND_FOLDER_HOOK:
+            KIND_FOLDER_HOOK(kind, str(target) if target else None)
     if payload.folder:
         new = Path(payload.folder).expanduser()
         if not new.is_absolute():
@@ -686,8 +744,8 @@ def _write_meta(d: Path, meta: dict) -> None:
 
 def _media_file(d: Path, meta: Optional[dict] = None) -> Optional[Path]:
     meta = _read_meta(d) if meta is None else meta
-    if meta.get("file"):  # média fini, rangé dans le dossier principal
-        media = DOWNLOAD_DIR / meta["file"]
+    if meta.get("file"):  # média fini : dossier principal, ou celui des sons / des vidéos
+        media = Path(meta["dir"]) / meta["file"] if meta.get("dir") else DOWNLOAD_DIR / meta["file"]
         return media if media.is_file() else None
     candidates = [
         p for p in d.iterdir()
@@ -732,17 +790,36 @@ def _free_name(name: str, folder: Optional[Path] = None) -> Path:
     return target
 
 
+def _folder_for(media: Path) -> Path:
+    """Dossier où ranger ce média : celui des sons, celui des vidéos, sinon le principal (zips…)."""
+    ext = media.suffix.lower()
+    if ext in AUDIO_EXTS and AUDIO_DIR:
+        return AUDIO_DIR
+    if ext not in AUDIO_EXTS and ext != ".zip" and VIDEO_DIR:
+        return VIDEO_DIR
+    return DOWNLOAD_DIR
+
+
 def _publish(d: Path) -> Optional[Path]:
     """Sort le média fini de son dossier de travail et le range directement dans le dossier
-    principal, à côté des autres. Sa fiche retient son nom."""
+    principal (ou celui des sons / des vidéos), à côté des autres. Sa fiche retient où."""
     meta = _read_meta(d)
     media = _media_file(d, meta)
     if not media or meta.get("file"):
         return media
-    target = _free_name(media.name)
+    folder = _folder_for(media)
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        folder = DOWNLOAD_DIR  # disque débranché… : dossier principal
+    target = _free_name(media.name, folder)
     shutil.move(str(media), str(target))
     meta.setdefault("status", "done")  # anciens médias sans fiche
     meta["file"] = target.name
+    if folder != DOWNLOAD_DIR:
+        meta["dir"] = str(folder)
+    else:
+        meta.pop("dir", None)
     _write_meta(d, meta)
     return target
 
@@ -792,6 +869,46 @@ def _cleanup_unfinished() -> None:
             z.unlink(missing_ok=True)
 
 
+def _read_history() -> dict:
+    try:
+        data = json.loads(HISTORY_FILE.read_text("utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_history(history: dict) -> None:
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = HISTORY_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(history, ensure_ascii=False), "utf-8")
+        tmp.replace(HISTORY_FILE)
+    except OSError:
+        pass  # les stats attendront la prochaine fois
+
+
+def _remember(items: list) -> None:
+    """Note chaque média du coffre dans l'historique (ajouts et tailles à jour)."""
+    with HISTORY_LOCK:
+        history = _read_history()
+        changed = False
+        for i in items:
+            entry = {"mode": i["mode"], "size": i["size"], "duration": i.get("duration") or 0,
+                     "created": i["created"]}
+            if history.get(i["id"]) != entry:
+                history[i["id"]] = entry
+                changed = True
+        if changed:
+            _write_history(history)
+
+
+def _forget(item_id: str) -> None:
+    with HISTORY_LOCK:
+        history = _read_history()
+        if history.pop(item_id, None) is not None:
+            _write_history(history)
+
+
 @app.get("/api/library")
 async def library():
     items = [
@@ -799,7 +916,26 @@ async def library():
         if d.is_dir() and ITEM_ID.match(d.name) and (item := _item_view(d))
     ]
     items.sort(key=lambda i: i["created"], reverse=True)
+    await asyncio.get_running_loop().run_in_executor(None, _remember, items)
     return items
+
+
+@app.get("/api/stats")
+async def stats():
+    """Stats du coffre : tout ce qui a été téléchargé, même si les fichiers ont été déplacés
+    ailleurs depuis. Seul « Enlever du coffre » dans l'appli retire un média des stats."""
+    with HISTORY_LOCK:
+        entries = list(_read_history().values())
+    count = {"audio": 0, "video": 0, "archive": 0}
+    for e in entries:
+        count[e.get("mode")] = count.get(e.get("mode"), 0) + 1
+    return {
+        "total": len(entries),
+        "audio": count["audio"], "video": count["video"], "archive": count["archive"],
+        "size": sum(e.get("size") or 0 for e in entries),
+        "duration": sum(e.get("duration") or 0 for e in entries),
+        "last": max((e.get("created") or 0 for e in entries), default=None),
+    }
 
 
 def _probe(path: Path) -> dict:
@@ -840,11 +976,13 @@ async def delete_item(item_id: str):
     job = JOBS.get(item_id)
     if job and job["status"] in ACTIVE_STATUSES:
         raise HTTPException(status_code=409, detail="Ce fichier est encore en cours de traitement.")
-    media = _media_file(d)
-    if media and media.parent == DOWNLOAD_DIR:
+    meta = _read_meta(d)
+    media = _media_file(d, meta)
+    if media and meta.get("file"):  # média rangé (dossier principal, sons ou vidéos)
         media.unlink(missing_ok=True)
     shutil.rmtree(d, ignore_errors=True)
     JOBS.pop(item_id, None)
+    _forget(item_id)
     return {"ok": True}
 
 
@@ -1912,10 +2050,15 @@ async def fetch_sons(payload: SonsFetchRequest):
     sons = _load_sons()
     if not sons:
         raise HTTPException(status_code=400, detail="La liste est vide.")
-    n = len(sons)
+    entries = [{"id": s["id"], "query": s["query"], "video_id": (s.get("pick") or {}).get("id")} for s in sons]
+    return await queue_sons(entries, payload)
+
+
+async def queue_sons(entries: list, payload: SonsFetchRequest) -> dict:
+    """Lance la recherche de ces titres sur YouTube. Aussi utilisé par le téléphone (jumelage.py)."""
+    n = len(entries)
     title = f"Liste de sons · {n} titre{'s' if n > 1 else ''}"
-    data = {"sons": [{"id": s["id"], "query": s["query"], "video_id": (s.get("pick") or {}).get("id")}
-                     for s in sons], **payload.model_dump()}
+    data = {"sons": entries, **payload.model_dump()}
     job = _new_job("sons", title, None, data)
     job.update(step=None, found=0, missing=0)
     job_dir = ITEMS_DIR / job["id"]

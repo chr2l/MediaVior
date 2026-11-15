@@ -148,6 +148,12 @@ Bouton **Réglages** en haut de l'appli :
 
 - **Dossier des médias** : choisis où arrivent les fichiers téléchargés. Les médias déjà rangés
   peuvent suivre (case cochée par défaut).
+- **Ranger les sons et les vidéos dans des dossiers différents** : un dossier pour les sons, un
+  pour les vidéos (ou le même pour les deux). Vaut pour les prochains téléchargements ; les zips
+  restent dans le dossier principal.
+- **Stats du coffre** (en haut du panneau « Dans le coffre ») : elles comptent tout ce qui a été
+  téléchargé, même si tu déplaces ensuite des fichiers ailleurs (historique dans
+  `~/.mediavior/historique.json`). Seul « Enlever du coffre » dans l'appli retire un média des stats.
 - **Lancer MediaVior au démarrage de l'ordinateur** : il démarre en arrière-plan, sans fenêtre.
   Le téléphone et l'extension du navigateur marchent tout de suite.
 - Le numéro de version de l'appli est affiché en bas de la fenêtre des réglages et de l'appli.

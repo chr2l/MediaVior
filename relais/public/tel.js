@@ -254,9 +254,17 @@ document.addEventListener("visibilitychange", () => {
 async function onMessage(msg) {
   if (msg.t === "etat") {
     state = { taches: msg.taches || [], fichiers: msg.fichiers || [] };
+    const before = pcVersion;
+    pcVersion = Number(msg.v) || 0;
+    $("majPc").hidden = pcVersion >= 2;
+    if (before < 2 && pcVersion >= 2) scheduleAnalyse();
     renderLists();
+  } else if (msg.t === "analyse") {
+    const done = waiting.get(msg.rid);
+    waiting.delete(msg.rid);
+    if (done) done(msg);
   } else if (msg.t === "recu") {
-    toast("C'est parti : le PC télécharge ✓");
+    toast(msg.n > 1 ? t("C'est parti : le PC télécharge {n} liens ✓", { n: msg.n }) : "C'est parti : le PC télécharge ✓");
   } else if (msg.t === "erreur") {
     toast(msg.texte || "Le PC a refusé la demande.", 5000);
     if (msg.tid) failTransfer(msg.tid, msg.texte);
@@ -276,6 +284,7 @@ function setOnline(on, unknown = false) {
   pill.classList.toggle("is-on", on);
   pill.textContent = t(on ? "PC connecté" : unknown ? "Connexion…" : "PC éteint");
   $("envoyer").disabled = !on;
+  if (on) scheduleAnalyse();
   $("envoiInfo").textContent = t(on
     ? "Le PC télécharge le fichier. Tu pourras ensuite le récupérer ici."
     : "Allume le PC et ouvre MediaVior : le bouton se réactive tout seul.");
@@ -301,16 +310,40 @@ const STATUS = {
 
 function renderLists() {
   const jobs = state.taches.filter((j) => j.status !== "done");
-  $("taches").replaceChildren(...jobs.map((j) => h("li", { class: "item" },
-    h("span", { class: `item__dot item__dot--${j.mode || "video"}` }),
-    h("div", { class: "item__body" },
-      h("div", { class: "item__title" }, t(j.title || "Lien")),
-      h("div", { class: "item__meta" + (j.status === "error" ? " is-error" : "") },
-        j.status === "error" ? t(j.error || STATUS.error) : `${t(STATUS[j.status] || j.status)} · ${Math.round(j.progress || 0)} %`),
-      j.status === "error" ? null : h("div", { class: "bar" }, h("i", { style: `width:${j.progress || 0}%` }))),
-  )));
+  $("taches").replaceChildren(...jobs.map((j) => {
+    const active = ACTIVE.includes(j.status);
+    const failed = j.status === "error" || j.status === "cancelled";
+    return h("li", { class: "item" },
+      h("span", { class: `item__dot item__dot--${j.mode || "video"}` }),
+      h("div", { class: "item__body" },
+        h("div", { class: "item__title" }, t(j.title || "Lien")),
+        h("div", { class: "item__meta" + (j.status === "error" ? " is-error" : "") },
+          j.status === "error" ? t(j.error || STATUS.error)
+            : [t(STATUS[j.status] || j.status), active ? `${Math.round(j.progress || 0)} %` : null, j.step].filter(Boolean).join(" · ")),
+        failed ? null : h("div", { class: "bar" }, h("i", { style: `width:${j.progress || 0}%` }))),
+      active && pcVersion >= 2 && !j.cancelling
+        ? h("div", { class: "item__actions" }, h("button", {
+          type: "button", class: "btn btn--ghost btn--sm", onclick: () => cancelJob(j),
+        }, t("Annuler")))
+        : null);
+  }));
   $("fichiers").replaceChildren(...state.fichiers.map(fileRow));
   $("vide").hidden = jobs.length > 0 || state.fichiers.length > 0;
+}
+
+const ACTIVE = ["queued", "downloading", "converting", "processing"];
+
+async function cancelJob(j) {
+  if (!confirm(t("Annuler « {titre} » ?", { titre: t(j.title || "Lien") }))) return;
+  try {
+    j.cancelling = true;
+    renderLists();
+    await send({ t: "annuler", id: j.id });
+  } catch (err) {
+    j.cancelling = false;
+    renderLists();
+    toast(err.message);
+  }
 }
 
 const rows = new Map(); // id du fichier -> éléments de sa ligne (pour le transfert)
@@ -319,7 +352,7 @@ function fileRow(f) {
   const meta = h("div", { class: "item__meta" }, [f.ext && f.ext.toUpperCase(), formatSize(f.size)].filter(Boolean).join(" · "));
   const actions = h("div", { class: "item__actions" });
   const row = h("li", { class: "item" },
-    h("span", { class: `item__dot item__dot--${f.mode || "video"}` }),
+    h("span", { class: `item__dot item__dot--${f.ext === "zip" ? "archive" : f.mode || "video"}` }),
     h("div", { class: "item__body" }, h("div", { class: "item__title" }, f.title || f.filename), meta),
     actions);
   const prev = rows.get(f.id);
@@ -331,23 +364,330 @@ function fileRow(f) {
 }
 
 // ---------------------------------------------------------------------------
-// Envoyer un lien
+// Envoyer des liens ou des titres : mêmes réglages que l'appli PC
 // ---------------------------------------------------------------------------
 
-function firstUrl(text) {
-  const m = (text || "").match(/https?:\/\/[^\s<>"']+/i);
-  return m ? m[0] : "";
+const OPTIONS = "mediavior-tel-options";
+let pcVersion = 0; // 2 et plus : le PC comprend les réglages, plusieurs liens, les titres
+let way = "liens";
+
+// Explications courtes sous le choix du format (mêmes phrases que l'appli PC)
+const VIDEO_HINTS = {
+  original: "Meilleure qualité possible : la vidéo est gardée telle que le site la fournit, sans conversion "
+    + "(souvent WebM en VP9 ou AV1). Parfait sur ordinateur ou avec VLC, mais pas toujours lu par un iPhone ou Photos Windows.",
+  mp4: "Lisible partout : téléphones, TV, logiciels de montage (H.264 + AAC). Si le site ne fournit pas ce format "
+    + "à la qualité choisie (souvent au-delà du 1080p), le serveur convertit la vidéo, ce qui peut être long.",
+  mov: "Comme le MP4, mais dans le format préféré des logiciels Apple (Final Cut, iMovie).",
+};
+const AUDIO_HINTS = {
+  original: "Meilleure qualité possible : la piste est gardée telle que le site la fournit, sans réencodage "
+    + "(souvent Opus ou M4A). Lue par la plupart des appareils récents.",
+  mp3: "Le format le plus compatible, partout. Réencodé depuis la source : à 320 kb/s, la différence est inaudible.",
+  flac: "Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. "
+    + "Utile pour l'archivage ou les logiciels qui demandent du FLAC.",
+  wav: "Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio.",
+};
+const MAX_QUALITIES = [
+  ["", "Meilleure disponible"],
+  ["2160", "4K (2160p) max"],
+  ["1440", "1440p max"],
+  ["1080", "1080p max"],
+  ["720", "720p max"],
+  ["480", "480p max"],
+];
+
+function extractUrls(text) {
+  const urls = (text || "").match(/https?:\/\/[^\s<>"']+/gi) || [];
+  return [...new Set(urls.map((u) => u.replace(/[)\]>.,;!?]+$/, "")))];
 }
+
+function firstUrl(text) {
+  return extractUrls(text)[0] || "";
+}
+
+function titleLines() {
+  return [...new Set($("titres").value.split(/\n+/).map((s) => s.trim()).filter(Boolean))];
+}
+
+function mode() {
+  return way === "titres" ? "audio" : document.querySelector('input[name="mode"]:checked').value;
+}
+
+function autoGrow(el, max = 160) {
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight + 2, max)}px`;
+}
+
+// --- Réglages retenus d'une fois sur l'autre ---
+
+function saveOptions() {
+  store(OPTIONS, {
+    mode: document.querySelector('input[name="mode"]:checked').value,
+    format: $("format").value,
+    formatAudio: $("formatAudio").value,
+    debit: $("debit").value,
+    zip: $("zip").checked,
+    way,
+  });
+}
+
+function restoreOptions() {
+  const o = load(OPTIONS) || {};
+  const pick = (id, value) => {
+    if (value && [...$(id).options].some((opt) => opt.value === value)) $(id).value = value;
+  };
+  if (o.mode === "audio") document.querySelector('input[name="mode"][value="audio"]').checked = true;
+  pick("format", o.format);
+  pick("formatAudio", o.formatAudio);
+  pick("debit", o.debit);
+  $("zip").checked = Boolean(o.zip);
+  if (o.way === "titres") way = "titres";
+}
+
+// --- Qualité : vraies définitions du média (après analyse), sinon un plafond ---
+
+let analysis = null; // { url, title, thumbnail, duration, video_formats, audio_size } ou { url, loading } ou { url, error }
+
+function fillQualities() {
+  const select = $("qualite");
+  const before = select.value;
+  const formats = analysis && analysis.video_formats && analysis.video_formats.length && linkCount() === 1
+    ? analysis.video_formats : null;
+  $("qualiteLabel").textContent = t(formats ? "Qualité" : "Qualité maximale");
+  if (formats) {
+    select.replaceChildren(...formats.map(({ height, size }) => {
+      let label = `${height}p`;
+      if (height >= 2160) label += " (4K)";
+      else if (height >= 1440) label += " (2K)";
+      if (size) label += ` · ≈ ${formatSize(size)}`;
+      return h("option", { value: height }, label);
+    }));
+  } else {
+    select.replaceChildren(...MAX_QUALITIES.map(([value, label]) => h("option", { value }, t(label))));
+  }
+  if ([...select.options].some((o) => o.value === before)) select.value = before;
+}
+
+// Taille estimée de chaque format audio (comme sur le PC)
+function refreshAudioSizes() {
+  const duration = (linkCount() === 1 && analysis && analysis.duration) || 0;
+  const audioSize = (linkCount() === 1 && analysis && analysis.audio_size) || 0;
+  $("formatAudio").querySelectorAll("option").forEach((opt) => {
+    let size = 0;
+    if (opt.value === "original") size = audioSize || (duration ? (160000 / 8) * duration : 0);
+    else if (opt.value === "mp3") size = duration ? (Number($("debit").value) * 1000 / 8) * duration : 0;
+    else size = duration ? (Number(opt.dataset.kbps) * 1000 / 8) * duration : 0;
+    const label = t(opt.dataset.label);
+    opt.textContent = size ? `${label} · ≈ ${formatSize(size)}` : label;
+  });
+}
+
+function linkCount() {
+  return extractUrls($("lien").value).length;
+}
+
+// --- Affichage du formulaire ---
+
+function refreshForm() {
+  const titres = way === "titres";
+  document.querySelectorAll(".tab").forEach((b) => {
+    const on = b.dataset.way === way;
+    b.classList.toggle("is-active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+  document.querySelectorAll("[data-panel]").forEach((el) => (el.hidden = el.dataset.panel !== way));
+
+  // Liste de titres : du son seulement, en MP3 ou WAV (comme sur le PC)
+  $("type").hidden = titres;
+  $("formatAudio").querySelectorAll("option").forEach((opt) => {
+    opt.disabled = titres && !["mp3", "wav"].includes(opt.value);
+    opt.hidden = opt.disabled;
+  });
+  if (titres && !["mp3", "wav"].includes($("formatAudio").value)) $("formatAudio").value = "mp3";
+
+  const audio = mode() === "audio";
+  $("optionsVideo").hidden = audio;
+  $("optionsAudio").hidden = !audio;
+  $("debit").disabled = $("formatAudio").value !== "mp3";
+  $("formatInfo").textContent = t(audio ? AUDIO_HINTS[$("formatAudio").value] : VIDEO_HINTS[$("format").value]);
+  refreshAudioSizes();
+
+  const n = linkCount();
+  const btn = $("envoyer");
+  if (titres) {
+    const nt = titleLines().length;
+    $("zipChoix").hidden = true;
+    $("nbTitres").textContent = nt
+      ? t(nt > 1 ? "{n} titres. Le PC cherche chaque son sur YouTube et range tout dans un zip." : "{n} titre. Le PC le cherche sur YouTube et le range dans un zip.", { n: nt })
+      : t("Un titre par ligne. Le PC cherche chaque son sur YouTube et range tout dans un zip.");
+    btn.textContent = nt > 1 ? t("Chercher les {n} titres", { n: nt }) : t("Chercher sur YouTube");
+  } else {
+    $("zipChoix").hidden = n < 2;
+    $("nbLiens").textContent = n > 1
+      ? t("{n} liens trouvés. Mêmes réglages pour tous.", { n })
+      : t("Un lien, ou plusieurs (un par ligne).");
+    btn.textContent = n > 1
+      ? t($("zip").checked ? "Mettre les {n} liens au coffre (zip)" : "Mettre les {n} liens au coffre", { n })
+      : t("Mettre au coffre");
+  }
+  btn.disabled = !pcOnline;
+}
+
+function renderPreview() {
+  const box = $("apercu");
+  const url = extractUrls($("lien").value);
+  if (way !== "liens" || url.length !== 1 || !analysis || analysis.url !== url[0]) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  const img = $("apercuImg");
+  img.hidden = !analysis.thumbnail;
+  if (analysis.thumbnail && img.getAttribute("src") !== analysis.thumbnail) img.src = analysis.thumbnail;
+  if (analysis.loading) {
+    $("apercuTitre").textContent = t("Analyse du lien…");
+    $("apercuInfo").textContent = t("Le PC regarde les qualités disponibles.");
+  } else if (analysis.error) {
+    $("apercuTitre").textContent = t(analysis.error);
+    $("apercuInfo").textContent = t("Tu peux quand même l'envoyer.");
+  } else {
+    $("apercuTitre").textContent = analysis.title || "";
+    $("apercuInfo").textContent = [analysis.source, formatDuration(analysis.duration)].filter(Boolean).join(" · ");
+  }
+}
+
+function formatDuration(s) {
+  if (!s) return "";
+  s = Math.round(s);
+  const hh = Math.floor(s / 3600);
+  const mm = Math.floor((s % 3600) / 60);
+  const ss = String(s % 60).padStart(2, "0");
+  return hh ? `${hh}:${String(mm).padStart(2, "0")}:${ss}` : `${mm}:${ss}`;
+}
+
+// --- Analyse d'un lien seul par le PC (titre, image, qualités disponibles) ---
+
+const waiting = new Map(); // numéro de demande -> fonction à appeler avec la réponse
+
+function ask(obj, ms = 60000) {
+  const rid = randomId();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      waiting.delete(rid);
+      reject(new Error(t("Le PC ne répond pas.")));
+    }, ms);
+    waiting.set(rid, (msg) => {
+      clearTimeout(timer);
+      resolve(msg);
+    });
+    send({ ...obj, rid }).catch((err) => {
+      clearTimeout(timer);
+      waiting.delete(rid);
+      reject(err);
+    });
+  });
+}
+
+let analyseTimer = null;
+
+function scheduleAnalyse() {
+  clearTimeout(analyseTimer);
+  analyseTimer = setTimeout(analyseLink, 500);
+}
+
+async function analyseLink() {
+  const urls = extractUrls($("lien").value);
+  if (urls.length !== 1 || pcVersion < 2 || !pcOnline) return refreshAll();
+  const url = urls[0];
+  if (analysis && analysis.url === url && !analysis.error) return refreshAll();
+  analysis = { url, loading: true };
+  refreshAll();
+  try {
+    const res = await ask({ t: "analyse", url });
+    if (!analysis || analysis.url !== url) return;
+    analysis = res.texte ? { url, error: res.texte } : { url, ...res };
+  } catch (err) {
+    if (!analysis || analysis.url !== url) return;
+    analysis = { url, error: err.message };
+  }
+  refreshAll();
+}
+
+function refreshAll() {
+  fillQualities();
+  refreshForm();
+  renderPreview();
+}
+
+// --- Événements ---
+
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
+  way = b.dataset.way;
+  saveOptions();
+  refreshAll();
+  (way === "titres" ? $("titres") : $("lien")).focus();
+}));
+
+["format", "formatAudio", "debit", "zip"].forEach((id) => $(id).addEventListener("change", () => {
+  saveOptions();
+  refreshForm();
+}));
+document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", () => {
+  saveOptions();
+  refreshForm();
+}));
+
+$("lien").addEventListener("input", () => {
+  autoGrow($("lien"));
+  refreshAll();
+  scheduleAnalyse();
+});
+$("lien").addEventListener("keydown", (e) => {
+  // Entrée envoie (comme avant) ; Maj + Entrée passe à la ligne pour un autre lien
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    $("envoi").requestSubmit();
+  }
+});
+$("titres").addEventListener("input", () => {
+  autoGrow($("titres"), 260);
+  refreshForm();
+});
 
 $("envoi").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const url = firstUrl($("lien").value) || $("lien").value.trim();
-  if (!/^https?:\/\//i.test(url)) return toast("Colle un lien qui commence par http.");
-  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const audio = mode() === "audio";
+  const opts = audio
+    ? { mode: "audio", quality: null, container: $("formatAudio").value,
+        audio_quality: $("formatAudio").value === "mp3" ? $("debit").value : null }
+    : { mode: "video", quality: $("qualite").value || null, container: $("format").value, audio_quality: null };
   try {
-    await send({ t: "dl", url, mode });
-    $("lien").value = "";
+    if (way === "titres") {
+      const titres = titleLines();
+      if (!titres.length) return toast("Écris au moins un titre.");
+      if (titres.length > 100) return toast("100 titres maximum à la fois.");
+      if (pcVersion < 2) return toast("Mets à jour MediaVior sur le PC pour utiliser la liste de titres.", 5000);
+      await send({ t: "titres", titres, container: opts.container, audio_quality: opts.audio_quality });
+      $("titres").value = "";
+      autoGrow($("titres"), 260);
+    } else {
+      const urls = extractUrls($("lien").value);
+      if (!urls.length) return toast("Colle un lien qui commence par http.");
+      if (urls.length > 100) return toast("100 liens maximum à la fois.");
+      if (urls.length === 1) {
+        const a = analysis && analysis.url === urls[0] && !analysis.loading && !analysis.error ? analysis : null;
+        await send({ t: "dl", url: urls[0], ...opts, title: a ? a.title : null, thumbnail: a ? a.thumbnail : null });
+      } else if (pcVersion >= 2) {
+        await send({ t: "liens", urls, zip: $("zip").checked, ...opts });
+      } else {
+        for (const url of urls) await send({ t: "dl", url, ...opts });
+      }
+      $("lien").value = "";
+      analysis = null;
+      autoGrow($("lien"));
+    }
     toast("Envoyé au PC…");
+    refreshAll();
   } catch (err) {
     toast(err.message);
   }
@@ -355,10 +695,14 @@ $("envoi").addEventListener("submit", async (e) => {
 
 $("coller").addEventListener("click", async () => {
   try {
-    const text = await navigator.clipboard.readText();
-    const url = firstUrl(text);
-    if (url) $("lien").value = url;
-    else toast("Pas de lien dans le presse-papiers.");
+    const urls = extractUrls(await navigator.clipboard.readText());
+    if (!urls.length) return toast("Pas de lien dans le presse-papiers.");
+    // Un lien déjà là : on ajoute les nouveaux en dessous (plusieurs liens)
+    const current = extractUrls($("lien").value);
+    $("lien").value = [...new Set([...current, ...urls])].join("\n");
+    autoGrow($("lien"));
+    refreshAll();
+    scheduleAnalyse();
   } catch (e) {
     $("lien").focus();
     toast("Appuie longuement dans le champ, puis « Coller ».");
@@ -368,6 +712,9 @@ $("coller").addEventListener("click", async () => {
 $("oublier").addEventListener("click", () => {
   if (confirm("Oublier ce PC ? Il faudra rescanner son QR code pour le retrouver.")) forget();
 });
+
+restoreOptions();
+refreshAll();
 
 // ---------------------------------------------------------------------------
 // Récupérer un fichier : connexion directe avec le PC (WebRTC)
@@ -575,7 +922,12 @@ applyLink(readLink(location.hash));
 // Partager → MediaVior (Android) : le lien arrive dans l'adresse
 const params = new URLSearchParams(location.search);
 const shared = firstUrl([params.get("url"), params.get("text"), params.get("title")].join(" "));
-if (shared) $("lien").value = shared;
+if (shared) {
+  $("lien").value = extractUrls([params.get("url"), params.get("text"), params.get("title")].join(" ")).join("\n");
+  way = "liens";
+  autoGrow($("lien"));
+  refreshAll();
+}
 if (location.search || location.hash) cleanUrl();
 setOnline(false, true);
 render();

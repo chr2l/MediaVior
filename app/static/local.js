@@ -259,6 +259,10 @@ if (settingsDialog) {
   const autoBox = document.getElementById("settingsAutostart");
   const autoRow = document.getElementById("settingsAutostartRow");
   const versionEl = document.getElementById("settingsVersion");
+  const splitBox = document.getElementById("settingsSplit");
+  const kindsBox = document.getElementById("settingsKinds");
+  const audioEl = document.getElementById("settingsAudio");
+  const videoEl = document.getElementById("settingsVideo");
 
   const show = (s) => {
     folderEl.textContent = s.folder;
@@ -267,6 +271,13 @@ if (settingsDialog) {
     autoRow.hidden = s.autostart === null;
     autoBox.checked = !!s.autostart;
     versionEl.textContent = s.version ? t("MediaVior version {v}", { v: s.version }) : "";
+    const split = Boolean(s.audio_folder || s.video_folder);
+    if (split || !kindsBox.hidden) {
+      splitBox.checked = true;
+      kindsBox.hidden = false;
+    }
+    audioEl.textContent = s.audio_folder || s.folder;
+    videoEl.textContent = s.video_folder || s.folder;
   };
   const save = async (body) => show(await api("/api/local/settings", { method: "POST", body }));
 
@@ -296,6 +307,36 @@ if (settingsDialog) {
       showToast(e.message);
     }
     pickBtn.disabled = false;
+  });
+
+  // Un dossier pour les sons, un pour les vidéos (ou le même pour les deux)
+  splitBox.addEventListener("change", async () => {
+    kindsBox.hidden = !splitBox.checked;
+    if (splitBox.checked) return; // la personne choisit ensuite chaque dossier
+    try {
+      await save({ audio_folder: "", video_folder: "" });
+      showToast(t("Sons et vidéos arriveront de nouveau dans le dossier principal."));
+    } catch (e) {
+      showToast(e.message);
+    }
+  });
+  settingsDialog.querySelectorAll("[data-pick-kind]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const kind = btn.dataset.pickKind;
+      const current = (kind === "audio" ? audioEl : videoEl).textContent;
+      btn.disabled = true;
+      try {
+        let { path, manual } = await api("/api/local/pick-folder", { method: "POST" });
+        if (manual) path = prompt(t("Chemin complet du dossier :"), current);
+        if (path) {
+          await save({ [`${kind}_folder`]: path.trim() });
+          showToast(t(kind === "audio" ? "Les prochains sons arriveront dans ce dossier." : "Les prochaines vidéos arriveront dans ce dossier."));
+        }
+      } catch (e) {
+        showToast(e.message);
+      }
+      btn.disabled = false;
+    });
   });
 
   autoBox.addEventListener("change", async () => {

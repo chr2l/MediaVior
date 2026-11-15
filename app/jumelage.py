@@ -33,6 +33,10 @@ INVITE_TTL = 10 * 60  # un QR code sert une fois, pendant 10 minutes (comme côt
 CHUNK = 60 * 1024  # taille d'un morceau de fichier sur la connexion directe
 MAX_ITEMS = 30  # fichiers récents montrés au téléphone
 DEFAULT_ICE = [{"urls": ["stun:stun.cloudflare.com:3478"]}]
+# Ce que ce PC sait faire pour le téléphone. 2 : choix de la qualité et du format, analyse d'un
+# lien, plusieurs liens, liste de titres, annuler. Le téléphone cache ce qu'un PC plus ancien ignore.
+VERSION = 2
+MAX_LINKS = 100
 
 router = APIRouter()
 web = None  # le module app/main.py, donné par setup()
@@ -47,6 +51,7 @@ _answers: dict = {}  # réponses WebRTC attendues, par numéro de transfert
 _ice_waiting: dict = {}
 _transfers: dict = {}
 _last_state: Optional[str] = None
+_tasks: set = set()  # analyses en cours (gardées ici pour qu'elles ne soient pas perdues)
 
 
 def _b64(data: bytes) -> str:
@@ -241,6 +246,20 @@ async def _on_phone(phone: str, msg: dict) -> None:
         await _send(_snapshot(), phone)
     elif t == "dl":
         await _start_download(phone, msg)
+    elif t == "liens":
+        await _start_links(phone, msg)
+    elif t == "titres":
+        await _start_titles(phone, msg)
+    elif t == "annuler":
+        try:
+            await web.cancel_job(str(msg.get("id") or ""))
+        except HTTPException:
+            pass
+    elif t == "analyse" and isinstance(msg.get("rid"), str):
+        # Peut prendre plusieurs secondes : à part, pour ne pas bloquer les autres messages
+        task = asyncio.create_task(_analyse(phone, msg["rid"], str(msg.get("url") or "")[:2000]))
+        _tasks.add(task)
+        task.add_done_callback(_tasks.discard)
     elif t == "get" and isinstance(msg.get("tid"), str):
         if len(_transfers) >= 2:
             await _send({"t": "erreur", "tid": msg["tid"], "texte": "Le PC envoie déjà des fichiers, réessaie dans un instant."}, phone)
@@ -254,20 +273,100 @@ async def _on_phone(phone: str, msg: dict) -> None:
             fut.set_result(msg["sdp"])
 
 
-async def _start_download(phone: str, msg: dict) -> None:
+def _text(value, limit: int) -> Optional[str]:
+    return str(value)[:limit] if isinstance(value, str) and value else None
+
+
+def _options(msg: dict) -> dict:
+    """Réglages choisis sur le téléphone. Sans réglage (ancien téléphone) : MP4, ou MP3 320 kb/s."""
     mode = "audio" if msg.get("mode") == "audio" else "video"
+    container = _text(msg.get("container"), 10) or ("mp3" if mode == "audio" else "mp4")
+    quality = str(msg.get("quality") or "")[:5] or None
+    audio_quality = str(msg.get("audio_quality") or "")[:4] or None
+    if mode == "audio" and container == "mp3" and not audio_quality:
+        audio_quality = "320"
+    return {"mode": mode, "container": container,
+            "quality": quality if mode == "video" else None,
+            "audio_quality": audio_quality if container == "mp3" else None}
+
+
+async def _refuse(phone: str, exc: Exception, default: str = "Lien refusé par le PC.") -> None:
+    text = str(exc.detail) if isinstance(exc, HTTPException) else default
+    await _send({"t": "erreur", "texte": text}, phone)
+
+
+async def _start_download(phone: str, msg: dict) -> None:
     try:
-        req = web.DownloadRequest(
-            url=str(msg.get("url") or "")[:2000], mode=mode,
-            container="mp3" if mode == "audio" else "mp4",
-            audio_quality="320" if mode == "audio" else None,
-        )
+        req = web.DownloadRequest(url=str(msg.get("url") or "")[:2000], title=_text(msg.get("title"), 300),
+                                  thumbnail=_text(msg.get("thumbnail"), 2000), **_options(msg))
         await web.start_download(req)
         await _send({"t": "recu"}, phone)
+    except Exception as exc:
+        await _refuse(phone, exc)
+
+
+async def _start_links(phone: str, msg: dict) -> None:
+    """Plusieurs liens, mêmes réglages : un fichier par lien, ou tout dans un zip (comme sur le PC)."""
+    urls = [str(u)[:2000] for u in (msg.get("urls") or []) if isinstance(u, str) and u.strip()]
+    urls = list(dict.fromkeys(urls))[:MAX_LINKS]
+    if not urls:
+        return await _send({"t": "erreur", "texte": "Aucun lien."}, phone)
+    try:
+        opts = _options(msg)
+        if msg.get("zip"):
+            await web.start_links(web.LinksRequest(urls=urls, **opts))
+            return await _send({"t": "recu", "n": len(urls)}, phone)
+        started, refused = 0, []
+        for url in urls:
+            try:
+                await web.start_download(web.DownloadRequest(url=url, **opts))
+                started += 1
+            except HTTPException as exc:
+                refused.append(f"{url} : {exc.detail}")
+        if started:
+            await _send({"t": "recu", "n": started}, phone)
+        if refused:
+            await _send({"t": "erreur", "texte": refused[0] if len(refused) == 1
+                         else f"{len(refused)} liens refusés par le PC. {refused[0]}"}, phone)
+    except Exception as exc:
+        await _refuse(phone, exc)
+
+
+async def _start_titles(phone: str, msg: dict) -> None:
+    """Liste de titres envoyée par le téléphone : cherchés sur YouTube, rangés dans un zip.
+    Elle ne s'ajoute pas à la liste de sons du PC."""
+    titles = [web._clean_query(str(q)[:300]) for q in (msg.get("titres") or []) if isinstance(q, str)]
+    titles = list(dict.fromkeys(q for q in titles if q))[:MAX_LINKS]
+    if not titles:
+        return await _send({"t": "erreur", "texte": "Écris au moins un titre."}, phone)
+    try:
+        container = "wav" if msg.get("container") == "wav" else "mp3"
+        audio_quality = (str(msg.get("audio_quality") or "320")[:4]) if container == "mp3" else None
+        payload = web.SonsFetchRequest(container=container, audio_quality=audio_quality)
+        entries = [{"id": secrets.token_hex(16), "query": q, "video_id": None} for q in titles]
+        await web.queue_sons(entries, payload)
+        await _send({"t": "recu", "n": len(titles)}, phone)
+    except Exception as exc:
+        await _refuse(phone, exc, "Titres refusés par le PC.")
+
+
+async def _analyse(phone: str, rid: str, url: str) -> None:
+    """Titre, image et qualités disponibles d'un lien, pour les menus du téléphone."""
+    try:
+        data = await web.analyze(web.AnalyzeRequest(url=url))
+        reply = {
+            "title": str(data.get("title") or "")[:300],
+            "thumbnail": _text(data.get("thumbnail"), 2000),
+            "duration": data.get("duration"),
+            "source": _text(data.get("source"), 60),
+            "video_formats": (data.get("video_formats") or [])[:20],
+            "audio_size": data.get("audio_size"),
+        }
     except HTTPException as exc:
-        await _send({"t": "erreur", "texte": str(exc.detail)}, phone)
+        reply = {"texte": str(exc.detail)[:500]}
     except Exception:
-        await _send({"t": "erreur", "texte": "Lien refusé par le PC."}, phone)
+        reply = {"texte": "Analyse impossible sur le PC."}
+    await _send({"t": "analyse", "rid": rid, **reply}, phone)
 
 
 # ---------------------------------------------------------------------------
@@ -282,6 +381,7 @@ def _snapshot() -> dict:
         p = j.get("_payload") or {}
         jobs.append({"id": j["id"], "title": str(j.get("title") or "")[:200], "status": j["status"],
                      "progress": j.get("progress") or 0, "error": j.get("error"),
+                     "step": str(j.get("step") or "")[:200] or None,
                      "mode": p.get("mode") if j["kind"] == "download" else "archive"})
     items = []
     try:
@@ -295,7 +395,7 @@ def _snapshot() -> dict:
                 break
     except OSError:
         pass
-    return {"t": "etat", "taches": jobs, "fichiers": items}
+    return {"t": "etat", "v": VERSION, "taches": jobs, "fichiers": items}
 
 
 async def _pusher() -> None:
