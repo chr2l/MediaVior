@@ -1953,3 +1953,18 @@ input[type="range"] {
 .apercu-bar a { color: var(--brass); }
 .apercu-bar .btn { margin-top: 0; }
 .apercu-bar .btn .icon { width: 15px; height: 15px; }
+
+/* Réglages : dossiers à part pour les sons et les vidéos */
+.settings-split { margin-top: 12px; }
+.settings-kinds { margin-top: 8px; display: grid; gap: 8px; }
+.settings-kinds[hidden] { display: none; }
+.settings-kind { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.settings-kind__label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; }
+.settings-kind__label .icon { width: 16px; height: 16px; }
+.settings-kind .settings-path { margin: 0; }
+.settings-kind .btn { margin-top: 0; width: auto; }
+.settings-kinds .hint { margin: 0; }
+@media (max-width: 520px) {
+  .settings-kind { grid-template-columns: 1fr auto; }
+  .settings-kind .settings-path { grid-column: 1 / -1; grid-row: 2; }
+}

@@ -510,12 +510,18 @@ async function onJobAction(node) {
 // ---------------------------------------------------------------------------
 
 let libraryItems = [];
+let vaultStats = null; // tout ce qui a été téléchargé, même déplacé ailleurs depuis (/api/stats)
 
 async function loadLibrary(highlightIds = []) {
   try {
     libraryItems = await api("/api/library");
   } catch (e) {
     return;
+  }
+  try {
+    vaultStats = await api("/api/stats");
+  } catch (e) {
+    vaultStats = null; // ancienne version du serveur : stats d'après le coffre affiché
   }
   renderLibrary(highlightIds);
 }
@@ -575,24 +581,39 @@ function listenText(seconds) {
   return t("{n} min à écouter", { n: Math.max(1, Math.round(seconds / 60)) });
 }
 
-function renderStats() {
+// Stats : d'après l'historique (les fichiers déplacés ailleurs comptent toujours), sinon le coffre
+function statsNumbers() {
+  if (vaultStats && typeof vaultStats.total === "number") {
+    const s = vaultStats;
+    return { n: s.total, audio: s.audio, video: s.video, archive: s.archive, size: s.size, seconds: s.duration, last: s.last };
+  }
   const items = libraryItems;
-  if (!items.length) {
+  const count = (mode) => items.filter((i) => i.mode === mode).length;
+  return {
+    n: items.length, audio: count("audio"), video: count("video"), archive: count("archive"),
+    size: items.reduce((sum, i) => sum + i.size, 0),
+    seconds: items.reduce((sum, i) => sum + (i.duration || 0), 0),
+    last: items.length ? items[0].created : null,
+  };
+}
+
+function renderStats() {
+  const st = statsNumbers();
+  if (!st.n) {
     heroHello.textContent = t("Colle un lien pour mettre ton premier média à l'abri.");
     statsEl.replaceChildren();
     return;
   }
-  heroHello.textContent = t("Dernier média rangé {since}.", { since: sinceText(items[0].created) });
-  const count = (mode) => items.filter((i) => i.mode === mode).length;
-  const size = items.reduce((sum, i) => sum + i.size, 0);
-  const seconds = items.reduce((sum, i) => sum + (i.duration || 0), 0);
-  const n = items.length;
+  heroHello.textContent = t("Dernier média rangé {since}.", { since: sinceText(st.last) });
+  const size = st.size;
+  const seconds = st.seconds;
+  const n = st.n;
   const chip = (kind, iconName, strong, text) =>
     h("div", { class: `stat tint tint--${kind}` }, icon(iconName), h("b", {}, strong), h("span", { class: "stat__label" }, text));
   const chips = [chip("neutral", "lock", n, t(n > 1 ? "médias à l'abri" : "média à l'abri"))];
-  const sons = count("audio");
-  const videos = count("video");
-  const zips = count("archive");
+  const sons = st.audio;
+  const videos = st.video;
+  const zips = st.archive;
   if (sons) chips.push(chip("son", "music", sons, t(sons > 1 ? "sons" : "son")));
   if (videos) chips.push(chip("video", "film", videos, t(videos > 1 ? "vidéos" : "vidéo")));
   if (zips) chips.push(chip("zip", "box", zips, `zip${zips > 1 ? "s" : ""}`));
@@ -699,7 +720,7 @@ async function deleteItem(item) {
   try {
     await api(`/api/library/${item.id}`, { method: "DELETE" });
     libraryItems = libraryItems.filter((i) => i.id !== item.id);
-    renderLibrary();
+    loadLibrary(); // stats à jour (le média enlevé n'y compte plus)
   } catch (e) {
     showError(e.message);
   }
