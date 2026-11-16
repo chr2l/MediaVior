@@ -1353,7 +1353,100 @@ async def analyze(payload: AnalyzeRequest):
         "audio_size": audio_size,
         "audio_best": _best_audio(info.get("formats") or []),
         "login": bool(_login_browser()),
+        "search": _music_query(info),
     }
+
+
+# ---------------------------------------------------------------------------
+# Meilleure source : le même titre sur un site qui compresse moins (Bandcamp, SoundCloud).
+# La personne choisit dans la liste : un résultat peut être un remix ou un autre morceau.
+# ---------------------------------------------------------------------------
+
+NOISE_WORDS = re.compile(
+    r"[\(\[][^)\]]*(official|officiel|video|vidéo|clip|audio|lyrics?|paroles|visuali[sz]er|hd|4k|hq|"
+    r"remaster(ed)?|live|en direct)[^)\]]*[\)\]]", re.IGNORECASE)
+
+
+def _music_query(info: dict) -> str:
+    """« Artiste Titre » pour chercher ailleurs, sans « (Official Video) » et compagnie."""
+    track, artist = info.get("track"), info.get("artist") or info.get("creator")
+    if track and artist:
+        return f"{artist.split(',')[0]} {track}"[:150]
+    title = NOISE_WORDS.sub(" ", info.get("title") or "")
+    title = re.sub(r"\s+", " ", re.sub(r"[|•]+", " ", title)).strip(" -")
+    return title[:150]
+
+
+class BetterSourceRequest(BaseModel):
+    query: str = Field(..., min_length=2, max_length=200)
+    url: Optional[str] = None  # lien actuel, à ne pas reproposer
+
+
+def _bandcamp_search(query: str, count: int = 3) -> list:
+    from urllib.request import Request as UrlRequest
+    body = json.dumps({"search_text": query, "search_filter": "t", "fan_id": None, "full_page": False}).encode()
+    req = UrlRequest("https://bandcamp.com/api/bcsearch_public_api/1/autocomplete_elastic", data=body,
+                     headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
+    with urlopen(req, timeout=10) as r:
+        data = json.loads(r.read().decode("utf-8"))
+    urls = []
+    for e in ((data.get("auto") or {}).get("results") or []):
+        link = e.get("item_url_path") or e.get("item_url_root")
+        if e.get("type") == "t" and isinstance(link, str) and link.startswith("https://"):
+            urls.append(link)
+    return urls[:count]
+
+
+def _soundcloud_search(query: str, count: int = 3) -> list:
+    opts = {"quiet": True, "no_warnings": True, "skip_download": True, "extract_flat": True}
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(f"scsearch{count}:{query}", download=False) or {}
+    return [e["url"] for e in info.get("entries") or [] if e and isinstance(e.get("url"), str)][:count]
+
+
+def _source_details(url: str) -> Optional[dict]:
+    opts = {"quiet": True, "no_warnings": True, "skip_download": True, "noplaylist": True}
+    try:
+        with _open_ydl(opts) as ydl:
+            info = ydl.extract_info(url, download=False) or {}
+    except Exception:
+        return None
+    best = _best_audio(info.get("formats") or [])
+    if not best:
+        return None
+    return {
+        "url": info.get("webpage_url") or url,
+        "site": info.get("extractor_key") or "",
+        "title": info.get("track") or info.get("title") or url,
+        "artist": info.get("artist") or info.get("uploader") or "",
+        "duration": info.get("duration"),
+        "thumbnail": info.get("thumbnail"),
+        "quality": best,
+    }
+
+
+def _better_sources(query: str, current: Optional[str]) -> dict:
+    from concurrent.futures import ThreadPoolExecutor
+    searches = {"Bandcamp": _bandcamp_search, "SoundCloud": _soundcloud_search}
+    urls, failed = [], []
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        found = {name: pool.submit(fn, query) for name, fn in searches.items()}
+        for name, fut in found.items():
+            try:
+                urls += fut.result(timeout=25)
+            except Exception:
+                failed.append(name)
+        urls = [u for u in dict.fromkeys(urls) if u != current]
+        details = [d for d in pool.map(_source_details, urls) if d]
+    # Sans perte d'abord, puis le débit le plus haut
+    details.sort(key=lambda d: (not d["quality"]["lossless"], -(d["quality"]["kbps"] or 0)))
+    return {"query": query, "results": details, "failed": failed}
+
+
+@app.post("/api/meilleure-source")
+async def better_source(payload: BetterSourceRequest):
+    return await asyncio.get_running_loop().run_in_executor(
+        None, _better_sources, payload.query.strip(), payload.url)
 
 
 # ---------------------------------------------------------------------------

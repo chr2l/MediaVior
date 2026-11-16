@@ -986,6 +986,13 @@ input[type="text"].sons-list__input:hover { border-color: var(--hairline); }
 .yt-results__item .btn { margin-top: 0; flex: none; width: auto; }
 .yt-dialog__search .btn { width: auto; }
 
+/* « Chercher une meilleure source » sous le choix du son */
+.better { margin-top: 12px; }
+.better .btn { width: auto; margin-top: 0; }
+.better__list { margin-top: 8px; }
+.better__badge { display: inline-block; padding: 1px 7px; margin-right: 6px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; background: var(--surface-raised); }
+.better__badge--lossless { background: var(--brass); color: #fff; }
+
 @media (max-width: 520px) {
   .yt-dialog { padding: 16px; }
   .yt-results__preview { width: 84px; }

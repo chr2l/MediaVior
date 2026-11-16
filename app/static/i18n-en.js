@@ -105,6 +105,16 @@ window.I18N_EN = {
   "Meilleure qualité que le site fournit, gardée sans réencodage. Si le site propose un fichier sans perte (FLAC, WAV), c'est lui qui est pris.":
     "The best quality the site provides, kept without re-encoding. If the site offers a lossless file (FLAC, WAV), that one is taken.",
   "Meilleure qualité du site": "Best quality from the site",
+  "Chercher une meilleure source": "Look for a better source",
+  "Recherche de « {q} » sur Bandcamp et SoundCloud…": "Searching Bandcamp and SoundCloud for “{q}”…",
+  "Rien trouvé sur Bandcamp ni SoundCloud pour « {q} ».": "Nothing found on Bandcamp or SoundCloud for “{q}”.",
+  "Trouvé, mais pas en meilleure qualité qu'ici. Le lien actuel reste le meilleur choix.":
+    "Found, but not in better quality than here. The current link is still the best choice.",
+  "Vérifie que c'est bien le même morceau (pas un remix) avant de le prendre.":
+    "Check that it is really the same track (not a remix) before taking it.",
+  "Recherche impossible sur : {sites}.": "Search failed on: {sites}.",
+  "durée différente de {s} s": "length differs by {s} s",
+  "Prendre celui-ci": "Take this one",
   "Utiliser ma connexion du navigateur": "Use my browser sign-in",
   "Pour le son en meilleure qualité : YouTube Premium (256 kb/s au lieu d'environ 160) et le fichier de l'artiste sur SoundCloud, quand il autorise le téléchargement. MediaVior lit sur ce PC les cookies du navigateur choisi ; rien n'est envoyé ailleurs qu'au site du média.":
     "For better audio quality: YouTube Premium (256 kb/s instead of about 160) and the artist's file on SoundCloud, when downloads are allowed. MediaVior reads the chosen browser's cookies on this PC; nothing is sent anywhere except to the media's site.",
