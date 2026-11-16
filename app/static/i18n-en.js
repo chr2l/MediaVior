@@ -113,6 +113,8 @@ window.I18N_EN = {
   "Vérifie que c'est bien le même morceau (pas un remix) avant de le prendre.":
     "Check that it is really the same track (not a remix) before taking it.",
   "Recherche impossible sur : {sites}.": "Search failed on: {sites}.",
+  "{n} résultat(s) écarté(s) : durée trop différente (autre version ou extrait).":
+    "{n} result(s) left out: length too different (another version or a preview).",
   "durée différente de {s} s": "length differs by {s} s",
   "Prendre celui-ci": "Take this one",
   "Utiliser ma connexion du navigateur": "Use my browser sign-in",
