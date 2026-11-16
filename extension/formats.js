@@ -116,7 +116,13 @@
         li.tabIndex = -1;
         li.dataset.value = o.value;
         li.append(el("span", "mvf__label", o.textContent));
-        if (fav) li.append(el("span", "mvf__tag", texts.favorite));
+        // Étiquette sur chaque ligne (invisible hors du préféré) : la liste garde la même largeur
+        // quel que soit le format marqué
+        if (canFavorite) {
+          const tag = el("span", "mvf__tag" + (fav ? "" : " mvf__tag--ghost"), texts.favorite);
+          if (!fav) tag.setAttribute("aria-hidden", "true");
+          li.append(tag);
+        }
         if (canFavorite) {
           const star = el("button", "mvf__star");
           star.type = "button";
