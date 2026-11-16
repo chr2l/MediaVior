@@ -270,9 +270,13 @@
 </div>
 
 <template id="optionsTpl">
-  <div class="mode-toggle" role="group" aria-label="Type de média">
-    <button type="button" class="mode-toggle__btn is-active" data-mode="video">Vidéo</button>
-    <button type="button" class="mode-toggle__btn" data-mode="audio">Audio</button>
+  <div class="mode-row">
+    <div class="mode-toggle" role="group" aria-label="Type de média">
+      <button type="button" class="mode-toggle__btn is-active" data-mode="video">Vidéo</button>
+      <button type="button" class="mode-toggle__btn" data-mode="audio">Audio</button>
+    </div>
+    <!-- À côté de Vidéo / Audio : la page tient sans défiler sur un écran plein -->
+    <button type="button" class="btn btn--ghost btn--sm better__btn js-audio js-better-btn hidden" hidden><span data-icon="search"></span>Chercher une meilleure source</button>
   </div>
   <div class="options-grid js-video">
     <label class="field">
@@ -312,7 +316,6 @@
   <p class="hint option-hint js-audio js-audio-hint hidden"></p>
   <div class="better js-audio hidden">
     <div class="js-better" hidden>
-      <button type="button" class="btn btn--ghost btn--sm js-better-btn"><span data-icon="search"></span>Chercher une meilleure source</button>
       <p class="hint js-better-info" role="status" hidden></p>
       <ul class="yt-results better__list js-better-list"></ul>
     </div>
