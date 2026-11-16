@@ -531,9 +531,60 @@ def _windows_light_theme() -> bool:
         return False
 
 
+_KEEP = []  # fonctions appelées par Windows : gardées en vie tant que la fenêtre existe
+
+
+def _remove_windows_title_bar(hwnd: int) -> None:
+    """Enlève la barre de titre de Windows mais garde le reste du cadre : bords pour
+    redimensionner, ombre, coins arrondis, agrandir en glissant vers le haut de l'écran.
+    La page dessine sa propre barre à la place (index.html, .titlebar).
+    Principe : au calcul du cadre (WM_NCCALCSIZE), on laisse Windows faire puis on remet le haut
+    de la zone de la page tout en haut de la fenêtre. À appeler sur le fil de la fenêtre."""
+    import ctypes
+    from ctypes import wintypes
+    user32, comctl32 = ctypes.windll.user32, ctypes.windll.comctl32
+    LRESULT = ctypes.c_ssize_t
+    SUBCLASSPROC = ctypes.WINFUNCTYPE(LRESULT, wintypes.HWND, wintypes.UINT, wintypes.WPARAM,
+                                      wintypes.LPARAM, ctypes.c_size_t, ctypes.c_size_t)
+    comctl32.DefSubclassProc.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    comctl32.DefSubclassProc.restype = LRESULT
+    comctl32.SetWindowSubclass.argtypes = [wintypes.HWND, SUBCLASSPROC, ctypes.c_size_t, ctypes.c_size_t]
+    comctl32.SetWindowSubclass.restype = wintypes.BOOL
+
+    class NCCALCSIZE_PARAMS(ctypes.Structure):
+        _fields_ = [("rgrc", wintypes.RECT * 3), ("lppos", ctypes.c_void_p)]
+
+    def frame_height(hwnd_):
+        # Épaisseur du cadre caché : quand la fenêtre est agrandie, Windows la fait déborder de
+        # l'écran d'autant ; on décale alors la page pour que sa barre reste visible.
+        try:
+            dpi = user32.GetDpiForWindow(hwnd_)
+            return user32.GetSystemMetricsForDpi(33, dpi) + user32.GetSystemMetricsForDpi(92, dpi)
+        except Exception:
+            return user32.GetSystemMetrics(33) + user32.GetSystemMetrics(92)
+
+    def proc(hwnd_, msg, wparam, lparam, _uid, _ref):
+        if msg == 0x0083 and wparam:  # WM_NCCALCSIZE
+            params = ctypes.cast(lparam, ctypes.POINTER(NCCALCSIZE_PARAMS)).contents
+            top = params.rgrc[0].top
+            result = comctl32.DefSubclassProc(hwnd_, msg, wparam, lparam)
+            params.rgrc[0].top = top + (frame_height(hwnd_) if user32.IsZoomed(hwnd_) else 0)
+            return result
+        return comctl32.DefSubclassProc(hwnd_, msg, wparam, lparam)
+
+    callback = SUBCLASSPROC(proc)
+    _KEEP.append(callback)
+    if not comctl32.SetWindowSubclass(wintypes.HWND(hwnd), callback, 1, 0):
+        raise OSError("SetWindowSubclass a échoué")
+    # Fait recalculer le cadre tout de suite (SWP_FRAMECHANGED | NOMOVE | NOSIZE | NOZORDER | NOACTIVATE)
+    user32.SetWindowPos(wintypes.HWND(hwnd), None, 0, 0, 0, 0, 0x20 | 0x2 | 0x1 | 0x4 | 0x10)
+
+
 def native_window(url: str) -> bool:
-    """Windows : ouvre l'appli dans sa propre fenêtre (pas celle d'un navigateur). Barre du haut
-    fixe aux couleurs de MediaVior, avec seulement réduire / agrandir / fermer.
+    """Windows : ouvre l'appli dans sa propre fenêtre (pas celle d'un navigateur), comme Discord
+    ou Claude : la barre du haut est dessinée par la page (coffre bleu, nom, boutons réduire /
+    agrandir / fermer), et Windows garde le redimensionnement par les bords et le glisser.
+    Si la barre de Windows ne peut pas être enlevée, elle reste, aux couleurs de l'appli.
     Tourne dans un processus à part (MediaVior.exe --fenetre) qui s'arrête à la fermeture.
     Renvoie False si c'est impossible ici (pywebview ou WebView2 absent)."""
     try:
@@ -549,27 +600,80 @@ def native_window(url: str) -> bool:
     # Mêmes couleurs que style.css : fond (--ink) et texte (--paper), en clair ou en sombre
     bg, fg = ("#F3F5F8", "#17202B") if light else ("#121821", "#E9ECF1")
     colorref = lambda hexa: int(hexa[5:7] + hexa[3:5] + hexa[1:3], 16)  # Windows : 0x00BBGGRR
+    state = {"bar": False, "native_drag": False, "ready": False, "hwnd": 0}
+
+    def hwnd() -> int:
+        return state["hwnd"]  # lu une fois sur le fil de la fenêtre (prepare)
+
+    def maximized() -> bool:
+        return bool(ctypes.windll.user32.IsZoomed(hwnd()))
 
     class Api:
-        def fermer(self):  # bouton « Quitter MediaVior » de la page
+        """Appelé par la page (local.js, « Barre du haut dessinée par la page »)."""
+        def fenetre(self):
+            return {"barre": state["bar"], "glisser_natif": state["native_drag"], "agrandie": maximized()}
+
+        def reduire(self):
+            window.minimize()
+
+        def agrandir(self):
+            if maximized():
+                window.restore()
+            else:
+                window.maximize()
+            return maximized()
+
+        def agrandie(self):
+            return maximized()
+
+        def fermer(self):  # bouton de la barre, ou « Quitter MediaVior »
             window.destroy()
 
-    window = webview.create_window("MediaVior", url, width=1200, height=820, min_size=(420, 560),
+    # D'abord une page vide de la couleur du fond : la barre est préparée, puis l'appli s'affiche
+    window = webview.create_window("MediaVior", html=f"<body style='background:{bg}'></body>",
+                                   width=1200, height=820, min_size=(420, 560),
                                    background_color=bg, text_select=True, js_api=Api())
 
     def paint_title_bar():
-        # Barre de titre : fond et texte aux couleurs de l'appli (Windows 11 ; Windows 10 garde
-        # la barre sombre ou claire du système).
+        # Couleurs du cadre : barre de Windows (si elle reste) et fin liseré autour de la fenêtre
         try:
-            hwnd = window.native.Handle.ToInt32()
-            for attr, value in ((20, 0 if light else 1), (35, colorref(bg)), (36, colorref(fg))):
+            for attr, value in ((20, 0 if light else 1), (35, colorref(bg)), (36, colorref(fg)),
+                                (34, colorref(bg))):
                 val = ctypes.c_int(value)
-                ctypes.windll.dwmapi.DwmSetWindowAttribute(ctypes.c_void_p(hwnd), attr,
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(ctypes.c_void_p(hwnd()), attr,
                                                            ctypes.byref(val), ctypes.sizeof(val))
         except Exception as exc:
             print(f"Couleur de la barre : {exc}", file=sys.stderr)
 
-    window.events.shown += paint_title_bar
+    def prepare():
+        # Sur le fil de la fenêtre (Windows et WebView2 l'exigent)
+        state["hwnd"] = window.native.Handle.ToInt32()
+        paint_title_bar()
+        try:
+            # La zone « app-region: drag » de la page se comporte comme une barre de titre :
+            # glisser, coller au bord de l'écran, double-clic pour agrandir, clic droit
+            window.native.browser.webview.CoreWebView2.Settings.IsNonClientRegionSupportEnabled = True
+            state["native_drag"] = True
+        except Exception as exc:
+            print(f"Glisser la barre (WebView2) : {exc}", file=sys.stderr)
+        try:
+            _remove_windows_title_bar(hwnd())
+            state["bar"] = True
+        except Exception as exc:
+            print(f"Barre de la page : {exc}", file=sys.stderr)
+
+    def on_loaded():
+        if state["ready"]:
+            return
+        state["ready"] = True
+        try:
+            from System import Action
+            window.native.Invoke(Action(prepare))
+        except Exception as exc:
+            print(f"Préparation de la fenêtre : {exc}", file=sys.stderr)
+        window.load_url(url)
+
+    window.events.loaded += on_loaded
     webview.settings["ALLOW_DOWNLOADS"] = True  # « Télécharger » depuis la bibliothèque
     storage = HOME_DIR / "fenetre"  # garde la langue choisie, etc. d'une ouverture à l'autre
     storage.mkdir(parents=True, exist_ok=True)
