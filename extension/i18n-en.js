@@ -12,6 +12,7 @@ window.I18N_EN = {
   "Format": "Format",
   "Meilleure disponible": "Best available",
   "Original · meilleure qualité": "Original · best quality",
+  "Meilleure qualité du site": "Best quality from the site",
   "MP4 · lisible partout": "MP4 · plays everywhere",
   "MOV · Apple et montage": "MOV · Apple and editing",
   "MP3 · le plus compatible": "MP3 · most compatible",

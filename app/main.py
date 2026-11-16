@@ -417,6 +417,8 @@ class SettingsRequest(BaseModel):
     # Dossier à part pour les sons / pour les vidéos ; "" = revenir au dossier principal
     audio_folder: Optional[str] = None
     video_folder: Optional[str] = None
+    # Navigateur dont on utilise la connexion ("" = aucun)
+    login_browser: Optional[str] = None
 
 
 def _autostart_state() -> Optional[bool]:
@@ -433,6 +435,7 @@ def _settings() -> dict:
     return {"folder": str(DOWNLOAD_DIR), "autostart": _autostart_state(), "version": APP_VERSION,
             "audio_folder": str(AUDIO_DIR) if AUDIO_DIR else None,
             "video_folder": str(VIDEO_DIR) if VIDEO_DIR else None,
+            "login_browser": _login_browser(), "login_error": LOGIN_STATE["error"],
             "count": sum(1 for d in ITEMS_DIR.iterdir() if d.is_dir() and ITEM_ID.match(d.name))}
 
 
@@ -501,6 +504,14 @@ async def save_settings(payload: SettingsRequest):
         try:
             AUTOSTART_HOOK(payload.autostart)
         except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
+    if payload.login_browser is not None:
+        browser = payload.login_browser or None
+        if browser and browser not in LOGIN_BROWSERS:
+            raise HTTPException(status_code=400, detail="Navigateur inconnu.")
+        try:
+            _set_login_browser(browser)
+        except OSError as exc:
             raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
     for kind in ("audio", "video"):
         raw = getattr(payload, f"{kind}_folder")
@@ -1183,10 +1194,57 @@ def _is_403(exc: Exception) -> bool:
     return bool(re.search(r"http error 403|403:? forbidden", str(exc), re.IGNORECASE))
 
 
+# Son : le fichier sans perte d'abord quand le site en fournit un (Bandcamp gratuit ou à prix libre,
+# Jamendo, Archive.org, fichier de l'artiste sur SoundCloud…), sinon la meilleure piste du site.
+LOSSLESS_CODECS = r"^(flac|alac|wav|aiff|pcm)"
+AUDIO_FORMAT = f"bestaudio[acodec~='{LOSSLESS_CODECS}']/bestaudio/best"
+
+# « Utiliser ma connexion du navigateur » (version PC) : yt-dlp lit sur l'ordinateur les cookies
+# du navigateur choisi. Débloque YouTube Premium (256 kb/s) et le fichier de l'artiste sur SoundCloud.
+# Rien n'est envoyé ailleurs qu'au site du média.
+LOGIN_FILE = STATE_DIR / "connexion.json"
+LOGIN_BROWSERS = ("firefox", "chrome", "edge", "brave", "opera", "vivaldi", "chromium", "safari")
+LOGIN_STATE = {"error": None}  # dernière lecture ratée des cookies (affichée dans les Réglages)
+
+
+def _login_browser() -> Optional[str]:
+    if not LOCAL_MODE:
+        return None
+    try:
+        browser = json.loads(LOGIN_FILE.read_text("utf-8")).get("browser")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return browser if browser in LOGIN_BROWSERS else None
+
+
+def _set_login_browser(browser: Optional[str]) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = LOGIN_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"browser": browser}), "utf-8")
+    tmp.replace(LOGIN_FILE)
+    LOGIN_STATE["error"] = None
+
+
+def _open_ydl(opts: dict):
+    """YoutubeDL avec la connexion du navigateur si elle est choisie. Si les cookies ne se lisent pas
+    (navigateur fermé à clé, chiffrement…), on continue sans, et l'erreur s'affiche dans les Réglages."""
+    browser = _login_browser()
+    if browser:
+        ydl = yt_dlp.YoutubeDL({**opts, "cookiesfrombrowser": (browser,)})
+        try:
+            ydl.cookiejar  # lit les cookies tout de suite
+            LOGIN_STATE["error"] = None
+            return ydl
+        except Exception as exc:
+            ydl.close()
+            LOGIN_STATE["error"] = re.sub(r"^ERROR:\s*", "", str(exc))[:300]
+    return yt_dlp.YoutubeDL(opts)
+
+
 def _run_ytdlp(opts: dict, run, clean: Optional[Path] = None):
     """Lance run(ydl) ; après un refus 403, réessaie une fois. clean : dossier où effacer les .part."""
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
+        with _open_ydl(opts) as ydl:
             return run(ydl)
     except JobCancelled:
         raise
@@ -1197,7 +1255,7 @@ def _run_ytdlp(opts: dict, run, clean: Optional[Path] = None):
         for f in clean.glob("*.part*"):
             f.unlink(missing_ok=True)
     retry = {**opts, "extractor_args": {"youtube": {"player_client": RETRY_403_CLIENTS}}}
-    with yt_dlp.YoutubeDL(retry) as ydl:
+    with _open_ydl(retry) as ydl:
         ydl.cache.remove()
         return run(ydl)
 
@@ -1218,6 +1276,30 @@ def _format_size(f: dict, duration: Optional[float]) -> Optional[float]:
     if not size and f.get("tbr") and duration:
         size = f["tbr"] * 1000 / 8 * duration
     return size
+
+
+CODEC_NAMES = {"mp4a": "AAC", "aac": "AAC", "opus": "Opus", "vorbis": "Vorbis", "mp3": "MP3", "flac": "FLAC",
+               "alac": "ALAC", "wav": "WAV", "aiff": "AIFF", "pcm": "WAV", "ec-3": "E-AC-3", "ac-3": "AC-3"}
+
+
+def _best_audio(formats: list) -> Optional[dict]:
+    """La piste son que AUDIO_FORMAT va prendre : codec, débit, sans perte ou non.
+    Les formats de yt-dlp sont rangés du moins bon au meilleur."""
+    with_audio = [f for f in formats if f.get("acodec") not in (None, "none")]
+    audio_only = [f for f in with_audio if f.get("vcodec") == "none"]
+    lossless = [f for f in audio_only if re.match(LOSSLESS_CODECS, str(f.get("acodec")))]
+    best = (lossless or audio_only or with_audio or [None])[-1]
+    if not best:
+        return None
+    acodec = str(best.get("acodec") or best.get("ext") or "")
+    key = acodec.split(".")[0].split("_")[0].lower()
+    kbps = best.get("abr") or (best.get("tbr") if best.get("vcodec") == "none" else None)
+    return {
+        "codec": CODEC_NAMES.get(key) or key.upper() or None,
+        "kbps": round(kbps) if kbps else None,
+        "lossless": bool(lossless),
+        "note": best.get("format_note") or None,
+    }
 
 
 def _size_estimates(formats: list, duration: Optional[float]):
@@ -1269,6 +1351,8 @@ async def analyze(payload: AnalyzeRequest):
         "source": info.get("extractor_key") or info.get("extractor"),
         "video_formats": video_formats,
         "audio_size": audio_size,
+        "audio_best": _best_audio(info.get("formats") or []),
+        "login": bool(_login_browser()),
     }
 
 
@@ -1652,7 +1736,7 @@ def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, co
         postprocessors.append({"key": "FFmpegThumbnailsConvertor", "format": "jpg", "when": "before_dl"})
 
     if p["mode"] == "audio":
-        ydl_opts["format"] = "bestaudio/best"
+        ydl_opts["format"] = AUDIO_FORMAT
         postprocessors.insert(0, {
             "key": "FFmpegExtractAudio",
             # "best" garde le codec de la source : simple changement de conteneur, aucune perte
@@ -2304,7 +2388,7 @@ def _sons_sync(job: dict) -> None:
             "quiet": True,
             "noprogress": True,
             "no_warnings": True,
-            "format": "bestaudio/best",
+            "format": AUDIO_FORMAT,
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "wav" if p["container"] == "aiff" else p["container"],

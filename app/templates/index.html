@@ -293,7 +293,7 @@
     <label class="field">
       <span class="field-label">Format</span>
       <select class="js-audio-container">
-        <option value="original" data-label="Original · meilleure qualité">Original · meilleure qualité</option>
+        <option value="original" data-label="Meilleure qualité du site">Meilleure qualité du site</option>
         <option value="mp3" data-label="MP3 · le plus compatible">MP3 · le plus compatible</option>
         <option value="flac" data-label="FLAC · sans perte" data-kbps="900">FLAC · sans perte</option>
         <option value="wav" data-label="WAV · non compressé" data-kbps="1536">WAV · non compressé</option>
@@ -422,6 +422,25 @@
       </div>
       <p class="hint">Pour les prochains téléchargements. Les zips restent dans le dossier principal.</p>
     </div>
+  </section>
+  <section class="settings-row" id="settingsLoginRow">
+    <h3 class="field-label">Utiliser ma connexion du navigateur</h3>
+    <p class="hint">Pour le son en meilleure qualité : YouTube Premium (256 kb/s au lieu d'environ 160) et le fichier de l'artiste sur SoundCloud, quand il autorise le téléchargement. MediaVior lit sur ce PC les cookies du navigateur choisi ; rien n'est envoyé ailleurs qu'au site du média.</p>
+    <label class="field settings-login">
+      <select id="settingsLogin">
+        <option value="">Non, sans connexion</option>
+        <option value="firefox">Firefox (conseillé)</option>
+        <option value="chrome">Chrome</option>
+        <option value="edge">Edge</option>
+        <option value="brave">Brave</option>
+        <option value="opera">Opera</option>
+        <option value="vivaldi">Vivaldi</option>
+        <option value="chromium">Chromium</option>
+        <option value="safari">Safari</option>
+      </select>
+    </label>
+    <p class="hint">Sous Windows, Chrome et Edge bloquent souvent cette lecture : Firefox marche le mieux. Google peut aussi limiter un compte YouTube utilisé ainsi.</p>
+    <p class="hint settings-error" id="settingsLoginError" role="status" hidden></p>
   </section>
   <section class="settings-row" id="settingsAutostartRow">
     <label class="settings-check settings-check--big"><input type="checkbox" id="settingsAutostart"> Lancer MediaVior au démarrage de l'ordinateur</label>
