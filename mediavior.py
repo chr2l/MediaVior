@@ -580,6 +580,17 @@ def _remove_windows_title_bar(hwnd: int) -> None:
     user32.SetWindowPos(wintypes.HWND(hwnd), None, 0, 0, 0, 0, 0x20 | 0x2 | 0x1 | 0x4 | 0x10)
 
 
+def _restore_windows_title_bar(hwnd: int) -> None:
+    """Annule _remove_windows_title_bar : la barre de Windows revient."""
+    import ctypes
+    from ctypes import wintypes
+    comctl32 = ctypes.windll.comctl32
+    if _KEEP:
+        comctl32.RemoveWindowSubclass.argtypes = [wintypes.HWND, ctypes.c_void_p, ctypes.c_size_t]
+        comctl32.RemoveWindowSubclass(wintypes.HWND(hwnd), ctypes.cast(_KEEP[-1], ctypes.c_void_p), 1)
+    ctypes.windll.user32.SetWindowPos(wintypes.HWND(hwnd), None, 0, 0, 0, 0, 0x20 | 0x2 | 0x1 | 0x4 | 0x10)
+
+
 def native_window(url: str) -> bool:
     """Windows : ouvre l'appli dans sa propre fenêtre (pas celle d'un navigateur), comme Discord
     ou Claude : la barre du haut est dessinée par la page (coffre bleu, nom, boutons réduire /
@@ -600,7 +611,7 @@ def native_window(url: str) -> bool:
     # Mêmes couleurs que style.css : fond (--ink) et texte (--paper), en clair ou en sombre
     bg, fg = ("#F3F5F8", "#17202B") if light else ("#121821", "#E9ECF1")
     colorref = lambda hexa: int(hexa[5:7] + hexa[3:5] + hexa[1:3], 16)  # Windows : 0x00BBGGRR
-    state = {"bar": False, "native_drag": False, "ready": False, "hwnd": 0}
+    state = {"bar": False, "native_drag": False, "ready": False, "hwnd": 0, "page_ok": False}
 
     def hwnd() -> int:
         return state["hwnd"]  # lu une fois sur le fil de la fenêtre (prepare)
@@ -611,7 +622,22 @@ def native_window(url: str) -> bool:
     class Api:
         """Appelé par la page (local.js, « Barre du haut dessinée par la page »)."""
         def fenetre(self):
+            state["page_ok"] = True
             return {"barre": state["bar"], "glisser_natif": state["native_drag"], "agrandie": maximized()}
+
+        def redimensionner(self, bord):
+            # Bord du haut et coins du haut (la page les dessine : la barre de Windows est enlevée).
+            # Lance le redimensionnement de Windows, comme en tirant sur un vrai bord.
+            code = {"haut": 3, "haut-gauche": 4, "haut-droite": 5}.get(bord)
+            if not code or maximized():
+                return
+            from System import Action
+            user32 = ctypes.windll.user32
+
+            def start():
+                user32.ReleaseCapture()
+                user32.SendMessageW(ctypes.c_void_p(hwnd()), 0x0112, 0xF000 + code, 0)  # WM_SYSCOMMAND, SC_SIZE
+            window.native.Invoke(Action(start))
 
         def reduire(self):
             window.minimize()
@@ -672,6 +698,19 @@ def native_window(url: str) -> bool:
         except Exception as exc:
             print(f"Préparation de la fenêtre : {exc}", file=sys.stderr)
         window.load_url(url)
+
+        def safety():
+            # Page sans barre à elle (ancienne version de l'appli encore lancée…) : on remet la
+            # barre de Windows, pour ne jamais laisser une fenêtre sans boutons.
+            time.sleep(10)
+            if state["bar"] and not state["page_ok"]:
+                try:
+                    from System import Action
+                    window.native.Invoke(Action(lambda: _restore_windows_title_bar(hwnd())))
+                    state["bar"] = False
+                except Exception as exc:
+                    print(f"Remettre la barre de Windows : {exc}", file=sys.stderr)
+        threading.Thread(target=safety, daemon=True).start()
 
     window.events.loaded += on_loaded
     webview.settings["ALLOW_DOWNLOADS"] = True  # « Télécharger » depuis la bibliothèque

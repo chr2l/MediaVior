@@ -573,6 +573,7 @@ if (settingsDialog) {
     maxBtn.textContent = on ? "" : "";
     maxBtn.title = t(on ? "Restaurer" : "Agrandir");
     maxBtn.setAttribute("aria-label", maxBtn.title);
+    body.classList.toggle("win-max", on);
   };
   let started = false;
   const start = async () => {
@@ -594,6 +595,11 @@ if (settingsDialog) {
     document.getElementById("winMin").addEventListener("click", () => api.reduire());
     maxBtn.addEventListener("click", async () => setMax(await api.agrandir()));
     document.getElementById("winClose").addEventListener("click", () => api.fermer());
+    bar.querySelectorAll(".titlebar__grip").forEach((grip) => grip.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      api.redimensionner(grip.dataset.bord);
+    }));
     let timer = 0;
     window.addEventListener("resize", () => {
       clearTimeout(timer);
