@@ -399,7 +399,7 @@
     en bout, et les fichiers vont directement du PC au téléphone.</p>
 </dialog>
 
-<!-- Extension de navigateur, ajoutée sans le Chrome Web Store -->
+<!-- Réglages (version PC) -->
 <dialog class="yt-dialog settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
   <div class="yt-dialog__head">
     <div class="yt-dialog__heading">
@@ -407,60 +407,109 @@
     </div>
     <button type="button" class="icon-btn" id="settingsClose" aria-label="Fermer" title="Fermer"></button>
   </div>
-  <section class="settings-row">
-    <h3 class="field-label">Dossier des médias</h3>
-    <p class="hint">Là où arrivent tes vidéos et tes sons une fois téléchargés.</p>
-    <code class="settings-path" id="settingsFolder"></code>
-    <div class="settings-actions">
-      <button type="button" class="btn btn--ghost btn--sm" id="settingsPick"><span data-icon="folder"></span>Choisir un autre dossier</button>
-      <label class="settings-check"><input type="checkbox" id="settingsMove" checked> Y déplacer aussi les médias déjà rangés</label>
-    </div>
-    <label class="settings-check settings-split"><input type="checkbox" id="settingsSplit"> Ranger les sons et les vidéos dans des dossiers différents</label>
-    <div class="settings-kinds" id="settingsKinds" hidden>
-      <div class="settings-kind">
-        <span class="settings-kind__label"><span data-icon="music"></span>Sons</span>
-        <code class="settings-path" id="settingsAudio"></code>
-        <button type="button" class="btn btn--quiet btn--sm" data-pick-kind="audio">Choisir</button>
+  <!-- Rangement : dossier principal, et au besoin un dossier pour les sons et un pour les vidéos -->
+  <section class="set-group" aria-labelledby="setFolderTitle">
+    <h3 class="set-group__title" id="setFolderTitle"><span data-icon="folder"></span>Rangement</h3>
+    <div class="set-card">
+      <div class="set-item">
+        <div class="set-item__text">
+          <span class="set-item__name">Dossier des médias</span>
+          <span class="set-item__desc">Là où arrivent tes vidéos et tes sons.</span>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" id="settingsPick">Changer</button>
+        <code class="settings-path set-item__full" id="settingsFolder"></code>
+        <label class="settings-check set-item__full"><input type="checkbox" id="settingsMove" checked> Quand je change de dossier, y déplacer aussi les médias déjà rangés</label>
       </div>
-      <div class="settings-kind">
-        <span class="settings-kind__label"><span data-icon="film"></span>Vidéos</span>
-        <code class="settings-path" id="settingsVideo"></code>
-        <button type="button" class="btn btn--quiet btn--sm" data-pick-kind="video">Choisir</button>
+      <div class="set-item">
+        <label class="set-item__text" for="settingsSplit">
+          <span class="set-item__name">Un dossier pour les sons, un pour les vidéos</span>
+          <span class="set-item__desc">Les zips restent dans le dossier des médias.</span>
+        </label>
+        <input type="checkbox" class="set-switch" role="switch" id="settingsSplit">
+        <div class="settings-kinds set-item__full" id="settingsKinds" hidden>
+          <div class="settings-kind">
+            <span class="settings-kind__label"><span data-icon="music"></span>Sons</span>
+            <code class="settings-path" id="settingsAudio"></code>
+            <button type="button" class="btn btn--quiet btn--sm" data-pick-kind="audio">Changer</button>
+          </div>
+          <div class="settings-kind">
+            <span class="settings-kind__label"><span data-icon="film"></span>Vidéos</span>
+            <code class="settings-path" id="settingsVideo"></code>
+            <button type="button" class="btn btn--quiet btn--sm" data-pick-kind="video">Changer</button>
+          </div>
+        </div>
       </div>
-      <p class="hint">Pour les prochains téléchargements. Les zips restent dans le dossier principal.</p>
     </div>
   </section>
-  <section class="settings-row" id="settingsLoginRow">
-    <h3 class="field-label">Utiliser ma connexion du navigateur</h3>
-    <p class="hint">Pour le son en meilleure qualité : YouTube Premium (256 kb/s au lieu d'environ 160) et le fichier de l'artiste sur SoundCloud, quand il autorise le téléchargement. MediaVior lit sur ce PC les cookies du navigateur choisi ; rien n'est envoyé ailleurs qu'au site du média.</p>
-    <label class="field settings-login">
-      <select id="settingsLogin">
-        <option value="">Non, sans connexion</option>
-        <option value="firefox">Firefox (conseillé)</option>
-        <option value="chrome">Chrome</option>
-        <option value="edge">Edge</option>
-        <option value="brave">Brave</option>
-        <option value="opera">Opera</option>
-        <option value="vivaldi">Vivaldi</option>
-        <option value="chromium">Chromium</option>
-        <option value="safari">Safari</option>
-      </select>
-    </label>
-    <p class="hint">Sous Windows, Chrome et Edge bloquent souvent cette lecture : Firefox marche le mieux. Google peut aussi limiter un compte YouTube utilisé ainsi.</p>
-    <p class="hint settings-error" id="settingsLoginError" role="status" hidden></p>
-  </section>
-  <section class="settings-row" id="settingsAutostartRow">
-    <label class="settings-check settings-check--big"><input type="checkbox" id="settingsAutostart"> Lancer MediaVior au démarrage de l'ordinateur</label>
-    <p class="hint">Il démarre en arrière-plan, sans ouvrir de fenêtre : le téléphone et l'extension du navigateur marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.</p>
-  </section>
-  <section class="settings-row" id="settingsUpdateRow" hidden>
-    <h3 class="field-label">Mise à jour</h3>
-    <p class="hint settings-version" id="settingsVersion"></p>
-    <div class="settings-actions">
-      <button type="button" class="btn btn--ghost btn--sm" id="settingsCheck">Rechercher une mise à jour</button>
-      <button type="button" class="btn btn--solid btn--sm" id="settingsInstall" hidden></button>
+
+  <!-- Qualité du son : connexion du navigateur (cookies lus sur ce PC) -->
+  <section class="set-group" id="settingsLoginRow" aria-labelledby="setLoginTitle">
+    <h3 class="set-group__title" id="setLoginTitle"><span data-icon="music"></span>Qualité du son</h3>
+    <div class="set-card">
+      <div class="set-item">
+        <label class="set-item__text" for="settingsLogin">
+          <span class="set-item__name">Utiliser ma connexion du navigateur</span>
+          <span class="set-item__desc">Pour YouTube Premium (256 kb/s au lieu d'environ 160) et le fichier de l'artiste sur SoundCloud.</span>
+        </label>
+        <select id="settingsLogin" class="set-select">
+          <option value="">Non, sans connexion</option>
+          <option value="firefox">Firefox (conseillé)</option>
+          <option value="chrome">Chrome</option>
+          <option value="edge">Edge</option>
+          <option value="brave">Brave</option>
+          <option value="opera">Opera</option>
+          <option value="vivaldi">Vivaldi</option>
+          <option value="chromium">Chromium</option>
+          <option value="safari">Safari</option>
+        </select>
+        <p class="hint settings-error set-item__full" id="settingsLoginError" role="status" hidden></p>
+        <details class="set-more set-item__full">
+          <summary>Comment ça marche ?</summary>
+          <p>MediaVior lit sur ce PC les cookies du navigateur choisi ; rien n'est envoyé ailleurs qu'au site du média.</p>
+          <p>Sous Windows, Chrome et Edge bloquent souvent cette lecture : Firefox marche le mieux. Google peut aussi limiter un compte YouTube utilisé ainsi.</p>
+        </details>
+      </div>
     </div>
-    <p class="hint" id="settingsUpdateMsg" role="status" hidden></p>
+  </section>
+
+  <!-- Général : démarrage avec l'ordinateur, langue -->
+  <section class="set-group" aria-labelledby="setGeneralTitle">
+    <h3 class="set-group__title" id="setGeneralTitle"><span data-icon="settings"></span>Général</h3>
+    <div class="set-card">
+      <div class="set-item" id="settingsAutostartRow">
+        <label class="set-item__text" for="settingsAutostart">
+          <span class="set-item__name">Lancer MediaVior au démarrage de l'ordinateur</span>
+          <span class="set-item__desc">En arrière-plan, sans fenêtre : le téléphone et l'extension marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.</span>
+        </label>
+        <input type="checkbox" class="set-switch" role="switch" id="settingsAutostart">
+      </div>
+      <div class="set-item">
+        <label class="set-item__text" for="settingsLang">
+          <span class="set-item__name">Langue</span>
+        </label>
+        <select id="settingsLang" class="set-select set-select--short">
+          <option value="fr" lang="fr">Français</option>
+          <option value="en" lang="en">English</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mise à jour (seulement l'appli installée : .exe, .dmg, AppImage) -->
+  <section class="set-group" id="settingsUpdateRow" aria-labelledby="setUpdateTitle" hidden>
+    <h3 class="set-group__title" id="setUpdateTitle"><span data-icon="download"></span>Mise à jour</h3>
+    <div class="set-card">
+      <div class="set-item">
+        <div class="set-item__text">
+          <span class="set-item__name settings-version" id="settingsVersion"></span>
+          <span class="set-item__desc" id="settingsUpdateMsg" role="status" hidden></span>
+        </div>
+        <div class="settings-actions">
+          <button type="button" class="btn btn--ghost btn--sm" id="settingsCheck">Rechercher une mise à jour</button>
+          <button type="button" class="btn btn--solid btn--sm" id="settingsInstall" hidden></button>
+        </div>
+      </div>
+    </div>
   </section>
 </dialog>
 
