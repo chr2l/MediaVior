@@ -200,6 +200,58 @@ function setupOptions(root) {
   let audioBest = null; // piste son prise par « Meilleure qualité du site » : codec, débit, sans perte
   let source = "";
   let login = false;
+  let searchQuery = ""; // « Artiste Titre » pour chercher une meilleure source
+  let mediaUrl = "";
+  let mediaDuration = 0;
+  const better = $(".js-better");
+  const betterBtn = $(".js-better-btn");
+  const betterInfo = $(".js-better-info");
+  const betterList = $(".js-better-list");
+  betterBtn.querySelector("[data-icon]").append(icon("search"));
+  betterBtn.addEventListener("click", () => findBetter());
+
+  // Même titre sur Bandcamp / SoundCloud, avec la qualité de chaque résultat. La personne choisit.
+  async function findBetter() {
+    betterBtn.disabled = true;
+    betterList.replaceChildren();
+    betterInfo.hidden = false;
+    betterInfo.textContent = t("Recherche de « {q} » sur Bandcamp et SoundCloud…", { q: searchQuery });
+    try {
+      const res = await api("/api/meilleure-source", { method: "POST", body: { query: searchQuery, url: mediaUrl } });
+      const current = audioBest;
+      const upgrades = res.results.filter((r) => r.quality.lossless
+        || (!current?.lossless && (r.quality.kbps || 0) > (current?.kbps || 0)));
+      if (!res.results.length) betterInfo.textContent = t("Rien trouvé sur Bandcamp ni SoundCloud pour « {q} ».", { q: res.query });
+      else if (!upgrades.length) betterInfo.textContent = t("Trouvé, mais pas en meilleure qualité qu'ici. Le lien actuel reste le meilleur choix.");
+      else betterInfo.textContent = t("Vérifie que c'est bien le même morceau (pas un remix) avant de le prendre.");
+      if (res.failed.length) betterInfo.textContent += " " + t("Recherche impossible sur : {sites}.", { sites: res.failed.join(", ") });
+      res.results.forEach((r) => betterList.append(betterItem(r)));
+    } catch (e) {
+      betterInfo.textContent = e.message;
+    } finally {
+      betterBtn.disabled = false;
+    }
+  }
+
+  function betterItem(r) {
+    const q = r.quality;
+    const badge = q.lossless
+      ? h("span", { class: "better__badge better__badge--lossless" }, t("{codec} sans perte", { codec: q.codec || "" }).trim())
+      : h("span", { class: "better__badge" }, qualityLabel(q));
+    const meta = [r.site, r.artist, r.duration ? formatDuration(r.duration) : ""].filter(Boolean).join(" · ");
+    const gap = r.duration && mediaDuration ? Math.abs(r.duration - mediaDuration) : 0;
+    return h("li", { class: "yt-results__item" },
+      h("div", { class: "yt-results__body" },
+        h("div", { class: "yt-results__title" }, badge, r.title),
+        h("div", { class: "yt-results__meta" }, meta,
+          gap > 10 ? ` · ${t("durée différente de {s} s", { s: Math.round(gap) })}` : "")),
+      h("a", { class: "btn btn--quiet btn--sm", href: r.url, target: "_blank", rel: "noopener" }, t("Écouter")),
+      h("button", { type: "button", class: "btn btn--ghost btn--sm", onclick: () => {
+        urlInput.value = r.url;
+        autoGrow();
+        analyze(r.url);
+      } }, t("Prendre celui-ci")));
+  }
 
   root.querySelectorAll(".mode-toggle__btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -238,8 +290,14 @@ function setupOptions(root) {
 
   return {
     quality,
-    setMedia(newDuration, newAudioSize, best, newSource, newLogin) {
+    setMedia(newDuration, newAudioSize, best, newSource, newLogin, search, url) {
       duration = newDuration || 0;
+      mediaDuration = duration;
+      searchQuery = search || "";
+      mediaUrl = url || "";
+      better.hidden = !searchQuery;
+      betterInfo.hidden = true;
+      betterList.replaceChildren();
       audioSize = newAudioSize || 0;
       audioBest = best || null;
       source = newSource || "";
@@ -378,7 +436,7 @@ function renderResult(data) {
   } else {
     select.append(h("option", { value: "" }, t("Meilleure disponible")));
   }
-  singleOptions.setMedia(data.duration, data.audio_size, data.audio_best, data.source, data.login);
+  singleOptions.setMedia(data.duration, data.audio_size, data.audio_best, data.source, data.login, data.search, data.url);
   // Qualité préférée : la même, ou la plus proche en dessous pour ce média
   formatPickers.forEach((p) => p.select === select && applyFavorite(p, favorites.quality, favorites.quality !== null));
 
