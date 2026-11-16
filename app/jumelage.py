@@ -347,7 +347,7 @@ async def _start_titles(phone: str, msg: dict) -> None:
     if not titles:
         return await _send({"t": "erreur", "texte": "Écris au moins un titre."}, phone)
     try:
-        container = "wav" if msg.get("container") == "wav" else "mp3"
+        container = msg.get("container") if msg.get("container") in ("wav", "aiff") else "mp3"
         audio_quality = (str(msg.get("audio_quality") or "320")[:4]) if container == "mp3" else None
         payload = web.SonsFetchRequest(container=container, audio_quality=audio_quality)
         entries = [{"id": secrets.token_hex(16), "query": q, "video_id": None} for q in titles]
