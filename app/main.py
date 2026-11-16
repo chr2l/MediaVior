@@ -2538,11 +2538,13 @@ async def sons_from_screen(request: Request):
         raise HTTPException(status_code=400, detail="Image vide.")
     if len(data) > MAX_SCREEN_BYTES:
         raise HTTPException(status_code=413, detail="Capture trop lourde (20 Mo maximum).")
-    with tempfile.NamedTemporaryFile(suffix=".img") as f:
-        f.write(data)
-        f.flush()
+    # Dossier temporaire plutôt que NamedTemporaryFile : sous Windows, un fichier temporaire encore
+    # ouvert ne peut pas être lu par ffmpeg, et toute capture finissait en « Impossible de lire ».
+    with tempfile.TemporaryDirectory() as tmp:
+        image = Path(tmp) / "capture.img"
+        image.write_bytes(data)
         try:
-            found = await asyncio.get_running_loop().run_in_executor(None, _ocr_lines, Path(f.name))
+            found = await asyncio.get_running_loop().run_in_executor(None, _ocr_lines, image)
         except FileNotFoundError:
             raise HTTPException(status_code=500, detail="Tesseract (lecture des captures) est introuvable sur le serveur.")
         except Exception:

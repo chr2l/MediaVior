@@ -227,6 +227,8 @@ window.I18N_EN = {
 
   // ----- File d'attente et coffre -----
   "Le serveur a renvoyé une erreur.": "The server returned an error.",
+  "MediaVior ne répond pas. Vérifie qu'il est bien lancé (ou relance-le), puis réessaie.":
+    "MediaVior is not responding. Check that it is running (or restart it), then try again.",
   "aujourd'hui, {time}": "today, {time}",
   "hier, {time}": "yesterday, {time}",
   "Mis à jour le {day} à {time}": "Updated on {day} at {time}",
