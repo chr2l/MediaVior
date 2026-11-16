@@ -29,12 +29,13 @@
   cursor: pointer; outline: none; font-size: var(--mvf-size, inherit); line-height: 1.3;
 }
 .mvf__opt:hover, .mvf__opt:focus-visible { background: var(--mvf-hover, rgba(59, 140, 194, 0.16)); }
-.mvf__opt.is-selected { color: var(--mvf-accent-text, var(--mvf-accent, #58A3D6)); font-weight: 600; }
+.mvf__opt.is-selected { color: var(--mvf-accent-text, var(--mvf-accent, #58A3D6)); } /* pas de gras : la largeur ne bouge pas */
 .mvf__label { flex: 1; min-width: 0; }
 .mvf__tag {
   flex: none; padding: 1px 7px; border-radius: 999px; font-size: 0.78em; font-weight: 600;
   color: var(--mvf-accent, #3B8CC2); background: var(--mvf-hover, rgba(59, 140, 194, 0.16));
 }
+.mvf__tag--ghost { visibility: hidden; }
 .mvf__star {
   flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin: -4px 0;
   padding: 0; border: 0; border-radius: 6px; background: none; color: var(--mvf-dim, #9BA3B0);

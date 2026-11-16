@@ -1,5 +1,5 @@
 // Rend la page installable (écran d'accueil, menu Partager) et l'affiche même hors connexion.
-const CACHE = "mediavior-tel-v9";
+const CACHE = "mediavior-tel-v10";
 const SHELL = ["/", "/formats.css", "/tel.css", "/tel.js", "/formats.js", "/i18n.js", "/i18n-en.js", "/manifest.webmanifest", "/icons/icon.svg", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
