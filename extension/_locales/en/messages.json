@@ -78,6 +78,9 @@
   "ytDownload": {
     "message": "Download"
   },
+  "fmtBestAudio": {
+    "message": "Best from the site"
+  },
   "fmtOriginal": {
     "message": "Original"
   },

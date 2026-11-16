@@ -2001,6 +2001,8 @@ input[type="range"] {
 
 /* Réglages : dossiers à part pour les sons et les vidéos */
 .settings-split { margin-top: 12px; }
+.settings-login { margin-top: 10px; max-width: 280px; }
+.settings-error { color: var(--danger); }
 .settings-kinds { margin-top: 8px; display: grid; gap: 8px; }
 .settings-kinds[hidden] { display: none; }
 .settings-kind { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 8px; align-items: center; }

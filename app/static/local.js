@@ -339,6 +339,8 @@ if (settingsDialog) {
   const kindsBox = document.getElementById("settingsKinds");
   const audioEl = document.getElementById("settingsAudio");
   const videoEl = document.getElementById("settingsVideo");
+  const loginSel = document.getElementById("settingsLogin");
+  const loginError = document.getElementById("settingsLoginError");
 
   const show = (s) => {
     folderEl.textContent = s.folder;
@@ -354,6 +356,10 @@ if (settingsDialog) {
       splitBox.checked = true;
       kindsBox.hidden = false;
     }
+    loginSel.value = s.login_browser || "";
+    loginError.hidden = !(s.login_browser && s.login_error);
+    loginError.textContent = s.login_error
+      ? t("La dernière lecture de la connexion a échoué, le téléchargement s'est fait sans : {err}", { err: s.login_error }) : "";
     audioEl.textContent = s.audio_folder || s.folder;
     videoEl.textContent = s.video_folder || s.folder;
   };
@@ -402,6 +408,17 @@ if (settingsDialog) {
     settingsDialog.showModal();
     try {
       show(await api("/api/local/settings"));
+    } catch (e) {
+      showToast(e.message);
+    }
+  });
+
+  loginSel.addEventListener("change", async () => {
+    try {
+      await save({ login_browser: loginSel.value });
+      showToast(loginSel.value
+        ? t("Connexion activée : les prochains téléchargements l'utiliseront.")
+        : t("Connexion désactivée."));
     } catch (e) {
       showToast(e.message);
     }

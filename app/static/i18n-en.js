@@ -102,8 +102,28 @@ window.I18N_EN = {
     "Plays everywhere: phones, TVs, editing software (H.264 + AAC). If the site doesn't offer this format at the chosen quality (often above 1080p), the video is converted, which can take a while.",
   "Comme le MP4, mais dans le format préféré des logiciels Apple (Final Cut, iMovie).":
     "Like MP4, but in the format Apple software prefers (Final Cut, iMovie).",
-  "Meilleure qualité possible : la piste est gardée telle que le site la fournit, sans réencodage (souvent Opus ou M4A). Lue par la plupart des appareils récents.":
-    "Best possible quality: the track is kept exactly as the site provides it, without re-encoding (often Opus or M4A). Plays on most recent devices.",
+  "Meilleure qualité que le site fournit, gardée sans réencodage. Si le site propose un fichier sans perte (FLAC, WAV), c'est lui qui est pris.":
+    "The best quality the site provides, kept without re-encoding. If the site offers a lossless file (FLAC, WAV), that one is taken.",
+  "Meilleure qualité du site": "Best quality from the site",
+  "Utiliser ma connexion du navigateur": "Use my browser sign-in",
+  "Pour le son en meilleure qualité : YouTube Premium (256 kb/s au lieu d'environ 160) et le fichier de l'artiste sur SoundCloud, quand il autorise le téléchargement. MediaVior lit sur ce PC les cookies du navigateur choisi ; rien n'est envoyé ailleurs qu'au site du média.":
+    "For better audio quality: YouTube Premium (256 kb/s instead of about 160) and the artist's file on SoundCloud, when downloads are allowed. MediaVior reads the chosen browser's cookies on this PC; nothing is sent anywhere except to the media's site.",
+  "Non, sans connexion": "No, without sign-in",
+  "Firefox (conseillé)": "Firefox (recommended)",
+  "Sous Windows, Chrome et Edge bloquent souvent cette lecture : Firefox marche le mieux. Google peut aussi limiter un compte YouTube utilisé ainsi.":
+    "On Windows, Chrome and Edge often block this: Firefox works best. Google may also restrict a YouTube account used this way.",
+  "La dernière lecture de la connexion a échoué, le téléchargement s'est fait sans : {err}":
+    "Reading the sign-in failed last time, so the download went ahead without it: {err}",
+  "Connexion activée : les prochains téléchargements l'utiliseront.": "Sign-in turned on: the next downloads will use it.",
+  "Connexion désactivée.": "Sign-in turned off.",
+  "{codec} sans perte": "{codec} lossless",
+  "{name} compressé": "{name} compressed",
+  "Ce site fournit ce son sans perte ({codec}) : c'est la meilleure copie possible, gardée telle quelle.":
+    "This site provides this audio lossless ({codec}): it is the best possible copy, kept as is.",
+  "Ce site ne diffuse que du son compressé ({name}) : c'est la meilleure copie qu'il donne, gardée sans réencodage, mais ce n'est pas le fichier d'origine de l'artiste.":
+    "This site only streams compressed audio ({name}): it is the best copy it gives, kept without re-encoding, but it is not the artist's original file.",
+  "Avec YouTube Premium, ou si l'artiste autorise le téléchargement sur SoundCloud, active « Utiliser ma connexion du navigateur » dans les Réglages pour une meilleure qualité.":
+    "With YouTube Premium, or if the artist allows downloads on SoundCloud, turn on “Use my browser sign-in” in Settings for better quality.",
   "Le format le plus compatible, partout. Réencodé depuis la source : à 320 kb/s, la différence est inaudible.":
     "The most compatible format, everywhere. Re-encoded from the source: at 320 kb/s, the difference is inaudible.",
   "Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. Utile pour l'archivage ou les logiciels qui demandent du FLAC.":
