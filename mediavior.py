@@ -171,6 +171,14 @@ def check() -> int:
             print(f"{mod} : ok")
         except ImportError:
             print(f"{mod} : absent (optionnel : téléphone relié)")
+    if IS_WIN:
+        # Fenêtre propre à MediaVior : pywebview, pythonnet et le moteur WebView2 d'Edge
+        try:
+            from webview.platforms.winforms import _is_chromium
+            print(f"Fenêtre MediaVior : {'ok' if _is_chromium() else 'WebView2 absent (fenêtre Edge/Chrome à la place)'}")
+        except Exception as exc:
+            print(f"Fenêtre MediaVior : absente ({exc}) ; fenêtre Edge/Chrome à la place")
+            ok &= not FROZEN  # l'appli installée doit l'avoir (vérifié à la construction)
     for tool, needed in (("ffmpeg", True), ("ffprobe", True), ("deno", True), ("tesseract", False)):
         found = shutil.which(tool)
         label = "ok" if found else ("MANQUANT" if needed else "absent (optionnel : lecture des captures)")
@@ -505,9 +513,93 @@ def open_in_browser_tab(url: str) -> bool:
     return False
 
 
+def native_window_available() -> bool:
+    """Windows : la fenêtre à MediaVior (pywebview + WebView2, déjà présent sur Windows 10/11)."""
+    if not IS_WIN:
+        return False
+    import importlib.util
+    return importlib.util.find_spec("webview") is not None
+
+
+def _windows_light_theme() -> bool:
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize") as key:
+            return bool(winreg.QueryValueEx(key, "AppsUseLightTheme")[0])
+    except OSError:
+        return False
+
+
+def native_window(url: str) -> bool:
+    """Windows : ouvre l'appli dans sa propre fenêtre (pas celle d'un navigateur). Barre du haut
+    fixe aux couleurs de MediaVior, avec seulement réduire / agrandir / fermer.
+    Tourne dans un processus à part (MediaVior.exe --fenetre) qui s'arrête à la fermeture.
+    Renvoie False si c'est impossible ici (pywebview ou WebView2 absent)."""
+    try:
+        import webview
+        from webview.platforms.winforms import _is_chromium
+        if not _is_chromium():  # sans WebView2, pywebview prendrait le vieux moteur d'Internet Explorer
+            return False
+    except Exception as exc:
+        print(f"Fenêtre MediaVior indisponible : {exc}", file=sys.stderr)
+        return False
+    import ctypes
+    light = _windows_light_theme()
+    # Mêmes couleurs que style.css : fond (--ink) et texte (--paper), en clair ou en sombre
+    bg, fg = ("#F3F5F8", "#17202B") if light else ("#121821", "#E9ECF1")
+    colorref = lambda hexa: int(hexa[5:7] + hexa[3:5] + hexa[1:3], 16)  # Windows : 0x00BBGGRR
+
+    class Api:
+        def fermer(self):  # bouton « Quitter MediaVior » de la page
+            window.destroy()
+
+    window = webview.create_window("MediaVior", url, width=1200, height=820, min_size=(420, 560),
+                                   background_color=bg, text_select=True, js_api=Api())
+
+    def paint_title_bar():
+        # Barre de titre : fond et texte aux couleurs de l'appli (Windows 11 ; Windows 10 garde
+        # la barre sombre ou claire du système).
+        try:
+            hwnd = window.native.Handle.ToInt32()
+            for attr, value in ((20, 0 if light else 1), (35, colorref(bg)), (36, colorref(fg))):
+                val = ctypes.c_int(value)
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(ctypes.c_void_p(hwnd), attr,
+                                                           ctypes.byref(val), ctypes.sizeof(val))
+        except Exception as exc:
+            print(f"Couleur de la barre : {exc}", file=sys.stderr)
+
+    window.events.shown += paint_title_bar
+    webview.settings["ALLOW_DOWNLOADS"] = True  # « Télécharger » depuis la bibliothèque
+    storage = HOME_DIR / "fenetre"  # garde la langue choisie, etc. d'une ouverture à l'autre
+    storage.mkdir(parents=True, exist_ok=True)
+    webview.start(gui="edgechromium", private_mode=False, storage_path=str(storage))
+    return True
+
+
 def open_window(url: str) -> None:
-    """Ouvre l'appli dans une fenêtre sans barre d'adresse (Edge/Chrome), sinon un onglet.
-    Si MediaVior est installé comme appli du navigateur, c'est cette fenêtre-là qui s'ouvre."""
+    """Ouvre l'appli : sous Windows dans sa propre fenêtre (processus à part), sinon dans une
+    fenêtre Edge/Chrome sans barre d'adresse, sinon un onglet."""
+    if native_window_available():
+        if FROZEN:
+            cmd = [sys.executable, "--fenetre", url]
+        else:
+            py = Path(sys.executable)
+            if py.with_name("pythonw.exe").is_file():
+                py = py.with_name("pythonw.exe")  # pas de fenêtre noire
+            cmd = [str(py), str(Path(__file__).resolve()), "--fenetre", url]
+        try:
+            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            return
+        except OSError:
+            pass
+    browser_window(url)
+
+
+def browser_window(url: str) -> None:
+    """Fenêtre Edge/Chrome sans barre d'adresse, sinon un onglet. Si MediaVior est installé
+    comme appli du navigateur, c'est cette fenêtre-là qui s'ouvre."""
     cmds = []
     try:
         installed = installed_window(url)
@@ -735,6 +827,7 @@ def main() -> int:
     parser.add_argument("--apres-maj", action="store_true", help=argparse.SUPPRESS)  # relancé par la mise à jour
     parser.add_argument("--raccourci", action="store_true", help="créer le raccourci sur le bureau")
     parser.add_argument("--verifier", action="store_true", help="vérifier l'installation")
+    parser.add_argument("--fenetre", metavar="URL", help=argparse.SUPPRESS)  # fenêtre Windows (open_window)
     args = parser.parse_args()
 
     # Lancé sans console (raccourci Windows) : la sortie va dans le journal
@@ -748,6 +841,10 @@ def main() -> int:
         return check()
     if args.raccourci:
         return create_shortcut()
+    if args.fenetre:
+        if not native_window(args.fenetre):
+            browser_window(args.fenetre)
+        return 0
 
     cfg = load_config()
     if args.dossier:
@@ -815,7 +912,9 @@ def main() -> int:
         """Fenêtre installée : WINDOW_HOOK() dit si elle l'est, WINDOW_HOOK("/chemin") ouvre un onglet."""
         if open_tab:
             return open_in_browser_tab(f"http://127.0.0.1:{port}{open_tab}")
-        return {"installed": installed_window(f"http://127.0.0.1:{port}/") is not None,
+        # Sous Windows, la fenêtre à MediaVior a déjà la barre aux couleurs : rien à installer
+        return {"installed": native_window_available()
+                or installed_window(f"http://127.0.0.1:{port}/") is not None,
                 "browser": bool(chromium_browsers())}
 
     web.WINDOW_HOOK = window_hook

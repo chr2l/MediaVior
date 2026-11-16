@@ -3,3 +3,5 @@ deno>=2.5
 # Téléphone relié (QR code, connexion directe) : voir app/jumelage.py
 aiortc>=1.9
 segno>=1.6
+# Windows : fenêtre propre à MediaVior (barre du haut aux couleurs de l'appli), voir mediavior.py
+pywebview>=6.0; sys_platform == "win32"

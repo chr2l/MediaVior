@@ -22,6 +22,8 @@ if (quitBtn) {
         h("p", {}, t("MediaVior est fermé. Tu peux fermer cette fenêtre.")),
         h("p", { class: "hint" }, t("Pour le rouvrir : double-clic sur l'icône MediaVior du bureau."))),
     );
+    // Fenêtre Windows de MediaVior : elle se ferme d'elle-même
+    if (window.pywebview && window.pywebview.api) setTimeout(() => window.pywebview.api.fermer(), 1500);
     setTimeout(() => window.close(), 400);
   });
 }
