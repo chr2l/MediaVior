@@ -607,6 +607,9 @@ select {
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 .btn:active:not(:disabled) { transform: translateY(1px); }
+/* Un bouton caché (attribut hidden) doit vraiment disparaître : sinon display:inline-flex
+   le laisse visible, vide (ex. « Mettre à jour » des Réglages quand il n'y a pas de mise à jour). */
+.btn[hidden] { display: none; }
 .btn:disabled { opacity: 0.55; cursor: default; }
 
 .btn--ghost {
