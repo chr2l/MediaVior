@@ -3,13 +3,31 @@
 // Traduction de la page (voir i18n.js), avant que les autres scripts y touchent
 translatePage();
 
+// « Failed to fetch » : la requête n'a pas atteint MediaVior (appli fermée, en train de redémarrer
+// après une mise à jour…). On réessaie une fois, puis on le dit en clair au lieu du message anglais.
+const OFFLINE_MSG = "MediaVior ne répond pas. Vérifie qu'il est bien lancé (ou relance-le), puis réessaie.";
+
+async function fetchOrRetry(path, init) {
+  try {
+    return await fetch(path, init);
+  } catch (e) {
+    if (e.name === "AbortError") throw e;
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      return await fetch(path, init);
+    } catch (e2) {
+      throw new Error(t(OFFLINE_MSG));
+    }
+  }
+}
+
 async function api(path, options = {}) {
   const init = { ...options };
   if (init.body && typeof init.body !== "string") {
     init.body = JSON.stringify(init.body);
     init.headers = { "Content-Type": "application/json", ...(init.headers || {}) };
   }
-  const res = await fetch(path, init);
+  const res = await fetchOrRetry(path, init);
   let data = null;
   try {
     data = await res.json();

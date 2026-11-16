@@ -170,7 +170,7 @@ async function readScreens(files) {
   for (const [i, file] of images.entries()) {
     sonsMessage(t("Lecture de la capture {i}/{n}…", { i: i + 1, n: images.length }));
     try {
-      const res = await fetch("/api/sons/ocr", {
+      const res = await fetchOrRetry("/api/sons/ocr", {
         method: "POST",
         body: file,
         headers: { "Content-Type": file.type || "application/octet-stream" },
