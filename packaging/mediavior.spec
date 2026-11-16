@@ -32,6 +32,10 @@ hiddenimports = (
     + collect_submodules("aiortc")
 )
 
+if IS_WIN:  # fenêtre propre à MediaVior (pywebview + WebView2) : DLL et modules de pywebview
+    datas += collect_data_files("webview")
+    hiddenimports += collect_submodules("webview.platforms") + ["clr"]
+
 a = Analysis(
     [str(ROOT / "mediavior.py")],
     pathex=[str(APP)],
