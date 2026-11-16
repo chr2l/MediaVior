@@ -1282,10 +1282,16 @@ CODEC_NAMES = {"mp4a": "AAC", "aac": "AAC", "opus": "Opus", "vorbis": "Vorbis", 
                "alac": "ALAC", "wav": "WAV", "aiff": "AIFF", "pcm": "WAV", "ec-3": "E-AC-3", "ac-3": "AC-3"}
 
 
+def _is_preview(f: dict) -> bool:
+    return "preview" in str(f.get("format_id") or "") or (f.get("preference") or 0) <= -10
+
+
 def _best_audio(formats: list) -> Optional[dict]:
     """La piste son que AUDIO_FORMAT va prendre : codec, débit, sans perte ou non.
     Les formats de yt-dlp sont rangés du moins bon au meilleur."""
-    with_audio = [f for f in formats if f.get("acodec") not in (None, "none")]
+    # Extraits de 30 s (SoundCloud Go+…) : seulement s'il n'y a rien d'autre
+    full = [f for f in formats if not _is_preview(f)]
+    with_audio = [f for f in (full or formats) if f.get("acodec") not in (None, "none")]
     audio_only = [f for f in with_audio if f.get("vcodec") == "none"]
     lossless = [f for f in audio_only if re.match(LOSSLESS_CODECS, str(f.get("acodec")))]
     best = (lossless or audio_only or with_audio or [None])[-1]
@@ -1380,24 +1386,42 @@ def _music_query(info: dict) -> str:
 class BetterSourceRequest(BaseModel):
     query: str = Field(..., min_length=2, max_length=200)
     url: Optional[str] = None  # lien actuel, à ne pas reproposer
+    duration: Optional[float] = None  # durée du média actuel : écarte les morceaux trop différents
 
 
-def _bandcamp_search(query: str, count: int = 3) -> list:
+BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/130.0 Safari/537.36")
+BANDCAMP_TRACK = re.compile(r"https://[a-z0-9-]+\.bandcamp\.com/track/[A-Za-z0-9_-]+")
+
+
+def _bandcamp_search(query: str, count: int = 4) -> list:
+    """Page de recherche de Bandcamp (titres seulement), puis son API de recherche en secours."""
+    from urllib.parse import quote_plus
     from urllib.request import Request as UrlRequest
-    body = json.dumps({"search_text": query, "search_filter": "t", "fan_id": None, "full_page": False}).encode()
-    req = UrlRequest("https://bandcamp.com/api/bcsearch_public_api/1/autocomplete_elastic", data=body,
-                     headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
-    with urlopen(req, timeout=10) as r:
-        data = json.loads(r.read().decode("utf-8"))
-    urls = []
-    for e in ((data.get("auto") or {}).get("results") or []):
-        link = e.get("item_url_path") or e.get("item_url_root")
-        if e.get("type") == "t" and isinstance(link, str) and link.startswith("https://"):
-            urls.append(link)
-    return urls[:count]
+    urls: List[str] = []
+    try:
+        req = UrlRequest(f"https://bandcamp.com/search?q={quote_plus(query)}&item_type=t",
+                         headers={"User-Agent": BROWSER_UA, "Accept-Language": "en"})
+        with urlopen(req, timeout=12) as r:
+            page = r.read().decode("utf-8", "replace")
+        urls = BANDCAMP_TRACK.findall(page)
+    except Exception:
+        pass
+    if not urls:
+        body = json.dumps({"search_text": query, "search_filter": "t", "fan_id": None, "full_page": False}).encode()
+        req = UrlRequest("https://bandcamp.com/api/bcsearch_public_api/1/autocomplete_elastic", data=body,
+                         headers={"Content-Type": "application/json", "User-Agent": BROWSER_UA,
+                                  "Origin": "https://bandcamp.com", "Referer": "https://bandcamp.com/"})
+        with urlopen(req, timeout=12) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        for e in ((data.get("auto") or {}).get("results") or []):
+            link = e.get("item_url_path") or e.get("item_url_root")
+            if e.get("type") == "t" and isinstance(link, str) and link.startswith("https://"):
+                urls.append(link)
+    return list(dict.fromkeys(urls))[:count]
 
 
-def _soundcloud_search(query: str, count: int = 3) -> list:
+def _soundcloud_search(query: str, count: int = 6) -> list:
     opts = {"quiet": True, "no_warnings": True, "skip_download": True, "extract_flat": True}
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(f"scsearch{count}:{query}", download=False) or {}
@@ -1411,7 +1435,10 @@ def _source_details(url: str) -> Optional[dict]:
             info = ydl.extract_info(url, download=False) or {}
     except Exception:
         return None
-    best = _best_audio(info.get("formats") or [])
+    formats = info.get("formats") or []
+    if formats and all(_is_preview(f) for f in formats):
+        return None  # extrait de 30 s seulement (titre réservé aux abonnés)
+    best = _best_audio(formats)
     if not best:
         return None
     return {
@@ -1425,7 +1452,11 @@ def _source_details(url: str) -> Optional[dict]:
     }
 
 
-def _better_sources(query: str, current: Optional[str]) -> dict:
+def _close_duration(d: Optional[float], ref: Optional[float]) -> bool:
+    return not d or not ref or abs(d - ref) <= max(20, ref * 0.15)
+
+
+def _better_sources(query: str, current: Optional[str], duration: Optional[float] = None) -> dict:
     from concurrent.futures import ThreadPoolExecutor
     searches = {"Bandcamp": _bandcamp_search, "SoundCloud": _soundcloud_search}
     urls, failed = [], []
@@ -1438,15 +1469,19 @@ def _better_sources(query: str, current: Optional[str]) -> dict:
                 failed.append(name)
         urls = [u for u in dict.fromkeys(urls) if u != current]
         details = [d for d in pool.map(_source_details, urls) if d]
+    # Autre version (mix d'une heure, extrait…) : durée trop éloignée du média actuel
+    kept = [d for d in details if _close_duration(d["duration"], duration)]
+    hidden = len(details) - len(kept)
+    details = kept
     # Sans perte d'abord, puis le débit le plus haut
     details.sort(key=lambda d: (not d["quality"]["lossless"], -(d["quality"]["kbps"] or 0)))
-    return {"query": query, "results": details, "failed": failed}
+    return {"query": query, "results": details, "failed": failed, "hidden": hidden}
 
 
 @app.post("/api/meilleure-source")
 async def better_source(payload: BetterSourceRequest):
     return await asyncio.get_running_loop().run_in_executor(
-        None, _better_sources, payload.query.strip(), payload.url)
+        None, _better_sources, payload.query.strip(), payload.url, payload.duration)
 
 
 # ---------------------------------------------------------------------------

@@ -217,13 +217,14 @@ function setupOptions(root) {
     betterInfo.hidden = false;
     betterInfo.textContent = t("Recherche de « {q} » sur Bandcamp et SoundCloud…", { q: searchQuery });
     try {
-      const res = await api("/api/meilleure-source", { method: "POST", body: { query: searchQuery, url: mediaUrl } });
+      const res = await api("/api/meilleure-source", { method: "POST", body: { query: searchQuery, url: mediaUrl, duration: mediaDuration || null } });
       const current = audioBest;
       const upgrades = res.results.filter((r) => r.quality.lossless
         || (!current?.lossless && (r.quality.kbps || 0) > (current?.kbps || 0)));
       if (!res.results.length) betterInfo.textContent = t("Rien trouvé sur Bandcamp ni SoundCloud pour « {q} ».", { q: res.query });
       else if (!upgrades.length) betterInfo.textContent = t("Trouvé, mais pas en meilleure qualité qu'ici. Le lien actuel reste le meilleur choix.");
       else betterInfo.textContent = t("Vérifie que c'est bien le même morceau (pas un remix) avant de le prendre.");
+      if (res.hidden) betterInfo.textContent += " " + t("{n} résultat(s) écarté(s) : durée trop différente (autre version ou extrait).", { n: res.hidden });
       if (res.failed.length) betterInfo.textContent += " " + t("Recherche impossible sur : {sites}.", { sites: res.failed.join(", ") });
       res.results.forEach((r) => betterList.append(betterItem(r)));
     } catch (e) {
