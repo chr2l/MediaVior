@@ -441,32 +441,87 @@ def port_free(port: int) -> bool:
             return False
 
 
-def open_window(url: str) -> None:
-    """Ouvre l'appli dans une fenêtre sans barre d'adresse (Edge/Chrome), sinon un onglet."""
-    candidates = []
+def chromium_browsers() -> list:
+    """Navigateurs qui savent ouvrir une fenêtre d'appli : (programme, dossier de leurs profils)."""
+    found = []
     if IS_WIN:
-        for base in (os.environ.get("ProgramFiles(x86)", ""), os.environ.get("ProgramFiles", ""),
-                     os.environ.get("LOCALAPPDATA", "")):
+        local = os.environ.get("LOCALAPPDATA", "")
+        profiles = {"msedge.exe": Path(local) / "Microsoft/Edge/User Data",
+                    "chrome.exe": Path(local) / "Google/Chrome/User Data",
+                    "brave.exe": Path(local) / "BraveSoftware/Brave-Browser/User Data"}
+        for base in (os.environ.get("ProgramFiles(x86)", ""), os.environ.get("ProgramFiles", ""), local):
             if base:
-                candidates += [Path(base) / "Microsoft/Edge/Application/msedge.exe",
-                               Path(base) / "Google/Chrome/Application/chrome.exe",
-                               Path(base) / "BraveSoftware/Brave-Browser/Application/brave.exe"]
+                for exe in (Path(base) / "Microsoft/Edge/Application/msedge.exe",
+                            Path(base) / "Google/Chrome/Application/chrome.exe",
+                            Path(base) / "BraveSoftware/Brave-Browser/Application/brave.exe"):
+                    found.append((exe, profiles[exe.name]))
     elif IS_MAC:
-        candidates += [Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
-                       Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
-                       Path("/Applications/Brave Browser.app/Contents/MacOS/Brave Browser")]
+        sup = Path.home() / "Library/Application Support"
+        found += [(Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"), sup / "Google/Chrome"),
+                  (Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"), sup / "Microsoft Edge"),
+                  (Path("/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"),
+                   sup / "BraveSoftware/Brave-Browser")]
     else:
-        for name in ("google-chrome", "chromium", "chromium-browser", "microsoft-edge", "brave-browser"):
+        conf = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+        for name, prof in (("google-chrome", "google-chrome"), ("chromium", "chromium"),
+                           ("chromium-browser", "chromium"), ("microsoft-edge", "microsoft-edge"),
+                           ("brave-browser", "BraveSoftware/Brave-Browser")):
             if shutil.which(name):
-                candidates.append(Path(shutil.which(name)))
-    for exe in candidates:
-        if exe.is_file():
-            try:
-                subprocess.Popen([str(exe), f"--app={url}", "--window-size=1200,820"],
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                return
-            except OSError:
-                continue
+                found.append((Path(shutil.which(name)), conf / prof))
+    return [(exe, prof) for exe, prof in found if exe.is_file()]
+
+
+def web_app_id(url: str) -> str:
+    """Identifiant que Chrome et Edge donnent à MediaVior installé comme appli : calculé à partir
+    de l'« id » du manifeste ("/", donc l'adresse de l'appli), comme le fait Chromium
+    (deux passages de SHA-256, puis les 32 premiers chiffres écrits avec les lettres a à p)."""
+    digest = hashlib.sha256(hashlib.sha256(url.encode()).digest()).hexdigest()[:32]
+    return "".join(chr(ord("a") + int(c, 16)) for c in digest)
+
+
+def installed_window(url: str) -> Optional[list]:
+    """Commande qui ouvre MediaVior installé comme appli dans Edge/Chrome (barre du haut aux
+    couleurs de l'appli), ou None s'il n'est installé dans aucun navigateur."""
+    app_id = web_app_id(url)
+    for exe, user_data in chromium_browsers():
+        try:
+            profiles = sorted(p for p in user_data.iterdir() if (p / "Web Applications").is_dir())
+        except OSError:
+            continue
+        for prof in profiles:
+            if (prof / "Web Applications" / "Manifest Resources" / app_id).is_dir():
+                return [str(exe), f"--profile-directory={prof.name}", f"--app-id={app_id}"]
+    return None
+
+
+def open_in_browser_tab(url: str) -> bool:
+    """Ouvre un onglet ordinaire d'Edge/Chrome (là où le bouton « Installer » existe)."""
+    for exe, _ in chromium_browsers():
+        try:
+            subprocess.Popen([str(exe), url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        except OSError:
+            continue
+    return False
+
+
+def open_window(url: str) -> None:
+    """Ouvre l'appli dans une fenêtre sans barre d'adresse (Edge/Chrome), sinon un onglet.
+    Si MediaVior est installé comme appli du navigateur, c'est cette fenêtre-là qui s'ouvre."""
+    cmds = []
+    try:
+        installed = installed_window(url)
+        if installed:
+            cmds.append(installed)
+    except Exception:
+        pass
+    cmds += [[str(exe), f"--app={url}", "--window-size=1200,820"] for exe, _ in chromium_browsers()]
+    for cmd in cmds:
+        try:
+            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return
+        except OSError:
+            continue
     webbrowser.open(url)
 
 
@@ -755,6 +810,15 @@ def main() -> int:
         save_config(cfg)
 
     web.KIND_FOLDER_HOOK = remember_kind_folder
+
+    def window_hook(open_tab: Optional[str] = None):
+        """Fenêtre installée : WINDOW_HOOK() dit si elle l'est, WINDOW_HOOK("/chemin") ouvre un onglet."""
+        if open_tab:
+            return open_in_browser_tab(f"http://127.0.0.1:{port}{open_tab}")
+        return {"installed": installed_window(f"http://127.0.0.1:{port}/") is not None,
+                "browser": bool(chromium_browsers())}
+
+    web.WINDOW_HOOK = window_hook
     if not args.sans_fenetre or args.demarrage:  # Pinokio (--sans-fenetre) gère seul le lancement
         web.AUTOSTART_HOOK = autostart
         try:

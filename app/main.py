@@ -83,6 +83,7 @@ PAGE_SEEN = False  # la page a demandé l'état de la mise à jour (après une r
 APP_VERSION: Optional[str] = None
 FOLDER_HOOK = None  # retient le nouveau dossier des médias (config de mediavior.py)
 KIND_FOLDER_HOOK = None  # retient le dossier à part des sons / des vidéos (kind, chemin ou None)
+WINDOW_HOOK = None  # fenêtre installée dans Edge/Chrome : WINDOW_HOOK() → état, WINDOW_HOOK(url) ouvre un onglet
 AUTOSTART_HOOK = None  # lancement au démarrage du PC : AUTOSTART_HOOK() lit, AUTOSTART_HOOK(True/False) règle
 
 # Change à chaque démarrage : force le navigateur à recharger CSS/JS après une mise à jour
@@ -409,6 +410,20 @@ async def open_link(req: OpenLinkRequest):
     return {"ok": True}
 
 
+@app.post("/api/local/fenetre")
+async def window_install_tab():
+    """Ouvre MediaVior dans un onglet ordinaire d'Edge/Chrome : c'est là que le navigateur
+    propose « Installer », pour avoir la fenêtre aux couleurs de l'appli."""
+    _local_only()
+    if not WINDOW_HOOK:
+        raise HTTPException(status_code=400, detail="Impossible ici.")
+    ok = await asyncio.get_running_loop().run_in_executor(
+        None, WINDOW_HOOK, "/?fenetre=1")
+    if not ok:
+        raise HTTPException(status_code=400, detail="Edge ou Chrome est nécessaire.")
+    return {"ok": True}
+
+
 # Réglages de la version PC : dossier des médias, lancement au démarrage
 class SettingsRequest(BaseModel):
     folder: Optional[str] = None
@@ -431,8 +446,19 @@ def _autostart_state() -> Optional[bool]:
         return None
 
 
+def _window_state() -> Optional[dict]:
+    """None : pas de navigateur Edge/Chrome géré par le lanceur (Pinokio, serveur…)."""
+    if not WINDOW_HOOK:
+        return None
+    try:
+        return WINDOW_HOOK()
+    except Exception:
+        return None
+
+
 def _settings() -> dict:
     return {"folder": str(DOWNLOAD_DIR), "autostart": _autostart_state(), "version": APP_VERSION,
+            "window": _window_state(),
             "audio_folder": str(AUDIO_DIR) if AUDIO_DIR else None,
             "video_folder": str(VIDEO_DIR) if VIDEO_DIR else None,
             "login_browser": _login_browser(), "login_error": LOGIN_STATE["error"],
@@ -781,7 +807,12 @@ async def editor(request: Request, item_id: str):
 
 @app.get("/manifest.webmanifest")
 async def manifest():
-    return FileResponse(BASE_DIR / "static" / "manifest.webmanifest", media_type="application/manifest+json")
+    data = json.loads((BASE_DIR / "static" / "manifest.webmanifest").read_text(encoding="utf-8"))
+    if LOCAL_MODE:
+        # Version PC installée comme appli d'Edge/Chrome : la page dessine sa propre barre
+        # de titre, à côté des boutons de la fenêtre (voir .titlebar dans style.css).
+        data["display_override"] = ["window-controls-overlay", "standalone"]
+    return JSONResponse(data, media_type="application/manifest+json")
 
 
 @app.get("/sw.js")

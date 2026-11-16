@@ -615,6 +615,16 @@ window.I18N_EN = {
   "En arrière-plan, sans fenêtre : le téléphone et l'extension marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.":
     "In the background, with no window: the phone and the extension work right away. Double-click the icon to show the app.",
   "Langue": "Language",
+  "Fenêtre aux couleurs de MediaVior": "MediaVior-colored window",
+  "Installe MediaVior comme appli de ton navigateur, une seule fois : la barre du haut prend les couleurs de l'appli.":
+    "Install MediaVior as an app of your browser, just once: the top bar takes on the app's colors.",
+  "C'est fait : MediaVior s'ouvrira désormais dans sa fenêtre.": "Done: MediaVior will now open in its own window.",
+  "Edge ou Chrome s'ouvre : clique sur « Installer » dans les réglages qui s'affichent.":
+    "Edge or Chrome is opening: click “Install” in the settings that appear.",
+  "Clique sur l'icône « Installer » au bout de la barre d'adresse (ou menu ⋯ > Applications > Installer MediaVior).":
+    "Click the “Install” icon at the end of the address bar (or menu ⋯ > Apps > Install MediaVior).",
+  "Impossible ici.": "Not possible here.",
+  "Edge ou Chrome est nécessaire.": "Edge or Chrome is required.",
   "Lancer MediaVior au démarrage de l'ordinateur": "Start MediaVior when the computer starts",
   "MediaVior version {v}": "MediaVior version {v}",
   "Mise à jour": "Update",
