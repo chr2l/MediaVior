@@ -549,3 +549,63 @@ if (settingsDialog) {
     }
   });
 }
+
+// ---------------------------------------------------------------------------
+// Barre du haut dessinée par la page (style.css, « Barre du haut dessinée par la page ») :
+// fenêtre Windows de MediaVior (boutons réduire / agrandir / fermer dessinés ici), ou appli
+// installée dans Edge/Chrome en mode « window-controls-overlay » (boutons du navigateur).
+// ---------------------------------------------------------------------------
+(() => {
+  const bar = document.querySelector(".titlebar");
+  if (!bar) return;
+  const body = document.body;
+  const wco = matchMedia("(display-mode: window-controls-overlay)");
+  const syncWco = () => {
+    if (body.classList.contains("native-window")) return;
+    body.classList.toggle("own-titlebar", wco.matches);
+    body.classList.toggle("wco", wco.matches);
+  };
+  syncWco();
+  wco.addEventListener("change", syncWco);
+
+  const maxBtn = document.getElementById("winMax");
+  const setMax = (on) => {
+    maxBtn.textContent = on ? "" : "";
+    maxBtn.title = t(on ? "Restaurer" : "Agrandir");
+    maxBtn.setAttribute("aria-label", maxBtn.title);
+    body.classList.toggle("win-max", on);
+  };
+  let started = false;
+  const start = async () => {
+    const api = window.pywebview && window.pywebview.api;
+    if (started || !api || !api.fenetre) return;
+    started = true;
+    const info = await api.fenetre().catch(() => null);
+    if (!info || !info.barre) return; // barre de Windows gardée
+    body.classList.add("native-window", "own-titlebar");
+    body.classList.remove("wco");
+    if (!info.glisser_natif) {
+      // Glisser de secours (pywebview) et double-clic pour agrandir
+      bar.classList.add("pywebview-drag-region");
+      bar.addEventListener("dblclick", async (e) => {
+        if (!e.target.closest(".titlebar__ctl")) setMax(await api.agrandir());
+      });
+    }
+    setMax(info.agrandie);
+    document.getElementById("winMin").addEventListener("click", () => api.reduire());
+    maxBtn.addEventListener("click", async () => setMax(await api.agrandir()));
+    document.getElementById("winClose").addEventListener("click", () => api.fermer());
+    bar.querySelectorAll(".titlebar__grip").forEach((grip) => grip.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      api.redimensionner(grip.dataset.bord);
+    }));
+    let timer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => setMax(await api.agrandie()), 150);
+    });
+  };
+  if (window.pywebview && window.pywebview.api) start();
+  else window.addEventListener("pywebviewready", start);
+})();

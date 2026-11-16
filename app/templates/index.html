@@ -22,11 +22,20 @@
 </head>
 <body class="shell"{% if apercu %} data-apercu{% endif %}>
 {% if local %}
-<!-- Barre du haut de la fenêtre installée (Edge/Chrome) : affichée seulement quand la page
-     dessine elle-même la barre de titre, à côté des boutons de la fenêtre (style.css, .titlebar) -->
-<div class="titlebar" aria-hidden="true">
+<!-- Barre du haut dessinée par la page : fenêtre Windows de MediaVior (avec ses boutons), ou
+     appli installée dans Edge/Chrome. Cachée ailleurs (style.css, .titlebar ; local.js) -->
+<div class="titlebar">
   <span class="titlebar__icon" data-icon="safe"></span>
   <span class="titlebar__name">MediaVior</span>
+  <!-- Bord du haut de la fenêtre Windows (redimensionner) : la barre de Windows est enlevée -->
+  <span class="titlebar__grip" data-bord="haut"></span>
+  <span class="titlebar__grip titlebar__grip--left" data-bord="haut-gauche"></span>
+  <span class="titlebar__grip titlebar__grip--right" data-bord="haut-droite"></span>
+  <div class="titlebar__ctl">
+    <button type="button" class="titlebar__btn" id="winMin" title="Réduire" aria-label="Réduire">&#xE921;</button>
+    <button type="button" class="titlebar__btn" id="winMax" title="Agrandir" aria-label="Agrandir">&#xE922;</button>
+    <button type="button" class="titlebar__btn titlebar__btn--close" id="winClose" title="Fermer" aria-label="Fermer">&#xE8BB;</button>
+  </div>
 </div>
 {% endif %}
 <div class="app">

@@ -618,6 +618,9 @@ window.I18N_EN = {
     "In the background, with no window: the phone and the extension work right away. Double-click the icon to show the app.",
   "Langue": "Language",
   "Fenêtre aux couleurs de MediaVior": "MediaVior-colored window",
+  "Réduire": "Minimize",
+  "Agrandir": "Maximize",
+  "Restaurer": "Restore",
   "Installe MediaVior comme appli de ton navigateur, une seule fois : la barre du haut prend les couleurs de l'appli.":
     "Install MediaVior as an app of your browser, just once: the top bar takes on the app's colors.",
   "C'est fait : MediaVior s'ouvrira désormais dans sa fenêtre.": "Done: MediaVior will now open in its own window.",

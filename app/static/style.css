@@ -2134,44 +2134,82 @@ label.set-item__text { cursor: pointer; }
 }
 .hint-more[hidden] { display: none; }
 
-/* ---------- Barre du haut de la fenêtre installée (Edge/Chrome) ----------
-   Quand MediaVior est installé comme appli du navigateur, la page dessine elle-même la barre
-   de titre (« window-controls-overlay ») : coffre bleu + nom, sur le fond de l'appli. Les boutons
-   de la fenêtre (réduire, agrandir, fermer) restent ceux du navigateur, sur la couleur
-   « theme-color » de index.html, la même que le fond. On peut la glisser pour bouger la fenêtre. */
+/* ---------- Barre du haut dessinée par la page ----------
+   - Windows : fenêtre de MediaVior (mediavior.py, native_window). La barre de Windows est
+     enlevée ; la page dessine tout : coffre bleu, nom, et les boutons réduire / agrandir /
+     fermer (mêmes symboles que Windows). Glisser la barre déplace la fenêtre (app-region).
+   - Appli installée dans Edge/Chrome (« window-controls-overlay ») : même barre, mais les
+     boutons de la fenêtre restent ceux du navigateur.
+   local.js ajoute la classe own-titlebar à <body> dans ces deux cas. */
 .titlebar { display: none; }
 
-@media (display-mode: window-controls-overlay) {
-  body.shell { --tb-h: env(titlebar-area-height, 33px); padding-top: var(--tb-h); }
-  .titlebar {
-    position: fixed;
-    z-index: 60;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: var(--tb-h);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 0 0 calc(env(titlebar-area-x, 0px) + 14px);
-    background: var(--ink);
-    -webkit-app-region: drag;
-    app-region: drag;
-    user-select: none;
-  }
-  .titlebar__icon { display: inline-flex; color: var(--brass); }
-  .titlebar__icon svg { width: 17px; height: 17px; }
-  .titlebar__name {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 0.92rem;
-    letter-spacing: 0.01em;
-    color: var(--paper);
-  }
-  .side { top: var(--tb-h); }
-  /* La partie gauche défile seule (voir plus haut) : elle s'arrête sous la barre */
-  @media (min-width: 961px) {
-    body.shell .main { height: calc(100vh - var(--tb-h)); height: calc(100dvh - var(--tb-h)); }
-  }
-  .side__tabs { padding-top: 20px; }
+body.own-titlebar { --tb-h: 36px; }
+body.own-titlebar.wco { --tb-h: env(titlebar-area-height, 33px); }
+body.shell.own-titlebar { padding-top: var(--tb-h); }
+body.own-titlebar .titlebar {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--tb-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 0 calc(env(titlebar-area-x, 0px) + 14px);
+  background: var(--ink);
+  -webkit-app-region: drag;
+  app-region: drag;
+  user-select: none;
 }
+.titlebar__icon { display: inline-flex; color: var(--brass); }
+.titlebar__icon svg { width: 17px; height: 17px; }
+.titlebar__name {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  color: var(--paper);
+}
+/* Boutons de la fenêtre (Windows seulement) : 46 px de large comme ceux de Windows */
+.titlebar__ctl { display: none; margin-left: auto; height: 100%; -webkit-app-region: no-drag; app-region: no-drag; }
+body.own-titlebar:not(.wco) .titlebar__ctl { display: flex; }
+.titlebar__btn {
+  width: 46px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--paper);
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets', sans-serif;
+  font-size: 10px;
+  cursor: default;
+}
+.titlebar__btn:hover { background: color-mix(in srgb, var(--paper) 10%, transparent); }
+.titlebar__btn:active { background: color-mix(in srgb, var(--paper) 16%, transparent); }
+.titlebar__btn--close:hover { background: #C42B1C; color: #FFFFFF; }
+.titlebar__btn--close:active { background: #B3271A; color: #FFFFFF; }
+/* Bord du haut et coins du haut : on tire dessus pour redimensionner (fenêtre Windows) */
+.titlebar__grip { display: none; }
+body.native-window:not(.win-max) .titlebar__grip {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 5px;
+  cursor: ns-resize;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+body.native-window:not(.win-max) .titlebar__grip--left { left: 0; right: auto; width: 8px; height: 8px; cursor: nwse-resize; }
+body.native-window:not(.win-max) .titlebar__grip--right { left: auto; right: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+body.own-titlebar .side { top: var(--tb-h); }
+/* La partie gauche défile seule (voir plus haut) : elle s'arrête sous la barre */
+@media (min-width: 961px) {
+  body.own-titlebar.shell .main { height: calc(100vh - var(--tb-h)); height: calc(100dvh - var(--tb-h)); }
+}
+body.own-titlebar .side__tabs { padding-top: 20px; }
