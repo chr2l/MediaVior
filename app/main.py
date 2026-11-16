@@ -555,43 +555,138 @@ async def save_settings(payload: SettingsRequest):
     return _settings()
 
 
-def _pick_folder_sync(start: str) -> Optional[str]:
-    """Ouvre la fenêtre « Choisir un dossier » du système. None si annulé ou impossible."""
+def _app_window_win() -> int:
+    """Windows : trouve la fenêtre MediaVior (celle où l'on vient de cliquer), 0 sinon."""
+    import ctypes
+    from ctypes import wintypes
+    user32 = ctypes.windll.user32
+
+    def title(hwnd) -> str:
+        size = user32.GetWindowTextLengthW(hwnd)
+        buf = ctypes.create_unicode_buffer(size + 1)
+        user32.GetWindowTextW(hwnd, buf, size + 1)
+        return buf.value
+
+    front = user32.GetForegroundWindow()
+    if front and "MediaVior" in title(front):
+        return front
+    found = []
+    proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    def each(hwnd, _):
+        if user32.IsWindowVisible(hwnd) and "MediaVior" in title(hwnd):
+            found.append(hwnd)
+            return False
+        return True
+
+    user32.EnumWindows(proc(each), 0)
+    return found[0] if found else 0
+
+
+def _x11_active_window() -> Optional[str]:
+    """Linux (X11) : numéro de la fenêtre au premier plan, pour y rattacher le sélecteur."""
+    if not shutil.which("xdotool") or not os.environ.get("DISPLAY"):
+        return None
+    try:
+        out = subprocess.run(["xdotool", "getactivewindow"], capture_output=True, text=True, timeout=3)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    wid = out.stdout.strip()
+    return wid if wid.isdigit() else None
+
+
+def _pick_folder_sync(start: str, title: str) -> Optional[str]:
+    """Ouvre la fenêtre « Choisir un dossier » du système, au-dessus de la fenêtre MediaVior
+    et rattachée à elle (modale). None si annulé ou impossible."""
+    owner = 0
+    flags = 0
     if sys.platform.startswith("win"):
+        try:
+            owner = _app_window_win()
+        except Exception:  # noqa: BLE001 - sans fenêtre trouvée, on garde l'ancien comportement
+            owner = 0
         start_ps = start.replace("'", "''")
+        title_ps = title.replace("'", "''")
+        # La fenêtre MediaVior devient « propriétaire » du sélecteur : Windows le garde
+        # au-dessus d'elle et la bloque tant qu'il est ouvert, comme une vraie fenêtre de l'appli.
         ps = ("[Console]::OutputEncoding = [Text.Encoding]::UTF8; "
               "Add-Type -AssemblyName System.Windows.Forms; "
+              "Add-Type -ReferencedAssemblies System.Windows.Forms -TypeDefinition "
+              "'public class MvOwner : System.Windows.Forms.IWin32Window { "
+              "public MvOwner(System.IntPtr h) { Handle = h; } "
+              "public System.IntPtr Handle { get; private set; } }'; "
               "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
-              "$d.Description = 'Dossier des médias MediaVior'; "
+              f"$d.Description = '{title_ps}'; "
               f"$d.SelectedPath = '{start_ps}'; $d.ShowNewFolderButton = $true; "
-              "$f = New-Object System.Windows.Forms.Form -Property @{TopMost = $true}; "
-              "if ($d.ShowDialog($f) -eq 'OK') { $d.SelectedPath }")
+              f"if ({int(owner)} -ne 0) {{ $o = New-Object MvOwner ([IntPtr]{int(owner)}) }} "
+              "else { $o = New-Object System.Windows.Forms.Form -Property @{TopMost = $true} }; "
+              "if ($d.ShowDialog($o) -eq 'OK') { $d.SelectedPath }")
         cmd = ["powershell", "-NoProfile", "-STA", "-Command", ps]
         flags = 0x08000000  # CREATE_NO_WINDOW : pas de fenêtre noire
     elif sys.platform == "darwin":
-        cmd = ["osascript", "-e", 'POSIX path of (choose folder with prompt "Dossier des médias MediaVior")']
-        flags = 0
+        # « activate » passe le sélecteur au premier plan, devant la fenêtre MediaVior.
+        script = ("on run argv\n"
+                  "activate\n"
+                  "try\n"
+                  "set here to (POSIX file (item 2 of argv)) as alias\n"
+                  "return POSIX path of (choose folder with prompt (item 1 of argv) default location here)\n"
+                  "on error number n\n"
+                  "if n is -128 then return \"\"\n"
+                  "end try\n"
+                  "return POSIX path of (choose folder with prompt (item 1 of argv))\n"
+                  "end run")
+        cmd = ["osascript", "-e", script, title, start]
     elif shutil.which("zenity"):
-        cmd = ["zenity", "--file-selection", "--directory", f"--filename={start}/"]
-        flags = 0
+        cmd = ["zenity", "--file-selection", "--directory", "--modal", f"--title={title}",
+               f"--filename={start}/"]
+        wid = _x11_active_window()
+        if wid:
+            cmd.append(f"--attach={wid}")
     elif shutil.which("kdialog"):
-        cmd = ["kdialog", "--getexistingdirectory", start]
-        flags = 0
+        cmd = ["kdialog", "--getexistingdirectory", start, "--title", title]
+        wid = _x11_active_window()
+        if wid:
+            cmd += ["--attach", wid]
     else:
         raise FileNotFoundError("aucune fenêtre de choix")
-    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=600,
-                         creationflags=flags)
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=600,
+                             creationflags=flags)
+    finally:
+        if owner:  # sécurité : la fenêtre MediaVior ne doit jamais rester bloquée
+            try:
+                import ctypes
+                ctypes.windll.user32.EnableWindow(owner, True)
+                ctypes.windll.user32.SetForegroundWindow(owner)
+            except Exception:  # noqa: BLE001
+                pass
     path = out.stdout.strip()
     return path or None
 
 
+class PickFolder(BaseModel):
+    kind: Optional[str] = None  # "audio" / "video" : part du dossier déjà choisi pour ce type
+    title: Optional[str] = None  # titre de la fenêtre, dans la langue de l'interface
+
+
+_PICKING = threading.Lock()  # une seule fenêtre de choix à la fois
+
+
 @app.post("/api/local/pick-folder")
-async def pick_folder():
+async def pick_folder(payload: Optional[PickFolder] = None):
     _local_only()
+    payload = payload or PickFolder()
+    current = {"audio": AUDIO_DIR, "video": VIDEO_DIR}.get(payload.kind or "")
+    start = str(current or DOWNLOAD_DIR)
+    title = (payload.title or "Dossier des médias MediaVior").strip()[:120] or "MediaVior"
+    if not _PICKING.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="Une fenêtre de choix est déjà ouverte.")
     try:
-        path = await asyncio.get_running_loop().run_in_executor(None, _pick_folder_sync, str(DOWNLOAD_DIR))
+        path = await asyncio.get_running_loop().run_in_executor(None, _pick_folder_sync, start, title)
     except (OSError, subprocess.SubprocessError):
         return {"path": None, "manual": True}  # pas de fenêtre de choix : on demande le chemin
+    finally:
+        _PICKING.release()
     return {"path": path}
 
 

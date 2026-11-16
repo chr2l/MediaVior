@@ -424,10 +424,20 @@ if (settingsDialog) {
     }
   });
 
-  pickBtn.addEventListener("click", async () => {
-    pickBtn.disabled = true;
+  // Une seule fenêtre de choix à la fois : les trois boutons « Choisir » attendent ensemble.
+  const pickButtons = [pickBtn, ...settingsDialog.querySelectorAll("[data-pick-kind]")];
+  const pickFolder = async (body) => {
+    pickButtons.forEach((b) => { b.disabled = true; });
     try {
-      let { path, manual } = await api("/api/local/pick-folder", { method: "POST" });
+      return await api("/api/local/pick-folder", { method: "POST", body });
+    } finally {
+      pickButtons.forEach((b) => { b.disabled = false; });
+    }
+  };
+
+  pickBtn.addEventListener("click", async () => {
+    try {
+      let { path, manual } = await pickFolder({ title: t("Dossier des médias MediaVior") });
       if (manual) path = prompt(t("Chemin complet du dossier où ranger les médias :"), folderEl.textContent);
       if (path) {
         await save({ folder: path.trim(), move: moveBox.checked });
@@ -437,7 +447,6 @@ if (settingsDialog) {
     } catch (e) {
       showToast(e.message);
     }
-    pickBtn.disabled = false;
   });
 
   // Un dossier pour les sons, un pour les vidéos (ou le même pour les deux)
@@ -455,9 +464,11 @@ if (settingsDialog) {
     btn.addEventListener("click", async () => {
       const kind = btn.dataset.pickKind;
       const current = (kind === "audio" ? audioEl : videoEl).textContent;
-      btn.disabled = true;
       try {
-        let { path, manual } = await api("/api/local/pick-folder", { method: "POST" });
+        let { path, manual } = await pickFolder({
+          kind,
+          title: t(kind === "audio" ? "Dossier des sons MediaVior" : "Dossier des vidéos MediaVior"),
+        });
         if (manual) path = prompt(t("Chemin complet du dossier :"), current);
         if (path) {
           await save({ [`${kind}_folder`]: path.trim() });
@@ -466,7 +477,6 @@ if (settingsDialog) {
       } catch (e) {
         showToast(e.message);
       }
-      btn.disabled = false;
     });
   });
 
