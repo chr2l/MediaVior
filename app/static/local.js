@@ -324,7 +324,7 @@ if (localBar) {
 }
 
 // ---------------------------------------------------------------------------
-// Réglages : dossier des médias, lancement au démarrage de l'ordinateur
+// Réglages : dossiers des médias, connexion du navigateur, démarrage, langue, mise à jour
 // ---------------------------------------------------------------------------
 
 const settingsDialog = document.getElementById("settingsDialog");
@@ -479,6 +479,11 @@ if (settingsDialog) {
       }
     });
   });
+
+  // Langue de l'appli (même choix que le lien « English / Français » en bas de page)
+  const langSel = document.getElementById("settingsLang");
+  langSel.value = window.LANG === "en" ? "en" : "fr";
+  langSel.addEventListener("change", () => setLang(langSel.value));
 
   autoBox.addEventListener("change", async () => {
     try {

@@ -1917,20 +1917,67 @@ input[type="range"] {
 
 /* ---------- Fenêtre « Réglages » (version PC) ---------- */
 
-.settings-row { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--hairline-soft); }
-.settings-row .field-label { margin: 0 0 4px; }
-.settings-row .hint { margin: 4px 0 0; }
-.settings-path {
-  display: block; margin-top: 10px; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;
-  background: var(--surface-raised); border: 1px solid var(--hairline); overflow-wrap: anywhere;
+/* Groupes par sujet (Rangement, Qualité du son, Général, Mise à jour), chacun dans une carte.
+   Une ligne = nom + petite explication à gauche, le réglage à droite. */
+.settings-dialog { width: min(600px, calc(100vw - 32px)); }
+.set-group { margin-top: 20px; }
+.set-group__title {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 8px;
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--paper-dim);
 }
-.settings-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.set-group__title .icon { width: 16px; height: 16px; color: var(--brass); }
+.set-group[hidden] { display: none; }
+.set-card { border: 1px solid var(--hairline-soft); border-radius: var(--radius); background: var(--surface-raised); }
+.set-item {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 16px;
+  padding: 14px 16px;
+}
+.set-item + .set-item { border-top: 1px solid var(--hairline-soft); }
+.set-item[hidden] { display: none; }
+.set-item__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; cursor: default; }
+label.set-item__text { cursor: pointer; }
+.set-item__name { font-size: 0.93rem; font-weight: 500; color: var(--paper); }
+.set-item__desc { font-size: 0.8rem; line-height: 1.45; color: var(--paper-dim); }
+.set-item__desc[hidden] { display: none; }
+.set-item__full { grid-column: 1 / -1; }
+.set-item > .btn { width: auto; margin-top: 0; }
+.set-select { width: auto; min-width: 180px; padding: 8px 36px 8px 12px; font-size: 0.88rem; }
+.set-select--short { min-width: 140px; }
+/* Interrupteur oui / non (case à cocher restylée) */
+.set-switch {
+  appearance: none; -webkit-appearance: none; margin: 0; flex: none; cursor: pointer;
+  width: 40px; height: 22px; border-radius: 999px; position: relative;
+  background: var(--hairline); transition: background 0.15s ease;
+}
+.set-switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); transition: transform 0.15s var(--ease);
+}
+.set-switch:checked { background: var(--brass); }
+.set-switch:checked::after { transform: translateX(18px); }
+.set-switch:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+/* « Comment ça marche ? » replié */
+.set-more { font-size: 0.8rem; line-height: 1.5; color: var(--paper-dim); }
+.set-more summary { cursor: pointer; color: var(--brass); width: fit-content; }
+.set-more p { margin: 6px 0 0; }
+.settings-path {
+  display: block; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;
+  background: var(--ink); border: 1px solid var(--hairline); overflow-wrap: anywhere;
+}
+.settings-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .settings-actions .btn { width: auto; margin-top: 0; }
-.settings-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+.settings-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--paper-dim); cursor: pointer; }
 .settings-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--brass); }
-.settings-check--big { font-size: 0.95rem; font-weight: 500; }
 .settings-check[hidden] { display: none; }
 .settings-version { font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) {
+  .set-item { grid-template-columns: 1fr; }
+  .set-item > .set-switch { grid-row: 1; grid-column: 2; }
+  .set-item:has(> .set-switch) { grid-template-columns: minmax(0, 1fr) auto; }
+  .set-select { width: 100%; }
+  .set-item > .btn { justify-self: start; }
+  .settings-actions { justify-content: flex-start; }
+}
 
 /* Boutons de téléchargement de l'appli PC (fenêtre « Avoir MediaVior sur ton PC ») */
 .dl-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
@@ -2010,17 +2057,13 @@ input[type="range"] {
 .apercu-bar .btn .icon { width: 15px; height: 15px; }
 
 /* Réglages : dossiers à part pour les sons et les vidéos */
-.settings-split { margin-top: 12px; }
-.settings-login { margin-top: 10px; max-width: 280px; }
-.settings-error { color: var(--danger); }
-.settings-kinds { margin-top: 8px; display: grid; gap: 8px; }
+.settings-error { color: var(--danger); opacity: 1; margin: 0; }
+.settings-kinds { display: grid; gap: 8px; }
 .settings-kinds[hidden] { display: none; }
 .settings-kind { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .settings-kind__label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; }
 .settings-kind__label .icon { width: 16px; height: 16px; }
-.settings-kind .settings-path { margin: 0; }
 .settings-kind .btn { margin-top: 0; width: auto; }
-.settings-kinds .hint { margin: 0; }
 @media (max-width: 520px) {
   .settings-kind { grid-template-columns: 1fr auto; }
   .settings-kind .settings-path { grid-column: 1 / -1; grid-row: 2; }
