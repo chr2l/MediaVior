@@ -382,8 +382,8 @@ const VIDEO_HINTS = {
   mov: "Comme le MP4, mais dans le format préféré des logiciels Apple (Final Cut, iMovie).",
 };
 const AUDIO_HINTS = {
-  original: "Meilleure qualité possible : la piste est gardée telle que le site la fournit, sans réencodage "
-    + "(souvent Opus ou M4A). Lue par la plupart des appareils récents.",
+  original: "Meilleure qualité que le site fournit, gardée sans réencodage. Si le site propose un fichier "
+    + "sans perte (FLAC, WAV), c'est lui qui est pris.",
   mp3: "Le format le plus compatible, partout. Réencodé depuis la source : à 320 kb/s, la différence est inaudible.",
   flac: "Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. "
     + "Utile pour l'archivage ou les logiciels qui demandent du FLAC.",

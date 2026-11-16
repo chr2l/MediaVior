@@ -71,6 +71,8 @@ Deux façons de lancer le même serveur :
 - **Liens filtrés** : `_safe_url()` refuse les adresses locales ou internes.
 - **yt-dlp jamais figé** : il se met à jour seul (`entrypoint.sh`, vérification PyPI, lanceur PC).
 - **Erreur 403** : `_run_ytdlp` (app/main.py) réessaie une fois, cache de yt-dlp vidé et autres clients YouTube (`RETRY_403_CLIENTS`). L'appli PC cherche un nouveau yt-dlp à chaque lancement puis toutes les 6 h ; s'il attend d'être chargé, le message d'erreur demande de relancer MediaVior.
+- **Meilleure qualité du son** : `AUDIO_FORMAT` prend d'abord un fichier sans perte si le site en fournit un (Bandcamp gratuit ou à prix libre, Jamendo, Archive.org, fichier de l'artiste sur SoundCloud), sinon la meilleure piste. `/api/analyze` renvoie `audio_best` (codec, débit, sans perte) : la page affiche la vraie qualité et ne dit jamais « original » pour un son compressé.
+- **Connexion du navigateur** (Réglages, version PC) : `connexion.json` à côté de l'historique garde le navigateur choisi ; `_open_ydl` passe ses cookies à yt-dlp (YouTube Premium 256 kb/s, fichier SoundCloud de l'artiste). Si la lecture échoue, le téléchargement continue sans, et l'erreur s'affiche dans les Réglages.
 
 ## Traduction (français / anglais)
 

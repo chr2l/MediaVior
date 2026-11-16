@@ -75,8 +75,8 @@ const VIDEO_HINTS = {
   mov: t("Comme le MP4, mais dans le format préféré des logiciels Apple (Final Cut, iMovie)."),
 };
 const AUDIO_HINTS = {
-  original: t("Meilleure qualité possible : la piste est gardée telle que le site la fournit, sans réencodage "
-    + "(souvent Opus ou M4A). Lue par la plupart des appareils récents."),
+  original: t("Meilleure qualité que le site fournit, gardée sans réencodage. Si le site propose un fichier "
+    + "sans perte (FLAC, WAV), c'est lui qui est pris."),
   mp3: t("Le format le plus compatible, partout. Réencodé depuis la source : à 320 kb/s, la différence est inaudible."),
   flac: t("Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. "
     + "Utile pour l'archivage ou les logiciels qui demandent du FLAC."),
@@ -160,6 +160,28 @@ async function loadFavorites() {
   favorites = { video: prefs.video ?? null, audio: prefs.audio ?? null, quality: prefs.quality ?? null };
 }
 
+// Qualité réelle de la piste son : jamais « d'origine » quand le site ne diffuse que du compressé
+function qualityLabel(best) {
+  const name = [best.codec, best.kbps && !best.lossless ? `${best.kbps} kb/s` : ""].filter(Boolean).join(" ");
+  return best.lossless ? t("{codec} sans perte", { codec: best.codec || "" }).trim() : t("{name} compressé", { name }).trim();
+}
+
+function bestHint(best, source, login) {
+  if (best.lossless) {
+    return t("Ce site fournit ce son sans perte ({codec}) : c'est la meilleure copie possible, gardée telle quelle.",
+      { codec: best.codec || "FLAC" });
+  }
+  let text = t("Ce site ne diffuse que du son compressé ({name}) : c'est la meilleure copie qu'il donne, "
+    + "gardée sans réencodage, mais ce n'est pas le fichier d'origine de l'artiste.",
+    { name: [best.codec, best.kbps ? `${best.kbps} kb/s` : ""].filter(Boolean).join(" ") });
+  const pc = !!document.getElementById("settingsBtn");
+  if (pc && !login && /^(youtube|soundcloud)/i.test(source)) {
+    text += " " + t("Avec YouTube Premium, ou si l'artiste autorise le téléchargement sur SoundCloud, active "
+      + "« Utiliser ma connexion du navigateur » dans les Réglages pour une meilleure qualité.");
+  }
+  return text;
+}
+
 function setupOptions(root) {
   root.append(document.getElementById("optionsTpl").content.cloneNode(true));
   const $ = (selector) => root.querySelector(selector);
@@ -175,6 +197,9 @@ function setupOptions(root) {
   let mode = "video";
   let duration = 0;
   let audioSize = 0;
+  let audioBest = null; // piste son prise par « Meilleure qualité du site » : codec, débit, sans perte
+  let source = "";
+  let login = false;
 
   root.querySelectorAll(".mode-toggle__btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -192,11 +217,13 @@ function setupOptions(root) {
       if (opt.value === "original") size = audioSize || (duration ? (160000 / 8) * duration : 0);
       else if (opt.value === "mp3") size = duration ? (Number(audioQuality.value) * 1000 / 8) * duration : 0;
       else size = duration ? (Number(opt.dataset.kbps) * 1000 / 8) * duration : 0;
-      opt.textContent = size ? `${opt.dataset.label} · ≈ ${formatBytes(size)}` : opt.dataset.label;
+      const label = opt.value === "original" && audioBest ? `${opt.dataset.label} · ${qualityLabel(audioBest)}` : opt.dataset.label;
+      opt.textContent = size ? `${label} · ≈ ${formatBytes(size)}` : label;
     });
     // Le débit ne s'applique qu'au MP3
     audioQuality.disabled = audioContainer.value !== "mp3";
-    audioHint.textContent = AUDIO_HINTS[audioContainer.value];
+    audioHint.textContent = audioContainer.value === "original" && audioBest
+      ? bestHint(audioBest, source, login) : AUDIO_HINTS[audioContainer.value];
   }
 
   function refreshVideo() {
@@ -211,9 +238,12 @@ function setupOptions(root) {
 
   return {
     quality,
-    setMedia(newDuration, newAudioSize) {
+    setMedia(newDuration, newAudioSize, best, newSource, newLogin) {
       duration = newDuration || 0;
       audioSize = newAudioSize || 0;
+      audioBest = best || null;
+      source = newSource || "";
+      login = !!newLogin;
       refreshAudio();
     },
     values() {
@@ -348,7 +378,7 @@ function renderResult(data) {
   } else {
     select.append(h("option", { value: "" }, t("Meilleure disponible")));
   }
-  singleOptions.setMedia(data.duration, data.audio_size);
+  singleOptions.setMedia(data.duration, data.audio_size, data.audio_best, data.source, data.login);
   // Qualité préférée : la même, ou la plus proche en dessous pour ce média
   formatPickers.forEach((p) => p.select === select && applyFavorite(p, favorites.quality, favorites.quality !== null));
 
