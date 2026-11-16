@@ -1,4 +1,4 @@
-// Choix du format avec un « format préféré » (signet).
+// Choix du format (ou de la qualité) avec un « préféré » (signet).
 // Remplace l'affichage d'une liste <select> par une liste maison : au survol, et sur le format
 // choisi, un signet apparaît. Un clic sur le signet en fait le format préféré : il passe en
 // haut de la liste et devient le choix par défaut. Un seul préféré à la fois : en marquer un
@@ -41,7 +41,7 @@
   let uid = 0;
 
   // select : la liste à remplacer. options :
-  //   favorite : format préféré au départ (ou null)
+  //   favorite : valeur préférée au départ (ou null ; "" est une vraie valeur, ex. « Meilleure disponible »)
   //   onFavorite(value | null) : appelé quand la personne marque ou enlève le préféré
   //   texts : { favorite, mark, unmark } (textes déjà traduits)
   //   canFavorite : false = pas de signet (ex. téléphone relié à un PC trop ancien)
@@ -52,7 +52,7 @@
       unmark: "Ne plus en faire le format préféré",
       ...(options.texts || {}),
     };
-    let favorite = options.favorite || null;
+    let favorite = options.favorite == null ? null : options.favorite;
     let canFavorite = options.canFavorite !== false;
     const id = `mvf-${++uid}`;
 
@@ -154,7 +154,7 @@
 
     function toggleFavorite(v) {
       favorite = favorite === v ? null : v;
-      if (favorite) choose(favorite);
+      if (favorite !== null) choose(favorite);
       render();
       if (options.onFavorite) options.onFavorite(favorite);
     }
@@ -236,8 +236,8 @@
       get favorite() { return favorite; },
       // Préféré venu d'ailleurs (autre fenêtre, extension, téléphone). apply : le choisir aussi.
       setFavorite(v, apply) {
-        favorite = v || null;
-        if (apply && favorite && has(favorite)) choose(favorite);
+        favorite = v == null ? null : v;
+        if (apply && favorite !== null && has(favorite)) choose(favorite);
         render();
       },
       setCanFavorite(on) {

@@ -104,5 +104,14 @@
   },
   "favUnmark": {
     "message": "Remove as favorite format"
+  },
+  "favQuality": {
+    "message": "Favorite"
+  },
+  "favQualityMark": {
+    "message": "Make this my favorite quality"
+  },
+  "favQualityUnmark": {
+    "message": "Remove as favorite quality"
   }
 }

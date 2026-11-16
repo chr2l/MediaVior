@@ -369,6 +369,7 @@ function fileRow(f) {
 // ---------------------------------------------------------------------------
 
 const OPTIONS = "mediavior-tel-options";
+let favorites = null; // préférés reçus du PC { video, audio, quality } ("" = meilleure qualité disponible)
 let pcVersion = 0; // 2 et plus : le PC comprend les réglages, plusieurs liens, les titres
 let way = "liens";
 
@@ -467,6 +468,7 @@ function fillQualities() {
     select.replaceChildren(...MAX_QUALITIES.map(([value, label]) => h("option", { value }, t(label))));
   }
   if ([...select.options].some((o) => o.value === before)) select.value = before;
+  else applyQualityFavorite(); // nouvelle liste : la qualité préférée
 }
 
 // Taille estimée de chaque format audio (comme sur le PC)
@@ -714,16 +716,23 @@ $("oublier").addEventListener("click", () => {
   if (confirm("Oublier ce PC ? Il faudra rescanner son QR code pour le retrouver.")) forget();
 });
 
-// --- Format préféré (signet dans la liste des formats) ---
-// Gardé par le PC : le même que dans l'appli et l'extension. Un PC trop ancien n'en envoie pas :
+// --- Préférés (signet dans les listes) : format vidéo, format audio, qualité vidéo ---
+// Gardés par le PC : les mêmes que dans l'appli et l'extension. Un PC trop ancien n'en envoie pas :
 // la liste reste alors sans signet.
-let favorites = null; // { video, audio } reçu du PC
 const FAV_TEXTS = {
   favorite: t("Préféré"),
   mark: t("Choisir comme format préféré"),
   unmark: t("Ne plus en faire le format préféré"),
 };
+const QUALITY_FAV_TEXTS = {
+  favorite: t("Préférée"),
+  mark: t("Choisir comme qualité préférée"),
+  unmark: t("Ne plus en faire la qualité préférée"),
+};
 const pickers = {
+  quality: MediaViorFormats.enhance($("qualite"), {
+    texts: QUALITY_FAV_TEXTS, canFavorite: false, onFavorite: (v) => sendFavorite("quality", v),
+  }),
   video: MediaViorFormats.enhance($("format"), {
     texts: FAV_TEXTS, canFavorite: false, alignRight: true, onFavorite: (v) => sendFavorite("video", v),
   }),
@@ -741,18 +750,36 @@ async function sendFavorite(kind, container) {
   }
 }
 
-// Préférés reçus du PC : un préféré nouveau ou changé devient le format choisi
+// Qualité préférée absente de la liste : la plus haute en dessous (sinon la plus basse)
+function applyQualityFavorite() {
+  const fav = favorites && favorites.quality;
+  if (fav == null) return;
+  const select = $("qualite");
+  const values = [...select.options].map((o) => o.value);
+  let v = fav;
+  if (!values.includes(fav)) {
+    const heights = values.filter((x) => x !== "").map(Number).sort((a, b) => b - a);
+    if (!heights.length) return;
+    v = String(fav === "" ? heights[0] : heights.find((h) => h <= Number(fav)) ?? heights[heights.length - 1]);
+  }
+  if (select.value !== v) select.value = v;
+}
+
+// Préférés reçus du PC : un préféré nouveau ou changé devient le choix affiché
 function applyFavorites(prefs) {
-  const before = favorites || { video: null, audio: null };
+  const before = favorites || { video: null, audio: null, quality: null };
   let changed = favorites === null;
-  ["video", "audio"].forEach((kind) => {
-    const value = prefs[kind] || null;
+  const next = {};
+  ["video", "audio", "quality"].forEach((kind) => {
+    const value = prefs[kind] ?? null;
+    next[kind] = value;
     const differs = value !== before[kind];
     if (differs) changed = true;
-    pickers[kind].setCanFavorite(true);
-    pickers[kind].setFavorite(value, differs);
+    pickers[kind].setCanFavorite(kind in prefs); // PC sans la qualité préférée : pas de signet
+    pickers[kind].setFavorite(value, differs && kind !== "quality");
   });
-  favorites = { video: prefs.video || null, audio: prefs.audio || null };
+  favorites = next;
+  if (next.quality !== before.quality) applyQualityFavorite();
   if (changed) {
     saveOptions();
     refreshForm();
