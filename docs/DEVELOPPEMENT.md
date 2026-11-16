@@ -42,6 +42,7 @@ Deux façons de lancer le même serveur :
 | `app/static/common.js` | Outils partagés : `api()`, `h()` (création d'éléments sans `innerHTML`), icônes |
 | `app/static/shell.js` | Navigation (panneau de droite sur ordinateur, onglets du bas sur téléphone), pastilles, notifications |
 | `app/static/app.js` | Analyse, options, file d'attente, bibliothèque |
+| `app/static/formats.js`, `app/static/formats.css` | Liste des formats avec le signet « format préféré » (un pour le son, un pour la vidéo). Le préféré est gardé par l'appli (`/api/preferences`, fichier `preferences.json` à côté de l'historique) : la page, l'extension et le téléphone relié voient le même. Copies identiques dans `relais/public/` et `extension/` |
 | `app/static/sons.js` | Liste de sons, captures d'écran, fenêtre de choix YouTube |
 | `app/static/editor.js` | Forme d'onde et commandes de l'éditeur |
 | `app/static/local.js` | Boutons de la version PC et fenêtre « Copier le prompt » |
@@ -69,6 +70,7 @@ Deux façons de lancer le même serveur :
   par `h()`.
 - **Liens filtrés** : `_safe_url()` refuse les adresses locales ou internes.
 - **yt-dlp jamais figé** : il se met à jour seul (`entrypoint.sh`, vérification PyPI, lanceur PC).
+- **Erreur 403** : `_run_ytdlp` (app/main.py) réessaie une fois, cache de yt-dlp vidé et autres clients YouTube (`RETRY_403_CLIENTS`). L'appli PC cherche un nouveau yt-dlp à chaque lancement puis toutes les 6 h ; s'il attend d'être chargé, le message d'erreur demande de relancer MediaVior.
 
 ## Traduction (français / anglais)
 

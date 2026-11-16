@@ -202,6 +202,43 @@ async function currentUrl() {
   return tab && tab.url && /^https?:/i.test(tab.url) ? tab.url : "";
 }
 
+// Format préféré (signet dans la liste des formats) : gardé par l'appli, le même que dans
+// l'appli et sur le téléphone. Appli fermée ou trop ancienne : la liste reste sans signet.
+const FAV_TEXTS = {
+  favorite: t("Préféré"),
+  mark: t("Choisir comme format préféré"),
+  unmark: t("Ne plus en faire le format préféré"),
+};
+const pickers = {
+  video: MediaViorFormats.enhance(videoContainerSel, {
+    texts: FAV_TEXTS, canFavorite: false, alignRight: true, onFavorite: (v) => saveFavorite("video", v),
+  }),
+  audio: MediaViorFormats.enhance(audioContainerSel, {
+    texts: FAV_TEXTS, canFavorite: false, onFavorite: (v) => saveFavorite("audio", v),
+  }),
+};
+
+async function saveFavorite(kind, container) {
+  try {
+    await api(settings.server, "/api/preferences", { method: "POST", body: { kind, container } });
+  } catch (err) {
+    setStatus(sendStatus, err.message, "error");
+  }
+}
+
+async function loadFavorites() {
+  let prefs;
+  try {
+    prefs = await api(settings.server, "/api/preferences");
+  } catch {
+    return;
+  }
+  ["video", "audio"].forEach((kind) => {
+    pickers[kind].setCanFavorite(true);
+    pickers[kind].setFavorite(prefs[kind], true); // le préféré devient le choix par défaut
+  });
+}
+
 async function init() {
   settings = await getSettings();
   settings.server = await findServer(settings.server);
@@ -209,6 +246,7 @@ async function init() {
   audioContainerSel.value = settings.audioContainer;
   audioQualitySel.value = settings.audioQuality;
   setMode(settings.mode);
+  loadFavorites();
 
   document.querySelectorAll(".mode-btn").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
   audioContainerSel.addEventListener("change", refreshMp3);

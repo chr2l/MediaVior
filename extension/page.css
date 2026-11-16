@@ -61,6 +61,17 @@
   background: #222; color: #fff; font: inherit;
 }
 .mediavior-menu select:focus, .mediavior-menu input:focus { outline: 2px solid #3B8CC2; outline-offset: 0; }
+/* Liste des formats avec le signet « préféré » (formats.css), ouverte dans le menu */
+.mediavior-menu .mvf {
+  --mvf-list-position: static; --mvf-bg: #222; --mvf-raised: #2b2b2b; --mvf-line: rgba(255, 255, 255, 0.18);
+  --mvf-text: #fff; --mvf-dim: #aaa; --mvf-accent: #3B8CC2; --mvf-accent-text: #58A3D6;
+  --mvf-hover: rgba(59, 140, 194, 0.22); --mvf-pad: 0 8px; --mvf-radius: 6px; --mvf-size: 13px;
+}
+.mediavior-menu .mvf__trigger { height: 32px; }
+.mediavior-menu .mvf span { color: inherit; font-size: inherit; } /* pas le style des titres de champ */
+.mediavior-menu .mvf__list { margin-top: 4px; max-width: none; width: auto; box-shadow: none; }
+.mediavior-menu .mvf__opt { margin: 0; padding-left: 8px; }
+.mediavior-menu .mvf__tag { display: none; } /* place comptée : le signet plein suffit */
 
 .mediavior-go {
   width: 100%; padding: 9px 0; border: 0; border-radius: 8px;

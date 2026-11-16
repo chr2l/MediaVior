@@ -405,6 +405,8 @@ window.I18N_EN = {
   "Le site limite les requêtes : réessaie dans quelques minutes.": "The site is limiting requests: try again in a few minutes.",
   "Le site a refusé l'accès (403). yt-dlp se met à jour tout seul : réessaie plus tard.":
     "The site refused access (403). yt-dlp updates itself: try again later.",
+  "Le site a refusé l'accès (403). Une version plus récente de yt-dlp est prête : ferme puis relance MediaVior, et réessaie.":
+    "The site refused access (403). A newer yt-dlp is ready: close and reopen MediaVior, then try again.",
   "Le site a changé sa structure. yt-dlp se met à jour tout seul : réessaie plus tard.":
     "The site changed its structure. yt-dlp updates itself: try again later.",
   "Ce format n'est pas disponible pour ce média : essaie une autre qualité.": "This format isn't available for this item: try another quality.",
@@ -594,6 +596,11 @@ window.I18N_EN = {
   "Choisis un autre dossier.": "Choose another folder.",
   "Attends la fin des téléchargements en cours.": "Wait for the current downloads to finish.",
   "Impossible d'écrire dans ce dossier.": "Can't write to this folder.",
+  // Format préféré (signet dans la liste des formats)
+  "Préféré": "Favorite",
+  "Choisir comme format préféré": "Make this my favorite format",
+  "Ne plus en faire le format préféré": "Remove as favorite format",
+  "Format inconnu.": "Unknown format.",
 };
 
 // Phrases qui contiennent un nombre ou un nom (titres de zips, erreurs détaillées…)

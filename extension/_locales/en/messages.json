@@ -95,5 +95,14 @@
   },
   "fmtWav": {
     "message": "WAV"
+  },
+  "favFormat": {
+    "message": "Favorite"
+  },
+  "favMark": {
+    "message": "Make this my favorite format"
+  },
+  "favUnmark": {
+    "message": "Remove as favorite format"
   }
 }

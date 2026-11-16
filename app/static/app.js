@@ -83,12 +83,59 @@ const AUDIO_HINTS = {
   wav: t("Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio."),
 };
 
+// Format préféré (signet dans la liste des formats), un pour la vidéo, un pour le son.
+// Gardé par l'appli (/api/preferences) : l'extension et le téléphone relié voient le même.
+const FAV_TEXTS = {
+  favorite: t("Préféré"),
+  mark: t("Choisir comme format préféré"),
+  unmark: t("Ne plus en faire le format préféré"),
+};
+const formatPickers = []; // { kind: "video" | "audio", picker }
+let favorites = { video: null, audio: null };
+
+function addFormatPicker(select, kind, alignRight) {
+  const picker = MediaViorFormats.enhance(select, {
+    texts: FAV_TEXTS,
+    alignRight,
+    onFavorite: (value) => saveFavorite(kind, value),
+  });
+  formatPickers.push({ kind, picker });
+}
+
+async function saveFavorite(kind, container) {
+  favorites = { ...favorites, [kind]: container };
+  // Les autres listes du même type (un lien / plusieurs liens) passent aussi sur le préféré
+  formatPickers.forEach((p) => p.kind === kind && p.picker.setFavorite(container, true));
+  try {
+    favorites = await api("/api/preferences", { method: "POST", body: { kind, container } });
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+// Au lancement et au retour sur la page (le préféré a pu changer dans l'extension ou le téléphone)
+async function loadFavorites() {
+  let prefs;
+  try {
+    prefs = await api("/api/preferences");
+  } catch (e) {
+    return;
+  }
+  ["video", "audio"].forEach((kind) => {
+    const changed = prefs[kind] !== favorites[kind];
+    formatPickers.forEach((p) => p.kind === kind && p.picker.setFavorite(prefs[kind], changed));
+  });
+  favorites = prefs;
+}
+
 function setupOptions(root) {
   root.append(document.getElementById("optionsTpl").content.cloneNode(true));
   const $ = (selector) => root.querySelector(selector);
   const quality = $(".js-quality");
   const container = $(".js-container");
   const audioContainer = $(".js-audio-container");
+  addFormatPicker(container, "video", true);
+  addFormatPicker(audioContainer, "audio", false);
   const audioQuality = $(".js-audio-quality");
   const videoHint = $(".js-video-hint");
   const audioHint = $(".js-audio-hint");
@@ -163,6 +210,12 @@ batchOptions.quality.closest(".field").querySelector(".field-label").textContent
   ["720", "720p max"],
   ["480", "480p max"],
 ].forEach(([value, label]) => batchOptions.quality.append(h("option", { value }, label)));
+
+loadFavorites();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") loadFavorites();
+});
+window.addEventListener("focus", loadFavorites);
 
 // ---------------------------------------------------------------------------
 // Saisie : un lien → analyse, plusieurs liens → file d'attente
