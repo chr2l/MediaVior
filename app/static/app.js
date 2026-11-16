@@ -263,6 +263,24 @@ function setupOptions(root) {
     });
   });
 
+  // Aide longue : deux lignes, puis « Lire la suite » (la page tient sans défiler sur un écran plein)
+  function clampHint(p) {
+    if (!p.moreBtn) {
+      p.moreBtn = h("button", { type: "button", class: "btn-link hint-more", hidden: true }, t("Lire la suite"));
+      p.moreBtn.addEventListener("click", () => {
+        p.classList.remove("is-clamped");
+        p.moreBtn.hidden = true;
+      });
+      new ResizeObserver(() => p.classList.contains("is-clamped") && fitHint(p)).observe(p);
+    }
+    p.append(p.moreBtn); // le texte vient d'être remplacé : le bouton revient au bout
+    p.classList.add("is-clamped");
+    fitHint(p);
+  }
+  function fitHint(p) {
+    p.moreBtn.hidden = p.scrollHeight <= p.clientHeight + 1;
+  }
+
   // Taille estimée de chaque format audio à partir de la durée (et de la vraie piste pour l'original)
   function refreshAudio() {
     audioContainer.querySelectorAll("option").forEach((opt) => {
@@ -277,10 +295,12 @@ function setupOptions(root) {
     audioQuality.disabled = audioContainer.value !== "mp3";
     audioHint.textContent = audioContainer.value === "original" && audioBest
       ? bestHint(audioBest, source, login) : AUDIO_HINTS[audioContainer.value];
+    clampHint(audioHint);
   }
 
   function refreshVideo() {
     videoHint.textContent = VIDEO_HINTS[container.value];
+    clampHint(videoHint);
   }
 
   audioContainer.addEventListener("change", refreshAudio);
@@ -297,6 +317,7 @@ function setupOptions(root) {
       searchQuery = search || "";
       mediaUrl = url || "";
       better.hidden = !searchQuery;
+      betterBtn.hidden = !searchQuery;
       betterInfo.hidden = true;
       betterList.replaceChildren();
       audioSize = newAudioSize || 0;
