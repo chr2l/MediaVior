@@ -59,8 +59,12 @@ function formatDuration(s) {
 
 function fillQualities(options, preferred) {
   qualitySel.replaceChildren(...options.map(([value, label]) => new Option(t(label), value)));
-  // La qualité retenue la dernière fois, ou la plus proche en dessous
-  const values = options.map(([v]) => v);
+  selectQuality(preferred);
+}
+
+// La qualité préférée (ou retenue la dernière fois), ou la plus proche en dessous
+function selectQuality(preferred) {
+  const values = [...qualitySel.options].map((o) => o.value);
   if (values.includes(preferred)) {
     qualitySel.value = preferred;
   } else if (preferred) {
@@ -202,14 +206,22 @@ async function currentUrl() {
   return tab && tab.url && /^https?:/i.test(tab.url) ? tab.url : "";
 }
 
-// Format préféré (signet dans la liste des formats) : gardé par l'appli, le même que dans
+// Préférés (signet dans les listes de format et de qualité) : gardés par l'appli, le même que dans
 // l'appli et sur le téléphone. Appli fermée ou trop ancienne : la liste reste sans signet.
 const FAV_TEXTS = {
   favorite: t("Préféré"),
   mark: t("Choisir comme format préféré"),
   unmark: t("Ne plus en faire le format préféré"),
 };
+const QUALITY_FAV_TEXTS = {
+  favorite: t("Préférée"),
+  mark: t("Choisir comme qualité préférée"),
+  unmark: t("Ne plus en faire la qualité préférée"),
+};
 const pickers = {
+  quality: MediaViorFormats.enhance(qualitySel, {
+    texts: QUALITY_FAV_TEXTS, canFavorite: false, onFavorite: (v) => saveFavorite("quality", v),
+  }),
   video: MediaViorFormats.enhance(videoContainerSel, {
     texts: FAV_TEXTS, canFavorite: false, alignRight: true, onFavorite: (v) => saveFavorite("video", v),
   }),
@@ -219,6 +231,7 @@ const pickers = {
 };
 
 async function saveFavorite(kind, container) {
+  if (kind === "quality" && container !== null) settings.quality = container;
   try {
     await api(settings.server, "/api/preferences", { method: "POST", body: { kind, container } });
   } catch (err) {
@@ -233,10 +246,15 @@ async function loadFavorites() {
   } catch {
     return;
   }
-  ["video", "audio"].forEach((kind) => {
+  ["video", "audio", "quality"].forEach((kind) => {
+    if (!(kind in prefs)) return; // appli trop ancienne pour ce préféré
     pickers[kind].setCanFavorite(true);
-    pickers[kind].setFavorite(prefs[kind], true); // le préféré devient le choix par défaut
+    pickers[kind].setFavorite(prefs[kind], kind !== "quality"); // le préféré devient le choix par défaut
   });
+  if (prefs.quality != null) {
+    settings.quality = prefs.quality;
+    selectQuality(prefs.quality);
+  }
 }
 
 async function init() {

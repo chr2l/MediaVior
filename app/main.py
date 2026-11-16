@@ -189,7 +189,7 @@ if APERCU:
             if request.method == "GET" and path == "/api/stats":
                 return JSONResponse({"total": 0})
             if request.method == "GET" and path == "/api/preferences":
-                return JSONResponse({"video": None, "audio": None})
+                return JSONResponse({"video": None, "audio": None, "quality": None})
             if path.startswith("/api/"):
                 return JSONResponse({"detail": APERCU_MSG, "apercu": True}, status_code=403)
             if path.startswith("/edit/"):
@@ -689,7 +689,7 @@ async def service_worker():
 
 
 # ---------------------------------------------------------------------------
-# Format préféré (signet dans le choix du format), un pour le son, un pour la vidéo.
+# Préférés (signet dans les listes) : format du son, format de la vidéo, qualité de la vidéo.
 # Gardé par l'appli : la page, l'extension et le téléphone relié voient le même.
 # ---------------------------------------------------------------------------
 
@@ -698,8 +698,16 @@ PREFS_LOCK = threading.Lock()
 
 
 class PreferenceRequest(BaseModel):
-    kind: Literal["video", "audio"]
-    container: Optional[str] = None  # None = plus de format préféré pour ce type
+    kind: Literal["video", "audio", "quality"]
+    # Format ("mp4"…), ou pour la qualité : hauteur ("1080") ou "" = meilleure disponible.
+    # None = plus de préféré pour ce type.
+    container: Optional[str] = None
+
+
+def _valid_pref(kind: str, value) -> bool:
+    if kind == "quality":
+        return isinstance(value, str) and (value == "" or (value.isdigit() and len(value) <= 4))
+    return value in (VIDEO_CONTAINERS if kind == "video" else AUDIO_CONTAINERS)
 
 
 def _prefs() -> dict:
@@ -709,15 +717,12 @@ def _prefs() -> dict:
         data = {}
     if not isinstance(data, dict):
         data = {}
-    video, audio = data.get("video"), data.get("audio")
-    return {"video": video if video in VIDEO_CONTAINERS else None,
-            "audio": audio if audio in AUDIO_CONTAINERS else None}
+    return {k: (data.get(k) if _valid_pref(k, data.get(k)) else None) for k in ("video", "audio", "quality")}
 
 
 def set_preference(kind: str, container: Optional[str]) -> dict:
-    """Retient (ou enlève, avec None) le format préféré d'un type. Renvoie les deux préférés."""
-    allowed = VIDEO_CONTAINERS if kind == "video" else AUDIO_CONTAINERS
-    if kind not in ("video", "audio") or (container is not None and container not in allowed):
+    """Retient (ou enlève, avec None) le préféré d'un type. Renvoie tous les préférés."""
+    if kind not in ("video", "audio", "quality") or (container is not None and not _valid_pref(kind, container)):
         raise ValueError("Format inconnu.")
     with PREFS_LOCK:
         prefs = _prefs()

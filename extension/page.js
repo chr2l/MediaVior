@@ -239,12 +239,13 @@
     const audioRows = el("div", { class: "mediavior-grid" }, field(msg("ytFormat"), audioFmt), bitrateField);
     menu.append(videoRows, audioRows);
 
-    // Format préféré (signet) : gardé par l'appli, le même que dans l'appli et le téléphone
+    // Préférés (signet sur la qualité et le format) : gardés par l'appli, les mêmes que dans l'appli et le téléphone
     const favTexts = { favorite: msg("favFormat"), mark: msg("favMark"), unmark: msg("favUnmark") };
+    const qualityTexts = { favorite: msg("favQuality"), mark: msg("favQualityMark"), unmark: msg("favQualityUnmark") };
     const pickers = {};
-    [["video", videoFmt, true], ["audio", audioFmt, false]].forEach(([kind, sel, alignRight]) => {
+    [["quality", quality, false], ["video", videoFmt, true], ["audio", audioFmt, false]].forEach(([kind, sel, alignRight]) => {
       pickers[kind] = window.MediaViorFormats.enhance(sel, {
-        texts: favTexts, canFavorite: false, alignRight,
+        texts: kind === "quality" ? qualityTexts : favTexts, canFavorite: false, alignRight,
         onFavorite: (container) => chrome.runtime.sendMessage({ type: "mediavior-prefs", kind, container, set: true })
           .then((res) => { if (!res || !res.ok) showToast(msg("ytFailed", [(res && res.detail) || "?"]), "error"); })
           .catch(() => {}),
@@ -252,10 +253,18 @@
     });
     chrome.runtime.sendMessage({ type: "mediavior-prefs" }).then((res) => {
       if (!res || !res.ok || !menu) return; // appli fermée ou trop ancienne : pas de signet
-      ["video", "audio"].forEach((kind) => {
+      ["video", "audio", "quality"].forEach((kind) => {
+        if (!(kind in res.prefs)) return; // appli trop ancienne pour ce préféré
         pickers[kind].setCanFavorite(true);
         pickers[kind].setFavorite(res.prefs[kind], true);
       });
+      // Qualité préférée absente du menu (ex. 360p) : la plus haute en dessous, sinon la plus basse
+      const fav = res.prefs.quality;
+      if (fav != null && !QUALITIES.includes(fav)) {
+        const heights = QUALITIES.filter((q) => q).map(Number).sort((a, b) => b - a);
+        quality.value = String(heights.find((h) => h <= Number(fav)) ?? heights[heights.length - 1]);
+        quality.dispatchEvent(new Event("change"));
+      }
     }).catch(() => {});
 
     const go = el("button", { type: "button", class: "mediavior-go", text: msg("ytDownload") });

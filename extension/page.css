@@ -71,6 +71,7 @@
 .mediavior-menu .mvf span { color: inherit; font-size: inherit; } /* pas le style des titres de champ */
 .mediavior-menu .mvf__list { margin-top: 4px; max-width: none; width: auto; box-shadow: none; }
 .mediavior-menu .mvf__opt { margin: 0; padding-left: 8px; }
+.mediavior-menu .mvf__label { white-space: nowrap; }
 .mediavior-menu .mvf__tag { display: none; } /* place comptée : le signet plein suffit */
 
 .mediavior-go {

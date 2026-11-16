@@ -42,7 +42,7 @@ Deux façons de lancer le même serveur :
 | `app/static/common.js` | Outils partagés : `api()`, `h()` (création d'éléments sans `innerHTML`), icônes |
 | `app/static/shell.js` | Navigation (panneau de droite sur ordinateur, onglets du bas sur téléphone), pastilles, notifications |
 | `app/static/app.js` | Analyse, options, file d'attente, bibliothèque |
-| `app/static/formats.js`, `app/static/formats.css` | Liste des formats avec le signet « format préféré » (un pour le son, un pour la vidéo). Le préféré est gardé par l'appli (`/api/preferences`, fichier `preferences.json` à côté de l'historique) : la page, l'extension et le téléphone relié voient le même. Copies identiques dans `relais/public/` et `extension/` |
+| `app/static/formats.js`, `app/static/formats.css` | Listes avec le signet « préféré » : format du son, format de la vidéo, qualité de la vidéo. Le préféré est gardé par l'appli (`/api/preferences`, fichier `preferences.json` à côté de l'historique) : la page, l'extension et le téléphone relié voient le même. Copies identiques dans `relais/public/` et `extension/` |
 | `app/static/sons.js` | Liste de sons, captures d'écran, fenêtre de choix YouTube |
 | `app/static/editor.js` | Forme d'onde et commandes de l'éditeur |
 | `app/static/local.js` | Boutons de la version PC et fenêtre « Copier le prompt » |
