@@ -21,6 +21,14 @@
 <script src="/static/i18n.js?v={{ v }}"></script>
 </head>
 <body class="shell"{% if apercu %} data-apercu{% endif %}>
+{% if local %}
+<!-- Barre du haut de la fenêtre installée (Edge/Chrome) : affichée seulement quand la page
+     dessine elle-même la barre de titre, à côté des boutons de la fenêtre (style.css, .titlebar) -->
+<div class="titlebar" aria-hidden="true">
+  <span class="titlebar__icon" data-icon="safe"></span>
+  <span class="titlebar__name">MediaVior</span>
+</div>
+{% endif %}
 <div class="app">
 
   <main class="main">
@@ -270,9 +278,13 @@
 </div>
 
 <template id="optionsTpl">
-  <div class="mode-toggle" role="group" aria-label="Type de média">
-    <button type="button" class="mode-toggle__btn is-active" data-mode="video">Vidéo</button>
-    <button type="button" class="mode-toggle__btn" data-mode="audio">Audio</button>
+  <div class="mode-row">
+    <div class="mode-toggle" role="group" aria-label="Type de média">
+      <button type="button" class="mode-toggle__btn is-active" data-mode="video">Vidéo</button>
+      <button type="button" class="mode-toggle__btn" data-mode="audio">Audio</button>
+    </div>
+    <!-- À côté de Vidéo / Audio : la page tient sans défiler sur un écran plein -->
+    <button type="button" class="btn btn--ghost btn--sm better__btn js-audio js-better-btn hidden" hidden><span data-icon="search"></span>Chercher une meilleure source</button>
   </div>
   <div class="options-grid js-video">
     <label class="field">
@@ -312,7 +324,6 @@
   <p class="hint option-hint js-audio js-audio-hint hidden"></p>
   <div class="better js-audio hidden">
     <div class="js-better" hidden>
-      <button type="button" class="btn btn--ghost btn--sm js-better-btn"><span data-icon="search"></span>Chercher une meilleure source</button>
       <p class="hint js-better-info" role="status" hidden></p>
       <ul class="yt-results better__list js-better-list"></ul>
     </div>
@@ -482,6 +493,13 @@
           <span class="set-item__desc">En arrière-plan, sans fenêtre : le téléphone et l'extension marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.</span>
         </label>
         <input type="checkbox" class="set-switch" role="switch" id="settingsAutostart">
+      </div>
+      <div class="set-item" id="settingsWindowRow" hidden>
+        <div class="set-item__text">
+          <span class="set-item__name">Fenêtre aux couleurs de MediaVior</span>
+          <span class="set-item__desc" id="settingsWindowDesc">Installe MediaVior comme appli de ton navigateur, une seule fois : la barre du haut prend les couleurs de l'appli.</span>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" id="settingsWindow">Installer</button>
       </div>
       <div class="set-item">
         <label class="set-item__text" for="settingsLang">

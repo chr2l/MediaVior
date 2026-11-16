@@ -195,8 +195,6 @@ body.shell {
   min-height: 0;
   overflow-y: auto;
   padding: 16px 20px 24px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--hairline) transparent;
 }
 
 .pane__head {
@@ -990,8 +988,11 @@ input[type="text"].sons-list__input:hover { border-color: var(--hairline); }
 .yt-dialog__search .btn { width: auto; }
 
 /* « Chercher une meilleure source » sous le choix du son */
-.better { margin-top: 12px; }
-.better .btn { width: auto; margin-top: 0; }
+/* Bouton à droite de Vidéo / Audio ; le résultat de la recherche s'affiche sous l'aide */
+.mode-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.mode-row .mode-toggle { margin-bottom: 0; }
+.mode-row .better__btn { width: auto; margin-top: 0; }
+.better .js-better-info { margin-top: 12px; }
 .better__list { margin-top: 8px; }
 .better__badge { display: inline-block; padding: 1px 7px; margin-right: 6px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; background: var(--surface-raised); }
 .better__badge--lossless { background: var(--brass); color: #fff; }
@@ -2067,4 +2068,110 @@ label.set-item__text { cursor: pointer; }
 @media (max-width: 520px) {
   .settings-kind { grid-template-columns: 1fr auto; }
   .settings-kind .settings-path { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* ---------- Barres de défilement au style de l'appli ----------
+   Fine, arrondie, couleur des bordures ; bleue au survol. Chrome, Edge et la fenêtre de l'appli
+   lisent ::-webkit-scrollbar ; Firefox lit scrollbar-color (sinon Chrome ignorerait le reste).
+   Souris seulement : sur téléphone, la barre reste celle du système (fine, par-dessus). */
+@media (pointer: fine) {
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--hairline);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--brass-dim); }
+  ::-webkit-scrollbar-thumb:active { background-color: var(--brass); }
+  @supports not selector(::-webkit-scrollbar) {
+    * { scrollbar-width: thin; scrollbar-color: var(--hairline) transparent; }
+  }
+}
+
+/* Ordinateur : la partie gauche défile seule, sa barre s'arrête au bord du coffre
+   (avant, la barre de la fenêtre passait par-dessus le panneau de droite). */
+@media (min-width: 961px) {
+  body.shell .main {
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+  /* Un peu moins d'espace : un lien analysé, en son, tient sans défiler sur un écran plein */
+  body.shell .main { padding: max(18px, env(safe-area-inset-top)) 48px 12px; }
+  .main .hero { margin-bottom: 14px; }
+  .main .ways { margin-bottom: 14px; }
+  .main .panel { padding: 24px; margin-bottom: 16px; }
+  #result .media-summary { margin-bottom: 16px; padding-bottom: 16px; }
+  #result .media-summary__text h2 { margin-bottom: 8px; }
+  #result .mode-row { margin-bottom: 18px; }
+  .main > .app-foot:not(.app-foot--small) { margin-top: 20px; }
+  .main > .app-foot--small { margin-top: 8px; }
+}
+/* Un lien analysé : aide sur toute la largeur, liste des sites cachée (plus utile à ce moment-là) */
+#result .option-hint { max-width: none; }
+#intake:has(~ #result:not(.hidden)) .sites { display: none; }
+/* Aide longue sous les formats : deux lignes, « Lire la suite » pour le reste */
+.option-hint.is-clamped {
+  position: relative;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* « Lire la suite » au bout de la 2e ligne, sur un fondu */
+.hint-more {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0 0 0 40px;
+  line-height: inherit;
+  font-size: inherit;
+  color: var(--brass-bright);
+  background: linear-gradient(90deg, transparent, var(--surface) 36px);
+}
+.hint-more[hidden] { display: none; }
+
+/* ---------- Barre du haut de la fenêtre installée (Edge/Chrome) ----------
+   Quand MediaVior est installé comme appli du navigateur, la page dessine elle-même la barre
+   de titre (« window-controls-overlay ») : coffre bleu + nom, sur le fond de l'appli. Les boutons
+   de la fenêtre (réduire, agrandir, fermer) restent ceux du navigateur, sur la couleur
+   « theme-color » de index.html, la même que le fond. On peut la glisser pour bouger la fenêtre. */
+.titlebar { display: none; }
+
+@media (display-mode: window-controls-overlay) {
+  body.shell { --tb-h: env(titlebar-area-height, 33px); padding-top: var(--tb-h); }
+  .titlebar {
+    position: fixed;
+    z-index: 60;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--tb-h);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 0 0 calc(env(titlebar-area-x, 0px) + 14px);
+    background: var(--ink);
+    -webkit-app-region: drag;
+    app-region: drag;
+    user-select: none;
+  }
+  .titlebar__icon { display: inline-flex; color: var(--brass); }
+  .titlebar__icon svg { width: 17px; height: 17px; }
+  .titlebar__name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.01em;
+    color: var(--paper);
+  }
+  .side { top: var(--tb-h); }
+  /* La partie gauche défile seule (voir plus haut) : elle s'arrête sous la barre */
+  @media (min-width: 961px) {
+    body.shell .main { height: calc(100vh - var(--tb-h)); height: calc(100dvh - var(--tb-h)); }
+  }
+  .side__tabs { padding-top: 20px; }
 }

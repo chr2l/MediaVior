@@ -362,6 +362,7 @@ if (settingsDialog) {
       ? t("La dernière lecture de la connexion a échoué, le téléchargement s'est fait sans : {err}", { err: s.login_error }) : "";
     audioEl.textContent = s.audio_folder || s.folder;
     videoEl.textContent = s.video_folder || s.folder;
+    showWindowRow(s.window);
   };
   const save = async (body) => show(await api("/api/local/settings", { method: "POST", body }));
 
@@ -400,6 +401,58 @@ if (settingsDialog) {
     checkBtn.textContent = t("Rechercher une mise à jour");
   });
   installBtn.addEventListener("click", () => foundRel && installUpdate(foundRel, installBtn));
+
+  // Fenêtre aux couleurs de MediaVior : installer l'appli dans Edge/Chrome (une seule fois).
+  // Ensuite le lanceur ouvre cette fenêtre-là, et la page dessine la barre du haut (.titlebar).
+  const winRow = document.getElementById("settingsWindowRow");
+  const winBtn = document.getElementById("settingsWindow");
+  const winDesc = document.getElementById("settingsWindowDesc");
+  const ownTitlebar = matchMedia("(display-mode: window-controls-overlay)");
+  let installPrompt = null;
+  let winState = null;
+  function showWindowRow(state) {
+    if (state !== undefined) winState = state;
+    winRow.hidden = !winState || winState.installed || !winState.browser || ownTitlebar.matches;
+  }
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // pas de bandeau du navigateur : le bouton des réglages s'en charge
+    installPrompt = e;
+  });
+  window.addEventListener("appinstalled", () => {
+    installPrompt = null;
+    if (winState) winState.installed = true;
+    showWindowRow();
+    showToast(t("C'est fait : MediaVior s'ouvrira désormais dans sa fenêtre."));
+  });
+  winBtn.addEventListener("click", async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice.catch(() => null);
+      return;
+    }
+    try {
+      // La fenêtre de l'appli n'a pas le bouton « Installer » : un onglet ordinaire, si.
+      await api("/api/local/fenetre", { method: "POST" });
+      showToast(t("Edge ou Chrome s'ouvre : clique sur « Installer » dans les réglages qui s'affichent."));
+    } catch (e) {
+      showToast(e.message);
+    }
+  });
+  // Onglet ouvert par le bouton ci-dessus : on montre directement le bouton « Installer »
+  if (new URLSearchParams(location.search).has("fenetre")) {
+    history.replaceState(null, "", "/");
+    setTimeout(() => {
+      document.getElementById("settingsBtn").click();
+      winRow.scrollIntoView({ block: "center" });
+      // Pas de proposition du navigateur (déjà installé, ou navigateur qui ne le permet pas) :
+      // on explique où cliquer.
+      setTimeout(() => {
+        if (installPrompt) return;
+        winBtn.hidden = true;
+        winDesc.textContent = t("Clique sur l'icône « Installer » au bout de la barre d'adresse (ou menu ⋯ > Applications > Installer MediaVior).");
+      }, 2500);
+    }, 400);
+  }
 
   document.getElementById("settingsClose").append(icon("close"));
   document.getElementById("settingsClose").addEventListener("click", () => settingsDialog.close());
