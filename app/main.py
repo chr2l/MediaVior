@@ -628,7 +628,7 @@ def _pick_folder_sync(start: str, title: str) -> Optional[str]:
         script = ("on run argv\n"
                   "activate\n"
                   "try\n"
-                  "set here to POSIX file (item 2 of argv) as alias\n"
+                  "set here to (POSIX file (item 2 of argv)) as alias\n"
                   "return POSIX path of (choose folder with prompt (item 1 of argv) default location here)\n"
                   "on error number n\n"
                   "if n is -128 then return \"\"\n"
