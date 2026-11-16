@@ -83,29 +83,59 @@ const AUDIO_HINTS = {
   wav: t("Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio."),
 };
 
-// Format préféré (signet dans la liste des formats), un pour la vidéo, un pour le son.
-// Gardé par l'appli (/api/preferences) : l'extension et le téléphone relié voient le même.
+// Préférés (signet dans les listes) : format de la vidéo, format du son, qualité de la vidéo.
+// Gardés par l'appli (/api/preferences) : l'extension et le téléphone relié voient les mêmes.
 const FAV_TEXTS = {
   favorite: t("Préféré"),
   mark: t("Choisir comme format préféré"),
   unmark: t("Ne plus en faire le format préféré"),
 };
-const formatPickers = []; // { kind: "video" | "audio", picker }
-let favorites = { video: null, audio: null };
+const QUALITY_FAV_TEXTS = {
+  favorite: t("Préférée"),
+  mark: t("Choisir comme qualité préférée"),
+  unmark: t("Ne plus en faire la qualité préférée"),
+};
+const FAV_KINDS = ["video", "audio", "quality"];
+const formatPickers = []; // { kind: "video" | "audio" | "quality", select, picker }
+let favorites = { video: null, audio: null, quality: null };
 
 function addFormatPicker(select, kind, alignRight) {
   const picker = MediaViorFormats.enhance(select, {
-    texts: FAV_TEXTS,
+    texts: kind === "quality" ? QUALITY_FAV_TEXTS : FAV_TEXTS,
     alignRight,
     onFavorite: (value) => saveFavorite(kind, value),
   });
-  formatPickers.push({ kind, picker });
+  formatPickers.push({ kind, select, picker });
+}
+
+// Qualité préférée absente de ce média : la plus haute en dessous (sinon la plus basse).
+// "" = meilleure disponible.
+function closestQuality(select, fav) {
+  const values = [...select.options].map((o) => o.value);
+  if (values.includes(fav)) return fav;
+  const heights = values.filter((v) => v !== "").map(Number).sort((a, b) => b - a);
+  if (!heights.length) return values[0];
+  if (fav === "") return String(heights[0]);
+  const below = heights.find((h) => h <= Number(fav));
+  return String(below ?? heights[heights.length - 1]);
+}
+
+// Montre le préféré dans une liste ; avec apply, il devient aussi le choix affiché
+function applyFavorite(p, value, apply) {
+  p.picker.setFavorite(value, apply && p.kind !== "quality");
+  if (apply && p.kind === "quality" && value !== null && p.select.options.length) {
+    const v = closestQuality(p.select, value);
+    if (v != null && p.select.value !== v) {
+      p.select.value = v;
+      p.select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
 }
 
 async function saveFavorite(kind, container) {
   favorites = { ...favorites, [kind]: container };
   // Les autres listes du même type (un lien / plusieurs liens) passent aussi sur le préféré
-  formatPickers.forEach((p) => p.kind === kind && p.picker.setFavorite(container, true));
+  formatPickers.forEach((p) => p.kind === kind && applyFavorite(p, container, true));
   try {
     favorites = await api("/api/preferences", { method: "POST", body: { kind, container } });
   } catch (e) {
@@ -121,11 +151,12 @@ async function loadFavorites() {
   } catch (e) {
     return;
   }
-  ["video", "audio"].forEach((kind) => {
-    const changed = prefs[kind] !== favorites[kind];
-    formatPickers.forEach((p) => p.kind === kind && p.picker.setFavorite(prefs[kind], changed));
+  FAV_KINDS.forEach((kind) => {
+    const value = prefs[kind] ?? null;
+    const changed = value !== favorites[kind];
+    formatPickers.forEach((p) => p.kind === kind && applyFavorite(p, value, changed));
   });
-  favorites = prefs;
+  favorites = { video: prefs.video ?? null, audio: prefs.audio ?? null, quality: prefs.quality ?? null };
 }
 
 function setupOptions(root) {
@@ -134,6 +165,7 @@ function setupOptions(root) {
   const quality = $(".js-quality");
   const container = $(".js-container");
   const audioContainer = $(".js-audio-container");
+  addFormatPicker(quality, "quality", false);
   addFormatPicker(container, "video", true);
   addFormatPicker(audioContainer, "audio", false);
   const audioQuality = $(".js-audio-quality");
@@ -316,6 +348,8 @@ function renderResult(data) {
     select.append(h("option", { value: "" }, t("Meilleure disponible")));
   }
   singleOptions.setMedia(data.duration, data.audio_size);
+  // Qualité préférée : la même, ou la plus proche en dessous pour ce média
+  formatPickers.forEach((p) => p.select === select && applyFavorite(p, favorites.quality, favorites.quality !== null));
 
   downloadBtn.disabled = false;
   downloadBtn.textContent = t("Mettre au coffre");

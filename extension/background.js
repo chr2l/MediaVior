@@ -59,7 +59,7 @@ async function prefsFromApp({ set, kind, container }) {
   const settings = await getSettings();
   const server = await findServer(settings.server);
   const prefs = set
-    ? await api(server, "/api/preferences", { method: "POST", body: { kind, container: container || null } })
+    ? await api(server, "/api/preferences", { method: "POST", body: { kind, container: container ?? null } })
     : await api(server, "/api/preferences");
   return { ok: true, prefs };
 }
