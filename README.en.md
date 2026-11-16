@@ -22,7 +22,7 @@ MediaVior downloads media from YouTube, SoundCloud, Bandcamp, Vimeo and
 [yt-dlp](https://github.com/yt-dlp/yt-dlp), in the quality and format you choose.
 
 - **Video**: best original quality, MP4 that plays everywhere, or MOV for editing.
-- **Audio**: original track, MP3 (320/192/128 kb/s), FLAC or WAV, with title, artist and cover art.
+- **Audio**: original track, MP3 (320/192/128 kb/s), FLAC, WAV or AIFF (for DJing), with title, artist and cover art.
 - **Several links at once**, in the same format, packed into a single zip.
 - **Song list**: type titles or add screenshots of playlists; each song is found on YouTube and
   packed into a zip.

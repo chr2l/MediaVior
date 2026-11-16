@@ -113,5 +113,8 @@
   },
   "favQualityUnmark": {
     "message": "Ne plus en faire la qualité préférée"
+  },
+  "fmtAiff": {
+    "message": "AIFF (DJ)"
   }
 }

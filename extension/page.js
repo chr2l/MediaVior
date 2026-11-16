@@ -12,7 +12,7 @@
   const DEFAULTS = { mode: "video", quality: "", videoContainer: "original", audioContainer: "mp3", audioQuality: "320" };
   const QUALITIES = ["", "2160", "1440", "1080", "720", "480"];
   const VIDEO_FORMATS = [["original", "fmtOriginal"], ["mp4", "fmtMp4"], ["mov", "fmtMov"]];
-  const AUDIO_FORMATS = [["original", "fmtOriginal"], ["mp3", "fmtMp3"], ["flac", "fmtFlac"], ["wav", "fmtWav"]];
+  const AUDIO_FORMATS = [["original", "fmtOriginal"], ["mp3", "fmtMp3"], ["flac", "fmtFlac"], ["wav", "fmtWav"], ["aiff", "fmtAiff"]];
   const BITRATES = ["320", "192", "128"];
   // Flèche de téléchargement, dessinée élément par élément (Firefox refuse le HTML brut)
   function arrow() {

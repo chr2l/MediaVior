@@ -11,7 +11,10 @@ Ce guide vaut pour la version PC comme pour la version serveur.
      lisible partout ; converti par le serveur si le site ne le fournit pas à cette qualité), *MOV*.
    - **Audio** : *Original* (piste du site sans réencodage, souvent Opus ou M4A : la meilleure qualité possible),
      *MP3* (320/192/128 kb/s, le plus compatible), *FLAC* (sans perte, pour l'archivage), *WAV* (non compressé,
-     pour le montage). Titre, artiste et pochette sont intégrés au fichier (sauf WAV).
+     pour le montage), *AIFF* (non compressé, pour Rekordbox, Serato et les platines CDJ). Titre, artiste et
+     pochette sont intégrés au fichier (sauf WAV).
+   - Un **signet** apparaît au survol d'un format ou d'une qualité : il en fait ton choix préféré, proposé par
+     défaut (un pour le son, un pour la vidéo, un pour la qualité). Le même dans l'extension et sur le téléphone.
 3. Clique sur **Télécharger** : le média part dans la file **En cours** (progression, vitesse,
    temps restant, bouton **Annuler**), puis arrive dans la **Bibliothèque**.
 

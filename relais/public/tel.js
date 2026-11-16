@@ -388,6 +388,7 @@ const AUDIO_HINTS = {
   flac: "Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. "
     + "Utile pour l'archivage ou les logiciels qui demandent du FLAC.",
   wav: "Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio.",
+  aiff: "Non compressé comme le WAV, mais avec titre, artiste et pochette : lu par Rekordbox, Serato et les platines CDJ. Pas meilleur que l'original : les sites diffusent déjà du son compressé.",
 };
 const MAX_QUALITIES = [
   ["", "Meilleure disponible"],
@@ -500,13 +501,13 @@ function refreshForm() {
   });
   document.querySelectorAll("[data-panel]").forEach((el) => (el.hidden = el.dataset.panel !== way));
 
-  // Liste de titres : du son seulement, en MP3 ou WAV (comme sur le PC)
+  // Liste de titres : du son seulement, en MP3, WAV ou AIFF (comme sur le PC)
   $("type").hidden = titres;
   $("formatAudio").querySelectorAll("option").forEach((opt) => {
-    opt.disabled = titres && !["mp3", "wav"].includes(opt.value);
+    opt.disabled = titres && !["mp3", "wav", "aiff"].includes(opt.value);
     opt.hidden = opt.disabled;
   });
-  if (titres && !["mp3", "wav"].includes($("formatAudio").value)) $("formatAudio").value = "mp3";
+  if (titres && !["mp3", "wav", "aiff"].includes($("formatAudio").value)) $("formatAudio").value = "mp3";
 
   const audio = mode() === "audio";
   $("optionsVideo").hidden = audio;
