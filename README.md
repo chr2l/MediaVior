@@ -24,7 +24,7 @@ MediaVior récupère les médias de YouTube, SoundCloud, Bandcamp, Vimeo et de
 charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp), dans la qualité et le format de ton choix.
 
 - **Vidéo** : meilleure qualité d'origine, MP4 lisible partout, ou MOV pour le montage.
-- **Audio** : piste d'origine, MP3 (320/192/128 kb/s), FLAC ou WAV, avec titre, artiste et pochette.
+- **Audio** : piste d'origine, MP3 (320/192/128 kb/s), FLAC, WAV ou AIFF (pour le DJing), avec titre, artiste et pochette.
 - **Plusieurs liens d'un coup**, dans un même format, rangés dans un seul zip.
 - **Liste de sons** : écris des titres ou ajoute des captures d'écran de playlists ; chaque son est
   retrouvé sur YouTube et rangé dans un zip.

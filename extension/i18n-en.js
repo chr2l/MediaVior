@@ -124,6 +124,7 @@ window.I18N_EN = {
   "Choisir comme format préféré": "Make this my favorite format",
   "Ne plus en faire le format préféré": "Remove as favorite format",
   "Format inconnu.": "Unknown format.",
+  "AIFF · pour le DJing": "AIFF · for DJing",
   "Préférée": "Favorite",
   "Choisir comme qualité préférée": "Make this my favorite quality",
   "Ne plus en faire la qualité préférée": "Remove as favorite quality",

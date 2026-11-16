@@ -81,6 +81,7 @@ const AUDIO_HINTS = {
   flac: t("Sans perte, mais pas meilleur que l'original : les sites diffusent déjà en audio compressé. "
     + "Utile pour l'archivage ou les logiciels qui demandent du FLAC."),
   wav: t("Non compressé, très lourd (≈ 10 Mo par minute). Pour les logiciels de montage audio."),
+  aiff: t("Non compressé comme le WAV, mais avec titre, artiste et pochette : lu par Rekordbox, Serato et les platines CDJ. Pas meilleur que l'original : les sites diffusent déjà du son compressé."),
 };
 
 // Préférés (signet dans les listes) : format de la vidéo, format du son, qualité de la vidéo.

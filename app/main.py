@@ -95,10 +95,10 @@ UPDATED_AT = int(max(
 
 META_FILE = "meta.json"
 ITEM_ID = re.compile(r"^[0-9a-f]{32}$")
-AUDIO_EXTS = {".mp3", ".wav", ".m4a", ".opus", ".ogg", ".flac", ".aac"}
+AUDIO_EXTS = {".mp3", ".wav", ".aiff", ".aif", ".m4a", ".opus", ".ogg", ".flac", ".aac"}
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 VIDEO_CONTAINERS = {"original", "mp4", "mov"}
-AUDIO_CONTAINERS = {"original", "mp3", "flac", "wav"}
+AUDIO_CONTAINERS = {"original", "mp3", "flac", "wav", "aiff"}
 # Formats où yt-dlp sait intégrer une pochette (le WebM n'en accepte pas)
 COVER_EXTS = {"mp3", "m4a", "opus", "ogg", "flac", "mp4", "m4v", "mkv", "mka"}
 YTDLP_CHECK_EVERY = 12 * 3600  # vérification d'une nouvelle version de yt-dlp
@@ -220,7 +220,7 @@ class DownloadRequest(BaseModel):
     mode: Literal["video", "audio"]
     quality: Optional[str] = None  # hauteur max pour la vidéo (ex: "2160")
     # "original" = tel que le site le fournit, sans réencodage (vidéo comme audio)
-    container: Literal["original", "mp4", "mov", "mp3", "flac", "wav"]
+    container: Literal["original", "mp4", "mov", "mp3", "flac", "wav", "aiff"]
     audio_quality: Optional[str] = None  # MP3 uniquement : "320", "192", "128" ("0" = VBR V0)
     title: Optional[str] = None
     thumbnail: Optional[str] = None
@@ -231,7 +231,7 @@ class LinksRequest(BaseModel):
     urls: list[str] = Field(min_length=1, max_length=100)
     mode: Literal["video", "audio"]
     quality: Optional[str] = None
-    container: Literal["original", "mp4", "mov", "mp3", "flac", "wav"]
+    container: Literal["original", "mp4", "mov", "mp3", "flac", "wav", "aiff"]
     audio_quality: Optional[str] = None
 
 
@@ -249,7 +249,7 @@ class SonPickRequest(BaseModel):
 
 
 class SonsFetchRequest(BaseModel):
-    container: Literal["mp3", "wav"] = "mp3"
+    container: Literal["mp3", "wav", "aiff"] = "mp3"
     audio_quality: Optional[Literal["0", "320", "192", "128"]] = None
 
 
@@ -1490,6 +1490,29 @@ def _embed_cover_mp4(media: Path, image: Path) -> None:
     tagged.save()
 
 
+def _wav_to_aiff(folder: Path) -> None:
+    """AIFF (logiciels DJ, CDJ) : yt-dlp ne sait pas le produire. On part du WAV qu'il a fait,
+    puis ffmpeg écrit l'AIFF avec titre, artiste et pochette (étiquettes ID3), sans perte."""
+    wav = next((f for f in folder.iterdir() if f.suffix.lower() == ".wav"), None)
+    if not wav:
+        return
+    cover = next((f for f in folder.iterdir() if f.suffix.lower() in IMAGE_EXTS), None)
+    out = wav.with_suffix(".aiff")
+    cmd = [FFMPEG, "-v", "error", "-nostdin", "-y", "-i", str(wav)]
+    if cover:
+        cmd += ["-i", str(cover), "-map", "0:a", "-map", "1:v", "-c:v", "copy", "-disposition:v:0", "attached_pic"]
+    cmd += ["-c:a", "pcm_s16be", "-write_id3v2", "1", "-id3v2_version", "3", str(out)]
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800)
+    if result.returncode != 0 and cover:  # pochette refusée : l'AIFF sans pochette plutôt qu'un échec
+        cmd = [FFMPEG, "-v", "error", "-nostdin", "-y", "-i", str(wav), "-c:a", "pcm_s16be",
+               "-write_id3v2", "1", "-id3v2_version", "3", str(out)]
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800)
+    if result.returncode != 0:
+        out.unlink(missing_ok=True)
+        raise RuntimeError(f"La conversion a échoué : {result.stderr.strip()[-300:]}")
+    wav.unlink(missing_ok=True)
+
+
 class _CoverArt(EmbedThumbnailPP):
     """Pochette intégrée au fichier quand le format le permet, sans jamais faire échouer le téléchargement."""
 
@@ -1633,7 +1656,8 @@ def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, co
         postprocessors.insert(0, {
             "key": "FFmpegExtractAudio",
             # "best" garde le codec de la source : simple changement de conteneur, aucune perte
-            "preferredcodec": "best" if container == "original" else container,
+            # AIFF : WAV d'abord, converti juste après (_wav_to_aiff)
+            "preferredcodec": "best" if container == "original" else "wav" if container == "aiff" else container,
             "preferredquality": p["audio_quality"] or "320",
         })
     else:
@@ -1677,6 +1701,9 @@ def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, co
                 _embed_cover_mp4(media, cover)
             except Exception:
                 pass  # une pochette manquante ne vaut pas un échec
+    if p["mode"] == "audio" and container == "aiff":
+        job.update(status="converting", speed=None, eta=None)
+        _wav_to_aiff(job_dir)
     for leftover in job_dir.iterdir():  # pochettes non intégrées
         if leftover.suffix.lower() in IMAGE_EXTS:
             leftover.unlink(missing_ok=True)
@@ -2280,7 +2307,7 @@ def _sons_sync(job: dict) -> None:
             "format": "bestaudio/best",
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": p["container"],
+                "preferredcodec": "wav" if p["container"] == "aiff" else p["container"],
                 "preferredquality": p["audio_quality"] or "0",
             }],
         }
@@ -2301,6 +2328,8 @@ def _sons_sync(job: dict) -> None:
                         ydl.extract_info(url, download=True)
 
                     _run_ytdlp(opts, run, clean=target)
+                    if p["container"] == "aiff":
+                        _wav_to_aiff(target)
                     media = _media_file(target)
                     if media:
                         found[son["id"]] = media

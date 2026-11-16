@@ -178,6 +178,9 @@ window.I18N_EN = {
   "Choisir comme format préféré": "Make this my favorite format",
   "Ne plus en faire le format préféré": "Remove as favorite format",
   "Format inconnu.": "Unknown format.",
+  "AIFF · pour le DJing": "AIFF · for DJing",
+  "Non compressé comme le WAV, mais avec titre, artiste et pochette : lu par Rekordbox, Serato et les platines CDJ. Pas meilleur que l'original : les sites diffusent déjà du son compressé.":
+    "Uncompressed like WAV, but with title, artist and cover art: read by Rekordbox, Serato and CDJ players. Not better than the original: sites already stream compressed audio.",
   "Préférée": "Favorite",
   "Choisir comme qualité préférée": "Make this my favorite quality",
   "Ne plus en faire la qualité préférée": "Remove as favorite quality",
