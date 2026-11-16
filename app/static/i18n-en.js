@@ -106,6 +106,7 @@ window.I18N_EN = {
     "The best quality the site provides, kept without re-encoding. If the site offers a lossless file (FLAC, WAV), that one is taken.",
   "Meilleure qualité du site": "Best quality from the site",
   "Chercher une meilleure source": "Look for a better source",
+  "Lire la suite": "Read more",
   "Recherche de « {q} » sur Bandcamp et SoundCloud…": "Searching Bandcamp and SoundCloud for “{q}”…",
   "Rien trouvé sur Bandcamp ni SoundCloud pour « {q} ».": "Nothing found on Bandcamp or SoundCloud for “{q}”.",
   "Trouvé, mais pas en meilleure qualité qu'ici. Le lien actuel reste le meilleur choix.":
