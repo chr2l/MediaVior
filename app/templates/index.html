@@ -21,6 +21,14 @@
 <script src="/static/i18n.js?v={{ v }}"></script>
 </head>
 <body class="shell"{% if apercu %} data-apercu{% endif %}>
+{% if local %}
+<!-- Barre du haut de la fenêtre installée (Edge/Chrome) : affichée seulement quand la page
+     dessine elle-même la barre de titre, à côté des boutons de la fenêtre (style.css, .titlebar) -->
+<div class="titlebar" aria-hidden="true">
+  <span class="titlebar__icon" data-icon="safe"></span>
+  <span class="titlebar__name">MediaVior</span>
+</div>
+{% endif %}
 <div class="app">
 
   <main class="main">
@@ -482,6 +490,13 @@
           <span class="set-item__desc">En arrière-plan, sans fenêtre : le téléphone et l'extension marchent tout de suite. Double-clic sur l'icône pour afficher l'appli.</span>
         </label>
         <input type="checkbox" class="set-switch" role="switch" id="settingsAutostart">
+      </div>
+      <div class="set-item" id="settingsWindowRow" hidden>
+        <div class="set-item__text">
+          <span class="set-item__name">Fenêtre aux couleurs de MediaVior</span>
+          <span class="set-item__desc" id="settingsWindowDesc">Installe MediaVior comme appli de ton navigateur, une seule fois : la barre du haut prend les couleurs de l'appli.</span>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" id="settingsWindow">Installer</button>
       </div>
       <div class="set-item">
         <label class="set-item__text" for="settingsLang">

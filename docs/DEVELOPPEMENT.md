@@ -48,7 +48,7 @@ Deux façons de lancer le même serveur :
 | `app/static/local.js` | Boutons de la version PC et fenêtre « Copier le prompt » |
 | `app/static/liens.js` | Version PC seulement : ouvre les liens vers d'autres sites dans le navigateur par défaut de l'ordinateur (et non dans la fenêtre Edge/Chrome de l'appli) |
 | `app/static/sw.js` | Service worker (appli installable). Change `CACHE` quand tu modifies l'interface |
-| `mediavior.py` | Lanceur PC : options, ffmpeg de secours, mises à jour, fenêtre, raccourci bureau |
+| `mediavior.py` | Lanceur PC : options, ffmpeg de secours, mises à jour, fenêtre, raccourci bureau. Fenêtre : si MediaVior est installé comme appli d'Edge/Chrome (Réglages > « Fenêtre aux couleurs de MediaVior »), le lanceur l'ouvre avec `--app-id` (barre du haut aux couleurs de l'appli, `.titlebar` dans `style.css`) ; sinon `--app=` comme avant |
 | `app/jumelage.py` | Téléphone relié (version PC) : QR code, connexion au relais, messages chiffrés, envoi des fichiers en WebRTC (aiortc) |
 | `relais/` | Relais Cloudflare (`src/worker.js`, un Durable Object par paire PC + téléphones) et page du téléphone (`public/`). Voir `relais/README.md` |
 | `packaging/` | Installeurs : recette PyInstaller, installeur Windows (Inno Setup), AppImage. Construits par `.github/workflows/installeurs.yml` à chaque push sur `main` |

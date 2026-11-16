@@ -3,6 +3,7 @@
   "short_name": "MediaVior",
   "description": "Sauvegarde des médias avant qu'ils ne disparaissent.",
   "lang": "fr",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

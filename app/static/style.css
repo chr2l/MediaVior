@@ -2068,3 +2068,41 @@ label.set-item__text { cursor: pointer; }
   .settings-kind { grid-template-columns: 1fr auto; }
   .settings-kind .settings-path { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* ---------- Barre du haut de la fenêtre installée (Edge/Chrome) ----------
+   Quand MediaVior est installé comme appli du navigateur, la page dessine elle-même la barre
+   de titre (« window-controls-overlay ») : coffre bleu + nom, sur le fond de l'appli. Les boutons
+   de la fenêtre (réduire, agrandir, fermer) restent ceux du navigateur, sur la couleur
+   « theme-color » de index.html, la même que le fond. On peut la glisser pour bouger la fenêtre. */
+.titlebar { display: none; }
+
+@media (display-mode: window-controls-overlay) {
+  body.shell { --tb-h: env(titlebar-area-height, 33px); padding-top: var(--tb-h); }
+  .titlebar {
+    position: fixed;
+    z-index: 60;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--tb-h);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 0 0 calc(env(titlebar-area-x, 0px) + 14px);
+    background: var(--ink);
+    -webkit-app-region: drag;
+    app-region: drag;
+    user-select: none;
+  }
+  .titlebar__icon { display: inline-flex; color: var(--brass); }
+  .titlebar__icon svg { width: 17px; height: 17px; }
+  .titlebar__name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.01em;
+    color: var(--paper);
+  }
+  .side { top: var(--tb-h); }
+  .side__tabs { padding-top: 20px; }
+}
