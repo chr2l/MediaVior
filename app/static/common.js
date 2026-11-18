@@ -101,6 +101,7 @@ const ICONS = {
   folder: '<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
   clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/>',
   image: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8 8"/>',
+  tag: '<path d="M4 4.5h7.2l8.3 8.3-6.7 6.7-8.3-8.3z"/><circle cx="8.3" cy="8.8" r="1.4"/>',
 };
 
 function icon(name) {

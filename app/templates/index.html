@@ -234,7 +234,11 @@
       </div>
       <div class="pane__head">
         <p class="pane__stats" id="libraryStats"></p>
-        <button type="button" class="btn-link hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
+        <div class="pane__actions">
+          <button type="button" class="btn-link" id="importBtn" title="Ajouter des sons de ton ordinateur : titre, interprètes et album sont complétés tout seuls">Ajouter mes sons</button>
+          <button type="button" class="btn-link hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
+        </div>
+        <input type="file" id="importInput" accept="audio/*,.mp3,.aiff,.aif,.wav,.flac,.m4a,.opus,.ogg,.aac" multiple hidden>
       </div>
       <ul class="item-list" id="libraryList"></ul>
       <p class="empty hidden" id="libraryEmpty"></p>
@@ -359,6 +363,49 @@
     <span class="hint" id="ytRemaining"></span>
     <button type="button" class="btn-link" id="ytSkip">Passer</button>
   </div>
+</dialog>
+
+<!-- Infos d'un son : titre, interprètes, album… (recherche MusicBrainz + Deezer, retouche à la main) -->
+<dialog class="yt-dialog tags-dialog" id="tagsDialog" aria-labelledby="tagsTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="tagsTitle">Infos du morceau</h2>
+      <p class="hint" id="tagsFile"></p>
+    </div>
+    <button type="button" class="icon-btn" id="tagsClose" aria-label="Fermer" title="Fermer"></button>
+  </div>
+  <form class="tags-form" id="tagsForm">
+    <div class="tags-top">
+      <div class="tags-cover" id="tagsCover"></div>
+      <div class="tags-main">
+        <label class="field"><span class="field-label">Titre</span><input type="text" name="title" autocomplete="off" spellcheck="false"></label>
+        <label class="field"><span class="field-label">Interprètes</span><input type="text" name="artist" autocomplete="off" spellcheck="false" placeholder="Artiste, Artiste invité"></label>
+      </div>
+    </div>
+    <div class="tags-grid">
+      <label class="field tags-grid__wide"><span class="field-label">Album</span><input type="text" name="album" autocomplete="off" spellcheck="false"></label>
+      <label class="field tags-grid__wide"><span class="field-label">Artiste de l'album</span><input type="text" name="album_artist" autocomplete="off" spellcheck="false"></label>
+      <label class="field"><span class="field-label">Année</span><input type="text" name="year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+      <label class="field"><span class="field-label">N° de piste</span><input type="text" name="track" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+      <label class="field tags-grid__wide"><span class="field-label">Genre</span><input type="text" name="genre" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <label class="settings-check"><input type="checkbox" name="rename" id="tagsRename"> Renommer le fichier en « Artiste - Titre »</label>
+
+    <div class="tags-search">
+      <h3 class="tags-search__title">Suggestions</h3>
+      <div class="yt-dialog__search">
+        <input type="search" id="tagsQuery" spellcheck="false" autocomplete="off" aria-label="Rechercher le morceau" placeholder="Artiste - Titre">
+        <button type="button" class="btn btn--ghost btn--sm" id="tagsSearch">Chercher</button>
+      </div>
+      <p class="hint" id="tagsInfo" role="status"></p>
+      <ul class="yt-results tags-results" id="tagsResults"></ul>
+    </div>
+    <p class="error hidden" id="tagsError" role="alert"></p>
+    <div class="yt-dialog__foot">
+      <span class="hint">Sources gratuites : MusicBrainz et Deezer.</span>
+      <button type="submit" class="btn btn--solid btn--sm tags-save" id="tagsSave">Enregistrer</button>
+    </div>
+  </form>
 </dialog>
 
 <!-- Installer MediaVior sur son propre PC, en un prompt -->
@@ -582,6 +629,7 @@
 <script src="/static/formats.js?v={{ v }}"></script>
 <script src="/static/app.js?v={{ v }}"></script>
 <script src="/static/sons.js?v={{ v }}"></script>
+<script src="/static/tags.js?v={{ v }}"></script>
 <script src="/static/local.js?v={{ v }}"></script>
 {% if local %}<script src="/static/liens.js?v={{ v }}"></script>{% endif %}
 </body>

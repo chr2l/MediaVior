@@ -898,6 +898,13 @@ function libraryRow(item, isNew) {
         title: t("Retélécharger le fichier"),
         "aria-label": t("Retélécharger le fichier"),
       }, icon("download")),
+      item.mode === "audio" ? h("button", {
+        type: "button",
+        class: "icon-btn",
+        title: t("Infos du morceau : titre, interprètes, album"),
+        "aria-label": t("Infos du morceau"),
+        onclick: () => openTags(item),
+      }, icon("tag")) : null,
       item.mode === "archive" ? null : h("a", {
         class: "icon-btn",
         href: `/edit/${item.id}`,

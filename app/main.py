@@ -17,12 +17,12 @@ import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from urllib.request import urlopen
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from starlette.background import BackgroundTask
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -1307,6 +1307,576 @@ async def waveform(item_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Infos des morceaux (titre, interprètes, album…) : lire, chercher, corriger
+# ---------------------------------------------------------------------------
+# Sources gratuites et sans compte : MusicBrainz (base musicale libre, pochettes sur Cover Art
+# Archive) et Deezer en secours (sorties récentes, rap FR…). Les infos sont écrites dans le
+# fichier avec mutagen (MP3, AIFF, WAV, FLAC, M4A, Opus, Ogg).
+
+TAG_FIELDS = ("title", "artist", "album", "album_artist", "year", "genre", "track")
+_ID3_FRAMES = {"title": "TIT2", "artist": "TPE1", "album": "TALB", "album_artist": "TPE2",
+               "year": "TDRC", "genre": "TCON", "track": "TRCK"}
+_MP4_KEYS = {"title": "\xa9nam", "artist": "\xa9ART", "album": "\xa9alb", "album_artist": "aART",
+             "year": "\xa9day", "genre": "\xa9gen"}
+_VORBIS_KEYS = {"title": "title", "artist": "artist", "album": "album", "album_artist": "albumartist",
+                "year": "date", "genre": "genre", "track": "tracknumber"}
+# ffprobe : noms des champs quand mutagen ne lit rien (WAV avec étiquettes RIFF, par exemple)
+_PROBE_KEYS = {"title": "title", "artist": "artist", "album": "album", "album_artist": "album_artist",
+               "year": "date", "genre": "genre", "track": "track"}
+MAX_IMPORT_BYTES = 2 * 1024 ** 3  # 2 Go par fichier : large, même pour un long WAV
+MAX_COVER_BYTES = 8 * 1024 * 1024
+# Pochettes : seulement depuis ces sites (jamais une adresse choisie par la page)
+COVER_HOSTS = ("coverartarchive.org", "archive.org", "dzcdn.net")
+TAGS_UA = f"{APP_NAME}/1.0 ( {GITHUB_URL} )"  # MusicBrainz demande un nom d'appli et un contact
+_MB_LOCK = threading.Lock()  # MusicBrainz : une requête par seconde au plus
+_MB_LAST = [0.0]
+
+
+class TagsRequest(BaseModel):
+    title: Optional[str] = Field(None, max_length=300)
+    artist: Optional[str] = Field(None, max_length=300)
+    album: Optional[str] = Field(None, max_length=300)
+    album_artist: Optional[str] = Field(None, max_length=300)
+    year: Optional[str] = Field(None, max_length=10)
+    genre: Optional[str] = Field(None, max_length=120)
+    track: Optional[str] = Field(None, max_length=10)
+    cover_url: Optional[str] = Field(None, max_length=500)
+    rename: bool = False
+
+
+def _mutagen_file(path: Path):
+    import mutagen
+    try:
+        return mutagen.File(str(path))
+    except Exception:
+        return None
+
+
+def _first(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        value = value[0] if value else ""
+    if isinstance(value, tuple):  # trkn des M4A : (numéro, total)
+        value = value[0] or ""
+    return str(value).strip()
+
+
+def _read_tags(path: Path) -> dict:
+    """Infos écrites dans le fichier, plus la présence d'une pochette."""
+    from mutagen.id3 import ID3
+    from mutagen.mp4 import MP4Tags
+    tags = {k: "" for k in TAG_FIELDS}
+    cover = False
+    f = _mutagen_file(path)
+    t = getattr(f, "tags", None) if f is not None else None
+    if isinstance(t, ID3):
+        for key, frame in _ID3_FRAMES.items():
+            if frame in t:
+                tags[key] = ", ".join(str(x) for x in t[frame].text if str(x).strip())
+        cover = bool(t.getall("APIC"))
+    elif isinstance(t, MP4Tags):
+        for key, name in _MP4_KEYS.items():
+            tags[key] = _first(t.get(name))
+        tags["track"] = _first(t.get("trkn"))
+        cover = bool(t.get("covr"))
+    elif t is not None:  # FLAC, Opus, Ogg : commentaires Vorbis
+        for key, name in _VORBIS_KEYS.items():
+            tags[key] = ", ".join(v for v in (t.get(name) or []) if v.strip())
+        cover = bool(getattr(f, "pictures", None)) or bool(t.get("metadata_block_picture"))
+    if not any(tags.values()):  # rien de lisible par mutagen : ffprobe (étiquettes RIFF des WAV…)
+        try:
+            out = subprocess.run([FFPROBE, "-v", "error", "-show_entries", "format_tags", "-of", "json", str(path)],
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+            found = {k.lower(): v for k, v in ((json.loads(out.stdout or "{}").get("format") or {}).get("tags") or {}).items()}
+            for key, name in _PROBE_KEYS.items():
+                tags[key] = str(found.get(name) or "").strip()
+        except Exception:
+            pass
+    tags["year"] = tags["year"][:4] if re.match(r"^\d{4}", tags["year"]) else tags["year"]
+    tags["track"] = tags["track"].split("/")[0]
+    return {**tags, "cover": cover}
+
+
+def _read_cover(path: Path) -> Optional[tuple]:
+    """Pochette intégrée au fichier : (octets, type MIME), sinon None."""
+    import base64
+    from mutagen.id3 import ID3
+    from mutagen.mp4 import MP4Tags, MP4Cover
+    from mutagen.flac import Picture
+    f = _mutagen_file(path)
+    t = getattr(f, "tags", None) if f is not None else None
+    if isinstance(t, ID3):
+        pics = t.getall("APIC")
+        if pics:
+            front = next((p for p in pics if p.type == 3), pics[0])
+            return front.data, front.mime or "image/jpeg"
+    elif isinstance(t, MP4Tags):
+        covr = t.get("covr") or []
+        if covr:
+            return bytes(covr[0]), "image/png" if covr[0].imageformat == MP4Cover.FORMAT_PNG else "image/jpeg"
+    elif t is not None:
+        pics = list(getattr(f, "pictures", None) or [])
+        for raw in t.get("metadata_block_picture") or []:
+            try:
+                pics.append(Picture(base64.b64decode(raw)))
+            except Exception:
+                pass
+        if pics:
+            return pics[0].data, pics[0].mime or "image/jpeg"
+    return None
+
+
+def _write_tags(path: Path, values: dict, cover: Optional[tuple] = None) -> None:
+    """Écrit les infos dans le fichier. Une valeur None ne touche pas au champ, "" l'efface."""
+    import base64
+    from mutagen import id3
+    from mutagen.mp4 import MP4, MP4Cover
+    from mutagen.flac import FLAC, Picture
+    from mutagen.mp3 import MP3
+    from mutagen.aiff import AIFF
+    from mutagen.wave import WAVE
+    f = _mutagen_file(path)
+    if f is None:
+        raise ValueError("format non reconnu")
+    if f.tags is None:
+        f.add_tags()  # AAC brut : pas de place pour les infos (erreur, affichée telle quelle)
+    t = f.tags
+    if isinstance(t, id3.ID3):
+        for key, frame in _ID3_FRAMES.items():
+            if values.get(key) is None:
+                continue
+            t.delall(frame)
+            if values[key]:
+                t.add(getattr(id3, frame)(encoding=3, text=[values[key]]))
+        if cover:
+            t.delall("APIC")
+            t.add(id3.APIC(encoding=3, mime=cover[1], type=3, desc="Cover", data=cover[0]))
+        # ID3v2.3 : la version que Windows, Rekordbox, Serato et la plupart des lecteurs lisent
+        f.save(v2_version=3) if isinstance(f, (MP3, AIFF, WAVE)) else f.save()
+        return
+    if isinstance(f, MP4):
+        for key, name in _MP4_KEYS.items():
+            if values.get(key) is None:
+                continue
+            t.pop(name, None)
+            if values[key]:
+                t[name] = [values[key]]
+        if values.get("track") is not None:
+            t.pop("trkn", None)
+            if values["track"].isdigit():
+                t["trkn"] = [(int(values["track"]), 0)]
+        if cover:
+            fmt = MP4Cover.FORMAT_PNG if cover[1] == "image/png" else MP4Cover.FORMAT_JPEG
+            t["covr"] = [MP4Cover(cover[0], imageformat=fmt)]
+        f.save()
+        return
+    for key, name in _VORBIS_KEYS.items():  # FLAC, Opus, Ogg
+        if values.get(key) is None:
+            continue
+        if name in t:
+            del t[name]
+        if values[key]:
+            t[name] = [values[key]]
+    if cover:
+        pic = Picture()
+        pic.type, pic.mime, pic.desc, pic.data = 3, cover[1], "Cover", cover[0]
+        if isinstance(f, FLAC):
+            f.clear_pictures()
+            f.add_picture(pic)
+        else:
+            t["metadata_block_picture"] = [base64.b64encode(pic.write()).decode("ascii")]
+    f.save()
+
+
+def _norm(text: str) -> str:
+    """Pour comparer deux titres : minuscules, sans accents ni ponctuation ni « (Official Video) »."""
+    text = _strip_accents(_clean_title(text or "")).lower()
+    text = re.sub(r"\b(feat|ft|featuring)\b.*$", "", text)
+    return re.sub(r"[^a-z0-9]+", " ", text).strip()
+
+
+def _noisy(tags: dict, filename: str) -> dict:
+    """Champs vides ou mal faits : à compléter par la recherche."""
+    title = tags.get("title") or ""
+    return {
+        "title": not title or title == Path(filename).stem or _clean_title(title) != title
+        or bool(_TITLE_SPLIT.match(title) and not tags.get("artist")),
+        "artist": not tags.get("artist"),
+        "album": not tags.get("album"),
+        "year": not tags.get("year"),
+        "cover": not tags.get("cover"),
+    }
+
+
+def _guess(tags: dict, filename: str) -> dict:
+    """« Artiste » et « Titre » probables, d'après les infos du fichier ou son nom."""
+    # « (2) » : ajouté par l'appli quand le nom de fichier était déjà pris
+    title = _clean_title(tags.get("title") or re.sub(r"\s\(\d+\)$", "", Path(filename).stem))
+    artist = tags.get("artist") or ""
+    split = _TITLE_SPLIT.match(title)
+    if split and (not artist or _norm(split.group(1)) in _norm(artist) or _norm(artist) in _norm(split.group(1))):
+        artist, title = artist or split.group(1).strip(), split.group(2).strip()
+    title = re.sub(r"\s+(?:feat\.?|ft\.?|featuring)\s.*$", "", _clean_title(title), flags=re.IGNORECASE)
+    return {"artist": _clean_channel(artist) if artist else "", "title": title.strip()}
+
+
+def _http_json(url: str, timeout: int = 12) -> dict:
+    from urllib.request import Request as UrlRequest
+    req = UrlRequest(url, headers={"User-Agent": TAGS_UA, "Accept": "application/json"})
+    with urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read(4 * 1024 * 1024).decode("utf-8"))
+
+
+def _mb_release(recording: dict) -> dict:
+    """La sortie la plus « normale » d'un enregistrement : album ou single officiel, pas une compil."""
+    def rank(rel: dict) -> tuple:
+        group = rel.get("release-group") or {}
+        secondary = group.get("secondary-types") or []
+        return (
+            rel.get("status") not in (None, "Official"),
+            "Compilation" in secondary or "DJ-mix" in secondary or "Live" in secondary,
+            {"Album": 0, "EP": 1, "Single": 2}.get(group.get("primary-type"), 3),
+            rel.get("date") or "9999",
+        )
+    releases = recording.get("releases") or []
+    return min(releases, key=rank) if releases else {}
+
+
+def _musicbrainz_search(artist: str, title: str, limit: int = 8) -> list:
+    def esc(s: str) -> str:
+        return re.sub(r'([+\-&|!(){}\[\]^"~*?:\\/])', r"\\\1", s)
+    query = f'recording:"{esc(title)}"' + (f' AND artist:"{esc(artist)}"' if artist else "")
+    with _MB_LOCK:
+        wait = 1.1 - (time.time() - _MB_LAST[0])
+        if wait > 0:
+            time.sleep(wait)
+        try:
+            data = _http_json("https://musicbrainz.org/ws/2/recording?" + urlencode(
+                {"query": query, "fmt": "json", "limit": limit}))
+        finally:
+            _MB_LAST[0] = time.time()
+    results = []
+    for rec in data.get("recordings") or []:
+        if (rec.get("score") or 0) < 60:
+            continue
+        credit = "".join(f"{c.get('name', '')}{c.get('joinphrase', '')}" for c in rec.get("artist-credit") or [])
+        rel = _mb_release(rec)
+        group = rel.get("release-group") or {}
+        media = (rel.get("media") or [{}])[0]
+        track = ((media.get("track") or [{}])[0]).get("number") or ""
+        date = rel.get("date") or rec.get("first-release-date") or ""
+        album_artist = "".join(f"{c.get('name', '')}{c.get('joinphrase', '')}" for c in rel.get("artist-credit") or []) or credit
+        results.append({
+            "source": "MusicBrainz",
+            "title": rec.get("title") or "",
+            "artist": credit,
+            "album": rel.get("title") or "",
+            "album_artist": album_artist,
+            "year": date[:4],
+            "track": str(track) if str(track).isdigit() else "",
+            "genre": "",
+            "duration": round(rec["length"] / 1000) if rec.get("length") else None,
+            "cover": f"https://coverartarchive.org/release-group/{group['id']}/front-250" if group.get("id") else None,
+            "cover_full": f"https://coverartarchive.org/release-group/{group['id']}/front-500" if group.get("id") else None,
+        })
+    return results
+
+
+def _deezer_search(artist: str, title: str, limit: int = 6) -> list:
+    q = f'artist:"{artist}" track:"{title}"' if artist else title
+    data = _http_json("https://api.deezer.com/search?" + urlencode({"q": q, "limit": limit}))
+    tracks = data.get("data") or []
+    if not tracks and artist:  # recherche stricte vide : en texte libre
+        data = _http_json("https://api.deezer.com/search?" + urlencode({"q": f"{artist} {title}", "limit": limit}))
+        tracks = data.get("data") or []
+    albums: Dict[int, dict] = {}
+
+    def album_info(album_id: int) -> dict:  # date de sortie et genre : seulement sur la fiche de l'album
+        try:
+            return _http_json(f"https://api.deezer.com/album/{int(album_id)}", timeout=8)
+        except Exception:
+            return {}
+    from concurrent.futures import ThreadPoolExecutor
+    ids = list(dict.fromkeys((t.get("album") or {}).get("id") for t in tracks[:4] if (t.get("album") or {}).get("id")))
+    if ids:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            albums = dict(zip(ids, pool.map(album_info, ids)))
+    results = []
+    for t in tracks:
+        album = t.get("album") or {}
+        info = albums.get(album.get("id")) or {}
+        genres = [g.get("name") for g in ((info.get("genres") or {}).get("data") or []) if g.get("name")]
+        results.append({
+            "source": "Deezer",
+            "title": t.get("title") or "",
+            "artist": (t.get("artist") or {}).get("name") or "",
+            "album": album.get("title") or "",
+            "album_artist": (info.get("artist") or {}).get("name") or "",
+            "year": str(info.get("release_date") or "")[:4],
+            "track": "",
+            "genre": ", ".join(genres[:2]),
+            "duration": t.get("duration"),
+            "cover": album.get("cover_medium"),
+            "cover_full": album.get("cover_xl") or album.get("cover_big"),
+        })
+    return results
+
+
+def _match_score(r: dict, artist: str, title: str, duration: Optional[float]) -> float:
+    score = 0.0
+    nt, na = _norm(title), _norm(artist)
+    rt, ra = _norm(r["title"]), _norm(r["artist"])
+    if nt and rt == nt:
+        score += 3
+    elif nt and (nt in rt or rt in nt):
+        score += 1.5
+    if na and ra and (na in ra or ra in na):
+        score += 3
+    if duration and r.get("duration"):
+        gap = abs(r["duration"] - duration)
+        score += 2 if gap <= 3 else 1 if gap <= 10 else -2 if gap > 30 else 0
+    score += 0.5 * bool(r.get("album")) + 0.5 * bool(r.get("year")) + 0.3 * bool(r.get("cover"))
+    return score
+
+
+def _search_tags(artist: str, title: str, duration: Optional[float] = None) -> dict:
+    """Résultats des deux sources, les plus ressemblants d'abord, sans doublons."""
+    results, errors = [], []
+    for search in (_musicbrainz_search, _deezer_search):
+        try:
+            results += search(artist, title)
+        except Exception:
+            errors.append(search.__name__)
+    for r in results:
+        r["score"] = round(_match_score(r, artist, title, duration), 2)
+    results.sort(key=lambda r: r["score"], reverse=True)
+    seen, unique = {}, []
+    for r in results:
+        key = (_norm(r["title"]), _norm(r["artist"]), _norm(r["album"]))
+        if key in seen:  # même morceau sur les deux sources : on complète ce qui manque (genre…)
+            kept = seen[key]
+            for field in ("album_artist", "year", "track", "genre", "cover", "cover_full", "duration"):
+                if not kept.get(field) and r.get(field):
+                    kept[field] = r[field]
+            kept["source"] = kept["source"] if r["source"] in kept["source"] else f"{kept['source']} + {r['source']}"
+        else:
+            seen[key] = r
+            unique.append(r)
+    return {"results": unique[:10], "offline": len(errors) == 2}
+
+
+def _confident(r: dict, artist: str, title: str, duration: Optional[float]) -> bool:
+    """Assez sûr pour remplir tout seul : même titre, même artiste, durée proche si on la connaît."""
+    if not artist or _norm(r["title"]) != _norm(title):
+        return False
+    ra, na = _norm(r["artist"]), _norm(artist)
+    if not (na and ra and (na in ra or ra in na)):
+        return False
+    return not (duration and r.get("duration") and abs(r["duration"] - duration) > 5)
+
+
+def _fetch_cover(url: str) -> Optional[tuple]:
+    """Télécharge une pochette, seulement depuis Cover Art Archive ou Deezer (redirections comprises)."""
+    from urllib.request import HTTPRedirectHandler, Request as UrlRequest, build_opener
+
+    def allowed(u: str) -> bool:
+        p = urlparse(u)
+        host = (p.hostname or "").lower()
+        return p.scheme == "https" and any(host == h or host.endswith("." + h) for h in COVER_HOSTS)
+
+    class OnlyCovers(HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            if not allowed(newurl):
+                raise ValueError("redirection refusée")
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    if not allowed(url):
+        raise HTTPException(status_code=400, detail="Pochette refusée : elle ne vient pas de MusicBrainz ou Deezer.")
+    try:
+        with build_opener(OnlyCovers).open(UrlRequest(url, headers={"User-Agent": TAGS_UA}), timeout=20) as r:
+            data = r.read(MAX_COVER_BYTES + 1)
+            mime = (r.headers.get("Content-Type") or "image/jpeg").split(";")[0]
+    except Exception:
+        return None
+    if len(data) > MAX_COVER_BYTES or not mime.startswith("image/"):
+        return None
+    return data, "image/png" if mime == "image/png" else "image/jpeg"
+
+
+def _safe_filename(text: str) -> str:
+    text = re.sub(r'[<>:"/\\|?*\x00-\x1f]', " ", text)
+    return re.sub(r"\s+", " ", text).strip(" .")[:150]
+
+
+def _tag_title(tags: dict, fallback: str) -> str:
+    if tags.get("artist") and tags.get("title"):
+        return f"{tags['artist']} - {tags['title']}"
+    return tags.get("title") or fallback
+
+
+def _apply_tags(d: Path, values: dict, cover: Optional[tuple], rename: bool) -> dict:
+    """Écrit les infos, met à jour la fiche (titre, pochette) et renomme si demandé."""
+    meta = _read_meta(d)
+    media = _media_file(d, meta)
+    if not media:
+        raise HTTPException(status_code=404, detail="Fichier introuvable")
+    try:
+        _write_tags(media, values, cover)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Impossible d'écrire les infos dans ce fichier : {exc}")
+    tags = _read_tags(media)
+    if rename and meta.get("file") and tags.get("title"):
+        name = _safe_filename(_tag_title(tags, media.stem))
+        if name and name != media.stem:
+            target = _free_name(name + media.suffix, media.parent)
+            media.rename(target)
+            meta["file"] = target.name
+    meta["title"] = _tag_title(tags, meta.get("title") or media.stem)
+    if tags.get("cover"):
+        meta["thumbnail"] = f"/api/library/{d.name}/cover?v={int(time.time())}"
+    _write_meta(d, meta)
+    return tags
+
+
+def _auto_tags(media: Path, duration: Optional[float], fill_cover: bool = True) -> Optional[dict]:
+    """Complète les champs vides ou mal faits si la recherche trouve le morceau à coup sûr.
+    Ne remplace jamais une info déjà correcte. Renvoie les champs remplis (ou None)."""
+    try:
+        tags = _read_tags(media)
+        guess = _guess(tags, media.name)
+        if not guess["artist"] or not guess["title"]:
+            return None
+        found = _search_tags(guess["artist"], guess["title"], duration)["results"]
+        best = next((r for r in found if _confident(r, guess["artist"], guess["title"], duration)), None)
+        noisy = _noisy(tags, media.name)
+        values = {}
+        if best:
+            for key in ("title", "artist"):
+                if noisy[key] and best[key]:
+                    values[key] = best[key]
+            for key in ("album", "album_artist", "year", "genre", "track"):
+                if not tags.get(key) and best.get(key):
+                    values[key] = best[key]
+        else:  # pas trouvé : au moins « Artiste » et « Titre » d'après le nom
+            if noisy["title"]:
+                values["title"] = guess["title"]
+            if noisy["artist"]:
+                values["artist"] = guess["artist"]
+        cover = _fetch_cover(best["cover_full"]) if best and fill_cover and noisy["cover"] and best.get("cover_full") else None
+        if not values and not cover:
+            return None
+        _write_tags(media, values, cover)
+        return {**values, "cover": bool(cover)}
+    except Exception:
+        return None  # pas d'Internet, format sans infos… : le fichier reste tel quel
+
+
+@app.get("/api/library/{item_id}/tags")
+async def get_tags(item_id: str):
+    item = _item_or_404(item_id)
+    if item["mode"] != "audio":
+        raise HTTPException(status_code=400, detail="Les infos du morceau ne concernent que les sons.")
+    media = _media_file(_item_dir(item_id))
+    tags = await asyncio.get_running_loop().run_in_executor(None, _read_tags, media)
+    return {"tags": tags, "guess": _guess(tags, media.name), "noisy": _noisy(tags, media.name),
+            "filename": media.name, "duration": item.get("duration")}
+
+
+@app.get("/api/library/{item_id}/cover")
+async def get_cover(item_id: str):
+    _item_or_404(item_id)
+    found = await asyncio.get_running_loop().run_in_executor(None, _read_cover, _media_file(_item_dir(item_id)))
+    if not found:
+        raise HTTPException(status_code=404, detail="Pas de pochette")
+    return Response(content=found[0], media_type=found[1], headers={"Cache-Control": "max-age=86400"})
+
+
+@app.get("/api/tags/search")
+async def search_tags(artist: str = "", title: str = "", duration: Optional[float] = None):
+    artist, title = artist.strip()[:200], title.strip()[:200]
+    if not title:
+        raise HTTPException(status_code=400, detail="Écris au moins le titre du morceau.")
+    found = await asyncio.get_running_loop().run_in_executor(None, _search_tags, artist, title, duration)
+    if found["offline"]:
+        raise HTTPException(status_code=502, detail="Recherche impossible : MusicBrainz et Deezer ne répondent pas. Vérifie ta connexion Internet.")
+    return found
+
+
+@app.put("/api/library/{item_id}/tags")
+async def save_tags(item_id: str, payload: TagsRequest):
+    item = _item_or_404(item_id)
+    if item["mode"] != "audio":
+        raise HTTPException(status_code=400, detail="Les infos du morceau ne concernent que les sons.")
+    job = JOBS.get(item_id)
+    if job and job["status"] in ACTIVE_STATUSES:
+        raise HTTPException(status_code=409, detail="Ce fichier est encore en cours de traitement.")
+    # Champ absent : laissé tel quel ; champ vide : effacé
+    values = {k: (v.strip() if (v := getattr(payload, k)) is not None else None) for k in TAG_FIELDS}
+    loop = asyncio.get_running_loop()
+    cover = None
+    if payload.cover_url:
+        cover = await loop.run_in_executor(None, _fetch_cover, payload.cover_url)
+        if not cover:
+            raise HTTPException(status_code=502, detail="Impossible de récupérer cette pochette. Réessaie, ou enregistre sans.")
+    d = _item_dir(item_id)
+    tags = await loop.run_in_executor(None, _apply_tags, d, values, cover, payload.rename)
+    return {"tags": tags, "item": _item_view(d)}
+
+
+@app.post("/api/library/import")
+async def import_file(request: Request, name: str, auto: bool = True):
+    """Ajoute un fichier son de l'ordinateur au coffre (corps brut de la requête = le fichier),
+    puis complète ses infos si la recherche trouve le morceau à coup sûr."""
+    name = _safe_filename(Path(name).name)
+    ext = Path(name).suffix.lower()
+    if not name or ext not in AUDIO_EXTS:
+        raise HTTPException(status_code=400, detail="Seuls les fichiers son sont acceptés (MP3, AIFF, WAV, FLAC, M4A, Opus, Ogg).")
+    item_id = uuid.uuid4().hex
+    d = ITEMS_DIR / item_id
+    d.mkdir(parents=True)
+    tmp = d / name
+    size = 0
+    try:
+        with tmp.open("wb") as out:
+            async for chunk in request.stream():
+                size += len(chunk)
+                if size > MAX_IMPORT_BYTES:
+                    raise HTTPException(status_code=413, detail="Fichier trop lourd (2 Go maximum).")
+                out.write(chunk)
+        if not size:
+            raise HTTPException(status_code=400, detail="Fichier vide.")
+        loop = asyncio.get_running_loop()
+        try:
+            probe = await loop.run_in_executor(None, _probe, tmp)
+        except Exception:
+            probe = {}
+        if not probe.get("has_audio"):
+            raise HTTPException(status_code=400, detail="Ce fichier ne contient pas de son lisible.")
+        filled = await loop.run_in_executor(None, _auto_tags, tmp, probe.get("duration")) if auto else None
+        tags = await loop.run_in_executor(None, _read_tags, tmp)
+        meta = {"status": "done", "kind": "import", "title": _tag_title(tags, tmp.stem),
+                "created": time.time(), "duration": probe.get("duration") or None}
+        if tags.get("cover"):
+            meta["thumbnail"] = f"/api/library/{item_id}/cover?v={int(time.time())}"
+        _write_meta(d, meta)
+        await loop.run_in_executor(None, _publish, d)
+    except BaseException:
+        shutil.rmtree(d, ignore_errors=True)
+        raise
+    return {"item": _item_view(d), "filled": filled}
+
+
+def _auto_album(media: Optional[Path], duration: Optional[float]) -> None:
+    """Après un téléchargement de son : l'album, l'année d'origine… si la recherche est sûre.
+    La pochette de la vidéo reste (elle est déjà dans le fichier)."""
+    if media and media.suffix.lower() in AUDIO_EXTS and media.suffix.lower() != ".aac":
+        _auto_tags(media, duration, fill_cover=False)
+
+
+# ---------------------------------------------------------------------------
 # Analyse
 # ---------------------------------------------------------------------------
 
@@ -2042,6 +2612,8 @@ def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, co
     if p["mode"] == "audio" and container == "aiff":
         job.update(status="converting", speed=None, eta=None)
         _wav_to_aiff(job_dir)
+    if p["mode"] == "audio":  # album, année d'origine… quand la recherche est sûre
+        _auto_album(_media_file(job_dir), info.get("duration"))
     for leftover in job_dir.iterdir():  # pochettes non intégrées
         if leftover.suffix.lower() in IMAGE_EXTS:
             leftover.unlink(missing_ok=True)
@@ -2671,6 +3243,7 @@ def _sons_sync(job: dict) -> None:
                     if p["container"] == "aiff":
                         _wav_to_aiff(target)
                     media = _media_file(target)
+                    _auto_album(media, None)
                     if media:
                         found[son["id"]] = media
                         break
