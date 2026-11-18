@@ -204,7 +204,7 @@ body.shell {
   gap: 12px;
   margin-bottom: 12px;
 }
-.pane__head:has(.pane__stats:empty):has(#selectBtn.hidden) { display: none; }
+.pane__actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .pane__stats {
   margin: 0;
   font-size: 0.82rem;
@@ -2213,3 +2213,55 @@ body.own-titlebar .side { top: var(--tb-h); }
   body.own-titlebar.shell .main { height: calc(100vh - var(--tb-h)); height: calc(100dvh - var(--tb-h)); }
 }
 body.own-titlebar .side__tabs { padding-top: 20px; }
+
+/* ---------- Infos du morceau (titre, interprètes, album…) ---------- */
+
+.tags-dialog { width: min(620px, calc(100vw - 32px)); }
+.tags-form { margin-top: 16px; }
+.tags-top { display: flex; gap: 16px; align-items: stretch; }
+.tags-cover {
+  flex: none;
+  align-self: flex-start;
+  width: 132px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-raised);
+  display: grid;
+  place-items: center;
+  color: var(--paper-dim);
+}
+.tags-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tags-cover .icon { width: 36px; height: 36px; opacity: 0.6; }
+.tags-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
+.tags-form input[type="text"] { width: 100%; }
+.tags-form .field-label { margin-bottom: 6px; }
+.tags-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+.tags-grid__wide { grid-column: span 2; }
+.tags-search { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--hairline-soft); }
+.tags-search__title { margin: 0; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--paper-dim); }
+.tags-search .yt-dialog__search { margin-top: 10px; }
+.tags-results { margin-top: 8px; max-height: 280px; overflow-y: auto; }
+.tags-result__cover {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  display: grid;
+  place-items: center;
+  color: var(--paper-dim);
+}
+.tags-result__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tags-result__cover .icon { width: 20px; height: 20px; }
+.tags-dialog .yt-dialog__foot .btn--solid { width: auto; margin-top: 0; flex: none; }
+
+/* Sons glissés depuis l'ordinateur sur le coffre */
+#library.is-dropping { outline: 2px dashed var(--brass); outline-offset: -6px; border-radius: var(--radius); }
+
+@media (max-width: 520px) {
+  .tags-top { flex-direction: column; }
+  .tags-cover { width: 96px; }
+  .tags-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
