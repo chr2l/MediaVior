@@ -2566,9 +2566,10 @@ def _tool_bin(name: str) -> Optional[str]:
     """Commande installée avec le paquet Python (rip, votify). Absente de l'appli figée (PyInstaller)."""
     if getattr(sys, "frozen", False):
         return None
+    # Même environnement que l'appli, sinon pipx (chacun le sien : streamrip et Votify ne tiennent pas ensemble)
     here = Path(sys.executable).parent
     for exe in (name, f"{name}.exe"):
-        for folder in (here, here / "Scripts"):
+        for folder in (here, here / "Scripts", Path.home() / ".local" / "bin"):
             if (folder / exe).is_file():
                 return str(folder / exe)
     return shutil.which(name)
