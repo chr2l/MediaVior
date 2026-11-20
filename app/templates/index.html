@@ -536,6 +536,31 @@
           <p>Sous Windows, Chrome et Edge bloquent souvent cette lecture : Firefox marche le mieux. Google peut aussi limiter un compte YouTube utilisé ainsi.</p>
         </details>
       </div>
+      <div class="set-item" id="settingsStreamripRow" hidden>
+        <div class="set-item__text">
+          <span class="set-item__name">Sources avec abonnement (Qobuz, Deezer, Spotify)</span>
+          <span class="set-item__desc">Avec ton propre abonnement, un lien de morceau Qobuz ou Deezer se télécharge en FLAC, et un lien Spotify dans le fichier d'origine de Spotify (OGG, jusqu'à 320 kb/s). Sans ça, ou si ça échoue, MediaVior fait comme d'habitude.</span>
+        </div>
+        <div class="settings-actions">
+          <button type="button" class="btn btn--ghost btn--sm" id="settingsStreamripBtn">Régler</button>
+        </div>
+        <p class="hint set-item__full" id="settingsStreamripState" role="status"></p>
+        <div class="set-item__full" id="settingsStreamripForm" hidden>
+          <label class="field" data-tool="streamrip"><span class="field-label">E-mail Qobuz</span><input type="text" id="settingsQobuzEmail" autocomplete="off" spellcheck="false"></label>
+          <label class="field" data-tool="streamrip"><span class="field-label">Mot de passe Qobuz</span><input type="password" id="settingsQobuzPassword" autocomplete="new-password" placeholder="Laisser vide pour ne pas le changer"></label>
+          <label class="field" data-tool="streamrip"><span class="field-label">Jeton Deezer (arl)</span><input type="password" id="settingsDeezerArl" autocomplete="off" placeholder="Laisser vide pour ne pas le changer"></label>
+          <label class="field" data-tool="votify"><span class="field-label">Cookie Spotify (sp_dc)</span><input type="password" id="settingsSpotifySpDc" autocomplete="off" placeholder="Laisser vide pour ne pas le changer"></label>
+          <div class="settings-actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="settingsStreamripClear">Tout effacer</button>
+            <button type="button" class="btn btn--solid btn--sm" id="settingsStreamripSave">Enregistrer</button>
+          </div>
+        </div>
+        <details class="set-more set-item__full">
+          <summary>Comment ça marche ?</summary>
+          <p>Il faut un abonnement Qobuz, Deezer Premium ou Spotify Premium à ton nom. Tes identifiants restent dans un fichier de ce PC et ne sont envoyés qu'au site concerné. Outils utilisés : streamrip (Qobuz, Deezer) et Votify (Spotify).</p>
+          <p>Seuls les morceaux sont concernés (pas les albums). Le jeton Deezer (arl) et le cookie Spotify (sp_dc) se trouvent dans les outils du navigateur, onglet des cookies, quand tu es connecté à deezer.com ou open.spotify.com.</p>
+        </details>
+      </div>
     </div>
   </section>
 
@@ -585,6 +610,22 @@
       </div>
     </div>
   </section>
+</dialog>
+
+<!-- Avertissement avant d'activer une connexion ou un compte (conditions des sites, responsabilité) -->
+<dialog class="yt-dialog risk-dialog" id="riskDialog" aria-labelledby="riskTitle">
+  <div class="yt-dialog__head">
+    <div class="yt-dialog__heading">
+      <h2 class="panel__title" id="riskTitle">Avant d'activer cette option</h2>
+    </div>
+  </div>
+  <p class="hint">Cette option utilise ton compte ou ta connexion sur un autre site (YouTube, SoundCloud, Qobuz, Deezer, Spotify…). Elle peut aller contre ses conditions d'utilisation ou contourner ses protections techniques, et le site peut suspendre ton compte. Selon ton pays, cet usage peut être interdit par la loi.</p>
+  <p class="hint">Tu es seul responsable de ce que tu en fais. MediaVior et ses contributeurs ne sont pas responsables de cet usage ni de ses conséquences. Utilise uniquement ton propre abonnement, pour un usage strictement personnel, et ne partage pas les fichiers obtenus.</p>
+  <label class="settings-check"><input type="checkbox" id="riskAgree"> J'ai compris et j'en prends l'entière responsabilité</label>
+  <div class="yt-dialog__foot">
+    <button type="button" class="btn btn--ghost btn--sm" id="riskCancel">Annuler</button>
+    <button type="button" class="btn btn--solid btn--sm" id="riskOk" disabled>Activer</button>
+  </div>
 </dialog>
 
 <dialog class="yt-dialog ext-dialog" id="extDialog" aria-labelledby="extTitle">

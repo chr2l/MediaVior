@@ -343,6 +343,32 @@ if (settingsDialog) {
   const videoEl = document.getElementById("settingsVideo");
   const loginSel = document.getElementById("settingsLogin");
   const loginError = document.getElementById("settingsLoginError");
+  const srRow = document.getElementById("settingsStreamripRow");
+  const srState = document.getElementById("settingsStreamripState");
+  const srForm = document.getElementById("settingsStreamripForm");
+  const srEmail = document.getElementById("settingsQobuzEmail");
+  const srPass = document.getElementById("settingsQobuzPassword");
+  const srArl = document.getElementById("settingsDeezerArl");
+  const srSpDc = document.getElementById("settingsSpotifySpDc");
+  const riskDialog = document.getElementById("riskDialog");
+  const riskAgree = document.getElementById("riskAgree");
+  const riskOk = document.getElementById("riskOk");
+  // Avertissement à chaque activation d'une connexion ou d'un compte : true si la personne accepte
+  const askRisk = () => new Promise((resolve) => {
+    riskAgree.checked = false;
+    riskOk.disabled = true;
+    const done = (ok) => {
+      riskDialog.removeEventListener("close", onClose);
+      riskDialog.close();
+      resolve(ok);
+    };
+    const onClose = () => done(false);
+    riskOk.onclick = () => done(true);
+    document.getElementById("riskCancel").onclick = () => done(false);
+    riskDialog.addEventListener("close", onClose);
+    riskDialog.showModal();
+  });
+  riskAgree.addEventListener("change", () => { riskOk.disabled = !riskAgree.checked; });
 
   const show = (s) => {
     folderEl.textContent = s.folder;
@@ -362,6 +388,15 @@ if (settingsDialog) {
     loginError.hidden = !(s.login_browser && s.login_error);
     loginError.textContent = s.login_error
       ? t("La dernière lecture de la connexion a échoué, le téléchargement s'est fait sans : {err}", { err: s.login_error }) : "";
+    srRow.hidden = !s.streamrip; // seulement si streamrip est installé
+    if (s.streamrip) {
+      const on = [s.streamrip.qobuz && "Qobuz", s.streamrip.deezer && "Deezer", s.streamrip.spotify && "Spotify"]
+        .filter(Boolean);
+      srState.textContent = on.length
+        ? t("Activé : {sites}.", { sites: on.join(", ") }) : t("Pas encore réglé.");
+      srForm.querySelectorAll("[data-tool]").forEach((el) => { el.hidden = !s.streamrip[el.dataset.tool]; });
+      srEmail.value = s.streamrip.qobuz || "";
+    }
     audioEl.textContent = s.audio_folder || s.folder;
     videoEl.textContent = s.video_folder || s.folder;
     showWindowRow(s.window);
@@ -470,7 +505,11 @@ if (settingsDialog) {
 
   loginSel.addEventListener("change", async () => {
     try {
-      await save({ login_browser: loginSel.value });
+      if (loginSel.value && !(await askRisk())) {
+        show(await api("/api/local/settings")); // remet le choix précédent
+        return;
+      }
+      await save({ login_browser: loginSel.value, accept_risks: Boolean(loginSel.value) });
       showToast(loginSel.value
         ? t("Connexion activée : les prochains téléchargements l'utiliseront.")
         : t("Connexion désactivée."));
@@ -478,6 +517,29 @@ if (settingsDialog) {
       showToast(e.message);
     }
   });
+
+  document.getElementById("settingsStreamripBtn").addEventListener("click", () => { srForm.hidden = !srForm.hidden; });
+  const saveStreamrip = async (body, done) => {
+    try {
+      await save(body);
+      srPass.value = "";
+      srArl.value = "";
+      srSpDc.value = "";
+      showToast(done);
+    } catch (e) {
+      showToast(e.message);
+    }
+  };
+  document.getElementById("settingsStreamripSave").addEventListener("click", async () => {
+    const body = { qobuz_email: srEmail.value, qobuz_password: srPass.value, deezer_arl: srArl.value,
+      spotify_sp_dc: srSpDc.value };
+    // Champs vides = garder l'existant : rien à envoyer pour eux
+    ["qobuz_password", "deezer_arl", "spotify_sp_dc"].forEach((k) => { if (!body[k].trim()) delete body[k]; });
+    if (Object.values(body).some((v) => v.trim()) && !(await askRisk())) return;
+    saveStreamrip({ ...body, accept_risks: true }, t("Identifiants enregistrés."));
+  });
+  document.getElementById("settingsStreamripClear").addEventListener("click", () =>
+    saveStreamrip({ qobuz_email: "", deezer_arl: "", spotify_sp_dc: "" }, t("Identifiants effacés.")));
 
   // Une seule fenêtre de choix à la fois : les trois boutons « Choisir » attendent ensemble.
   const pickButtons = [pickBtn, ...settingsDialog.querySelectorAll("[data-pick-kind]")];

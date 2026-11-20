@@ -127,6 +127,38 @@ window.I18N_EN = {
     "Reading the sign-in failed last time, so the download went ahead without it: {err}",
   "Connexion activée : les prochains téléchargements l'utiliseront.": "Sign-in turned on: the next downloads will use it.",
   "Connexion désactivée.": "Sign-in turned off.",
+  "Sources avec abonnement (Qobuz, Deezer, Spotify)": "Subscription sources (Qobuz, Deezer, Spotify)",
+  "Avec ton propre abonnement, un lien de morceau Qobuz ou Deezer se télécharge en FLAC, et un lien Spotify dans le fichier d'origine de Spotify (OGG, jusqu'à 320 kb/s). Sans ça, ou si ça échoue, MediaVior fait comme d'habitude.":
+    "With your own subscription, a Qobuz or Deezer track link downloads as FLAC, and a Spotify link as Spotify's original file (OGG, up to 320 kb/s). Without it, or if it fails, MediaVior works as usual.",
+  "Régler": "Set up",
+  "E-mail Qobuz": "Qobuz email",
+  "Mot de passe Qobuz": "Qobuz password",
+  "Jeton Deezer (arl)": "Deezer token (arl)",
+  "Cookie Spotify (sp_dc)": "Spotify cookie (sp_dc)",
+  "Laisser vide pour ne pas le changer": "Leave empty to keep it",
+  "Tout effacer": "Clear all",
+  "Il faut un abonnement Qobuz, Deezer Premium ou Spotify Premium à ton nom. Tes identifiants restent dans un fichier de ce PC et ne sont envoyés qu'au site concerné. Outils utilisés : streamrip (Qobuz, Deezer) et Votify (Spotify).":
+    "You need a Qobuz, Deezer Premium or Spotify Premium subscription in your name. Your credentials stay in a file on this PC and are only sent to the site concerned. Tools used: streamrip (Qobuz, Deezer) and Votify (Spotify).",
+  "Seuls les morceaux sont concernés (pas les albums). Le jeton Deezer (arl) et le cookie Spotify (sp_dc) se trouvent dans les outils du navigateur, onglet des cookies, quand tu es connecté à deezer.com ou open.spotify.com.":
+    "Only tracks are covered (not albums). The Deezer token (arl) and the Spotify cookie (sp_dc) are in the browser's developer tools, cookies tab, while you're signed in to deezer.com or open.spotify.com.",
+  "Activé : {sites}.": "On: {sites}.",
+  "Pas encore réglé.": "Not set up yet.",
+  "Identifiants enregistrés.": "Credentials saved.",
+  "Identifiants effacés.": "Credentials cleared.",
+  "Avant d'activer cette option": "Before turning this on",
+  "Cette option utilise ton compte ou ta connexion sur un autre site (YouTube, SoundCloud, Qobuz, Deezer, Spotify…). Elle peut aller contre ses conditions d'utilisation ou contourner ses protections techniques, et le site peut suspendre ton compte. Selon ton pays, cet usage peut être interdit par la loi.":
+    "This option uses your account or sign-in on another site (YouTube, SoundCloud, Qobuz, Deezer, Spotify…). It may go against that site's terms of use or get around its technical protections, and the site may suspend your account. Depending on your country, this use may be against the law.",
+  "Tu es seul responsable de ce que tu en fais. MediaVior et ses contributeurs ne sont pas responsables de cet usage ni de ses conséquences. Utilise uniquement ton propre abonnement, pour un usage strictement personnel, et ne partage pas les fichiers obtenus.":
+    "You alone are responsible for what you do with it. MediaVior and its contributors are not responsible for this use or its consequences. Only use your own subscription, for strictly personal use, and don't share the files you get.",
+  "J'ai compris et j'en prends l'entière responsabilité": "I understand and take full responsibility",
+  "Activer": "Turn on",
+  "Accepte d'abord l'avertissement.": "Accept the warning first.",
+  "Ni streamrip ni Votify n'est installé ici.": "Neither streamrip nor Votify is installed here.",
+  "Le téléchargement met trop de temps.": "The download is taking too long.",
+  "seulement si tu actives une source avec abonnement dans les Réglages : Qobuz, Deezer ou Spotify, qui reçoivent alors tes identifiants pour ce site, et rien d'autre.":
+    "only if you turn on a subscription source in Settings: Qobuz, Deezer or Spotify, which then receive your credentials for that site, and nothing else.",
+  "Les options qui utilisent ton compte ou ta connexion sur un autre site (connexion du navigateur, sources avec abonnement) peuvent aller contre les conditions de ce site ou contourner ses protections. Elles sont désactivées par défaut et demandent ton accord avant d'être activées. Leur usage relève de ta seule responsabilité : MediaVior et ses contributeurs ne sauraient en être tenus responsables.":
+    "Options that use your account or sign-in on another site (browser sign-in, subscription sources) may go against that site's terms or get around its protections. They are off by default and ask for your consent before being turned on. Using them is your sole responsibility: MediaVior and its contributors cannot be held responsible.",
   "{codec} sans perte": "{codec} lossless",
   "{name} compressé": "{name} compressed",
   "Ce site fournit ce son sans perte ({codec}) : c'est la meilleure copie possible, gardée telle quelle.":
