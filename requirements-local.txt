@@ -5,3 +5,5 @@ aiortc>=1.9
 segno>=1.6
 # Windows : fenêtre propre à MediaVior (barre du haut aux couleurs de l'appli), voir mediavior.py
 pywebview>=6.0; sys_platform == "win32"
+# Sans perte Qobuz / Deezer avec son propre abonnement : voir _streamrip_* dans app/main.py
+streamrip>=2.1

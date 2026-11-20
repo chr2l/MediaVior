@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import ipaddress
 import json
 import os
@@ -434,6 +435,10 @@ class SettingsRequest(BaseModel):
     video_folder: Optional[str] = None
     # Navigateur dont on utilise la connexion ("" = aucun)
     login_browser: Optional[str] = None
+    # streamrip (sans perte Qobuz / Deezer) : "" = effacer ; None = ne pas toucher
+    qobuz_email: Optional[str] = Field(None, max_length=200)
+    qobuz_password: Optional[str] = Field(None, max_length=200)
+    deezer_arl: Optional[str] = Field(None, max_length=500)
 
 
 def _autostart_state() -> Optional[bool]:
@@ -462,6 +467,7 @@ def _settings() -> dict:
             "audio_folder": str(AUDIO_DIR) if AUDIO_DIR else None,
             "video_folder": str(VIDEO_DIR) if VIDEO_DIR else None,
             "login_browser": _login_browser(), "login_error": LOGIN_STATE["error"],
+            "streamrip": _streamrip_state(),
             "count": sum(1 for d in ITEMS_DIR.iterdir() if d.is_dir() and ITEM_ID.match(d.name))}
 
 
@@ -537,6 +543,24 @@ async def save_settings(payload: SettingsRequest):
             raise HTTPException(status_code=400, detail="Navigateur inconnu.")
         try:
             _set_login_browser(browser)
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
+    if payload.qobuz_email is not None or payload.qobuz_password is not None or payload.deezer_arl is not None:
+        if not _streamrip_state():
+            raise HTTPException(status_code=400, detail="streamrip n'est pas installé ici.")
+        creds = _streamrip_creds()
+        if payload.qobuz_email is not None:
+            email = payload.qobuz_email.strip()
+            creds["qobuz_email"] = email
+            if not email:
+                creds.pop("qobuz_password", None)
+        if payload.qobuz_password:  # streamrip veut l'empreinte md5 du mot de passe Qobuz
+            creds["qobuz_password"] = hashlib.md5(payload.qobuz_password.encode("utf-8")).hexdigest()
+        if payload.deezer_arl is not None:
+            creds["deezer_arl"] = payload.deezer_arl.strip()
+        creds = {k: v for k, v in creds.items() if v}
+        try:
+            _streamrip_save(creds)
         except OSError as exc:
             raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
     for kind in ("audio", "video"):
@@ -2510,8 +2534,200 @@ async def start_download(payload: DownloadRequest):
     return {"job_id": job["id"]}
 
 
+# ---------------------------------------------------------------------------
+# Sans perte via streamrip (Qobuz, Deezer) : version PC, avec l'abonnement de la personne
+# ---------------------------------------------------------------------------
+# Un lien de morceau Qobuz ou Deezer est confié à streamrip (FLAC), à condition que ses identifiants
+# soient dans les Réglages. Sinon, ou si streamrip échoue, yt-dlp reste le moteur. SoundCloud et
+# les autres sites restent à yt-dlp (streamrip n'y fait pas mieux). Albums et listes : yt-dlp aussi.
+# Les identifiants restent dans `streamrip.json` à côté de l'historique, jamais renvoyés à la page.
+STREAMRIP_FILE = STATE_DIR / "streamrip.json"
+STREAMRIP_CONFIG = STATE_DIR / "streamrip" / "config.toml"
+STREAMRIP_TIMEOUT = 20 * 60
+_STREAMRIP_TRACK = {
+    "qobuz": re.compile(r"(^|\.)qobuz\.com$"),
+    "deezer": re.compile(r"(^|\.)deezer\.com$"),
+}
+
+
+def _streamrip_bin() -> Optional[str]:
+    """Commande `rip` installée avec streamrip. Absente de l'appli figée (PyInstaller)."""
+    if getattr(sys, "frozen", False):
+        return None
+    here = Path(sys.executable).parent
+    for name in ("rip", "rip.exe"):
+        for folder in (here, here / "Scripts"):
+            if (folder / name).is_file():
+                return str(folder / name)
+    return shutil.which("rip")
+
+
+def _streamrip_creds() -> dict:
+    try:
+        data = json.loads(STREAMRIP_FILE.read_text("utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _streamrip_save(creds: dict) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = STREAMRIP_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(creds), "utf-8")
+    try:
+        tmp.chmod(0o600)  # identifiants : lisibles par la seule personne
+    except OSError:
+        pass
+    tmp.replace(STREAMRIP_FILE)
+
+
+def _streamrip_state() -> Optional[dict]:
+    """None : streamrip n'est pas installé ici (le réglage n'apparaît pas)."""
+    if not LOCAL_MODE or not _streamrip_bin():
+        return None
+    c = _streamrip_creds()
+    return {"qobuz": c.get("qobuz_email") if c.get("qobuz_password") else None,
+            "deezer": bool(c.get("deezer_arl"))}
+
+
+def _streamrip_service(url: str) -> Optional[str]:
+    """Qobuz / Deezer si c'est un morceau et que les identifiants sont là, sinon None (→ yt-dlp)."""
+    state = _streamrip_state()
+    if not state:
+        return None
+    parts = urlparse(url)
+    host = (parts.hostname or "").lower()
+    path = parts.path.lower()
+    if _STREAMRIP_TRACK["qobuz"].search(host) and state["qobuz"] and re.search(r"/track/", path):
+        return "qobuz"
+    if _STREAMRIP_TRACK["deezer"].search(host) and state["deezer"] and re.search(r"/track/\d+", path):
+        return "deezer"
+    return None
+
+
+def _streamrip_write_config(folder: Path) -> Path:
+    """Écrit la config de streamrip (dossier du travail, identifiants, pas de base de suivi)."""
+    import tomlkit
+    rip = _streamrip_bin()
+    STREAMRIP_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    if not STREAMRIP_CONFIG.is_file():
+        subprocess.run([rip, "--config-path", str(STREAMRIP_CONFIG), "config", "reset", "-y"],
+                       capture_output=True, timeout=60, check=False)
+    conf = tomlkit.parse(STREAMRIP_CONFIG.read_text("utf-8"))
+    c = _streamrip_creds()
+    conf["downloads"]["folder"] = str(folder)
+    conf["downloads"]["source_subdirectories"] = False
+    conf["qobuz"].update({"quality": 4, "use_auth_token": False, "email_or_userid": c.get("qobuz_email", ""),
+                          "password_or_token": c.get("qobuz_password", ""), "download_booklets": False})
+    conf["deezer"].update({"quality": 2, "arl": c.get("deezer_arl", "")})
+    conf["artwork"].update({"embed": True, "save_artwork": False})
+    conf["filepaths"]["add_singles_to_folder"] = False
+    conf["conversion"]["enabled"] = False
+    conf["misc"]["check_for_updates"] = False
+    conf["cli"].update({"progress_bars": False, "text_output": False})
+    # Le fichier contient les identifiants : écrit avec les droits de la seule personne
+    STREAMRIP_CONFIG.write_text(tomlkit.dumps(conf), "utf-8")
+    try:
+        STREAMRIP_CONFIG.chmod(0o600)
+    except OSError:
+        pass
+    return STREAMRIP_CONFIG
+
+
+def _streamrip_convert(job_dir: Path, container: str) -> None:
+    """Le FLAC de streamrip est gardé tel quel ; MP3, WAV, AIFF : ffmpeg, avec titre et pochette si le format les accepte."""
+    flac = next((f for f in job_dir.iterdir() if f.suffix.lower() == ".flac"), None)
+    if not flac or container in ("original", "flac"):
+        return
+    job_ext = {"mp3": ".mp3", "wav": ".wav", "aiff": ".aiff"}[container]
+    out = flac.with_suffix(job_ext)
+    cmd = [FFMPEG, "-v", "error", "-nostdin", "-y", "-i", str(flac)]
+    if container == "wav":
+        cmd += ["-vn", "-c:a", "pcm_s16le"]
+    elif container == "aiff":
+        cmd += ["-map", "0", "-c:a", "pcm_s16be", "-c:v", "copy", "-write_id3v2", "1", "-id3v2_version", "3"]
+    else:
+        cmd += ["-map", "0", "-c:a", "libmp3lame", "-q:a", "0", "-c:v", "copy", "-id3v2_version", "3"]
+    cmd.append(str(out))
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800)
+    if result.returncode != 0 and container != "wav":  # pochette refusée : le son sans pochette
+        cmd = [FFMPEG, "-v", "error", "-nostdin", "-y", "-i", str(flac), "-vn"]
+        cmd += (["-c:a", "pcm_s16be", "-write_id3v2", "1", "-id3v2_version", "3"] if container == "aiff"
+                else ["-c:a", "libmp3lame", "-q:a", "0", "-id3v2_version", "3"])
+        result = subprocess.run(cmd + [str(out)], capture_output=True, text=True, encoding="utf-8",
+                                errors="replace", timeout=1800)
+    if result.returncode != 0:
+        out.unlink(missing_ok=True)
+        raise RuntimeError(f"La conversion a échoué : {result.stderr.strip()[-300:]}")
+    flac.unlink(missing_ok=True)
+
+
+def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, count: int) -> dict:
+    """Télécharge un morceau sans perte avec streamrip. Lève une erreur si rien n'est produit
+    (l'appelant retombe alors sur yt-dlp)."""
+    work = job_dir / ".streamrip"
+    shutil.rmtree(work, ignore_errors=True)
+    work.mkdir(parents=True)
+    config = _streamrip_write_config(work)
+    log_path = job_dir / ".streamrip.log"
+    job.update(status="downloading", speed=None, eta=None)
+    cmd = [_streamrip_bin(), "--config-path", str(config), "--no-db", "--no-progress", "url", url]
+    started = time.time()
+    try:
+        with log_path.open("wb") as log:
+            proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                    **({"creationflags": 0x08000000} if sys.platform.startswith("win") else {}))
+            while proc.poll() is None:
+                if job["_cancel"] or time.time() - started > STREAMRIP_TIMEOUT:
+                    proc.kill()
+                    proc.wait()
+                    if job["_cancel"]:
+                        raise JobCancelled()
+                    raise RuntimeError("streamrip met trop de temps.")
+                time.sleep(0.5)
+        files = sorted((f for f in work.rglob("*") if f.is_file() and f.suffix.lower() in AUDIO_EXTS),
+                       key=lambda f: f.stat().st_size, reverse=True)
+        if not files:
+            raise RuntimeError("streamrip n'a produit aucun fichier.")
+        track = files[0]
+        final = job_dir / track.name
+        shutil.move(str(track), str(final))
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+        log_path.unlink(missing_ok=True)
+    info: dict = {"extractor_key": "streamrip"}
+    try:
+        import mutagen
+        tags = mutagen.File(final, easy=True)
+        if tags is not None:
+            info["duration"] = getattr(tags.info, "length", None)
+            title = (tags.get("title") or [None])[0]
+            artist = (tags.get("artist") or [None])[0]
+            info["title"] = f"{artist} - {title}" if artist and title else title or final.stem
+    except Exception:
+        info["title"] = final.stem
+    if count == 1 and job["title"] == url:
+        job["title"] = info.get("title") or job["title"]
+    job["progress"] = round((index + 1) / count * 100, 1)
+    if p["container"] not in ("original", "flac"):
+        job.update(status="converting", speed=None, eta=None)
+        _streamrip_convert(job_dir, p["container"])
+    return info
+
+
 def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, count: int = 1) -> dict:
     """Télécharge un média dans job_dir avec les options p. index/count : place dans un lot de liens."""
+    if p["mode"] == "audio" and _streamrip_service(url):
+        try:
+            return _fetch_streamrip(job, p, url, job_dir, index, count)
+        except JobCancelled:
+            raise
+        except Exception:
+            if job["_cancel"]:
+                raise JobCancelled()
+            for leftover in job_dir.iterdir():  # reste d'un essai raté : yt-dlp repart à neuf
+                if leftover.is_file() and leftover.suffix.lower() in AUDIO_EXTS:
+                    leftover.unlink(missing_ok=True)
     outtmpl = str(job_dir / "%(title).150s.%(ext)s")
     parts_done = 0
     single = count == 1

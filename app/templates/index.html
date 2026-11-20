@@ -536,6 +536,30 @@
           <p>Sous Windows, Chrome et Edge bloquent souvent cette lecture : Firefox marche le mieux. Google peut aussi limiter un compte YouTube utilisé ainsi.</p>
         </details>
       </div>
+      <div class="set-item" id="settingsStreamripRow" hidden>
+        <div class="set-item__text">
+          <span class="set-item__name">Sons sans perte (Qobuz, Deezer)</span>
+          <span class="set-item__desc">Avec ton propre abonnement, un lien de morceau Qobuz ou Deezer se télécharge en FLAC. Sans ça, ou si ça échoue, MediaVior fait comme d'habitude.</span>
+        </div>
+        <div class="settings-actions">
+          <button type="button" class="btn btn--ghost btn--sm" id="settingsStreamripBtn">Régler</button>
+        </div>
+        <p class="hint set-item__full" id="settingsStreamripState" role="status"></p>
+        <div class="set-item__full" id="settingsStreamripForm" hidden>
+          <label class="field"><span class="field-label">E-mail Qobuz</span><input type="text" id="settingsQobuzEmail" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span class="field-label">Mot de passe Qobuz</span><input type="password" id="settingsQobuzPassword" autocomplete="new-password" placeholder="Laisser vide pour ne pas le changer"></label>
+          <label class="field"><span class="field-label">Jeton Deezer (arl)</span><input type="password" id="settingsDeezerArl" autocomplete="off" placeholder="Laisser vide pour ne pas le changer"></label>
+          <div class="settings-actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="settingsStreamripClear">Tout effacer</button>
+            <button type="button" class="btn btn--solid btn--sm" id="settingsStreamripSave">Enregistrer</button>
+          </div>
+        </div>
+        <details class="set-more set-item__full">
+          <summary>Comment ça marche ?</summary>
+          <p>Il faut un abonnement Qobuz ou Deezer Premium à ton nom. Tes identifiants restent dans un fichier de ce PC et ne sont envoyés qu'à Qobuz ou Deezer. N'utilise cette option que dans le cadre des conditions de ton abonnement.</p>
+          <p>Seuls les morceaux sont concernés (pas les albums). Le jeton Deezer (arl) est le cookie « arl » de ton compte, visible dans les outils du navigateur quand tu es connecté à deezer.com.</p>
+        </details>
+      </div>
     </div>
   </section>
 

@@ -127,6 +127,23 @@ window.I18N_EN = {
     "Reading the sign-in failed last time, so the download went ahead without it: {err}",
   "Connexion activée : les prochains téléchargements l'utiliseront.": "Sign-in turned on: the next downloads will use it.",
   "Connexion désactivée.": "Sign-in turned off.",
+  "Sons sans perte (Qobuz, Deezer)": "Lossless sounds (Qobuz, Deezer)",
+  "Avec ton propre abonnement, un lien de morceau Qobuz ou Deezer se télécharge en FLAC. Sans ça, ou si ça échoue, MediaVior fait comme d'habitude.":
+    "With your own subscription, a Qobuz or Deezer track link downloads as FLAC. Without it, or if it fails, MediaVior works as usual.",
+  "Régler": "Set up",
+  "E-mail Qobuz": "Qobuz email",
+  "Mot de passe Qobuz": "Qobuz password",
+  "Jeton Deezer (arl)": "Deezer token (arl)",
+  "Laisser vide pour ne pas le changer": "Leave empty to keep it",
+  "Tout effacer": "Clear all",
+  "Il faut un abonnement Qobuz ou Deezer Premium à ton nom. Tes identifiants restent dans un fichier de ce PC et ne sont envoyés qu'à Qobuz ou Deezer. N'utilise cette option que dans le cadre des conditions de ton abonnement.":
+    "You need a Qobuz or Deezer Premium subscription in your name. Your credentials stay in a file on this PC and are only sent to Qobuz or Deezer. Use this option only within your subscription's terms.",
+  "Seuls les morceaux sont concernés (pas les albums). Le jeton Deezer (arl) est le cookie « arl » de ton compte, visible dans les outils du navigateur quand tu es connecté à deezer.com.":
+    "Only tracks are covered (not albums). The Deezer token (arl) is your account's \"arl\" cookie, visible in the browser's developer tools when you're signed in to deezer.com.",
+  "Sans perte activé : {sites}.": "Lossless on: {sites}.",
+  "Pas encore réglé.": "Not set up yet.",
+  "Identifiants enregistrés.": "Credentials saved.",
+  "Identifiants effacés.": "Credentials cleared.",
   "{codec} sans perte": "{codec} lossless",
   "{name} compressé": "{name} compressed",
   "Ce site fournit ce son sans perte ({codec}) : c'est la meilleure copie possible, gardée telle quelle.":
