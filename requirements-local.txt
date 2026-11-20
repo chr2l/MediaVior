@@ -5,6 +5,5 @@ aiortc>=1.9
 segno>=1.6
 # Windows : fenêtre propre à MediaVior (barre du haut aux couleurs de l'appli), voir mediavior.py
 pywebview>=6.0; sys_platform == "win32"
-# Sources avec abonnement (Qobuz, Deezer : streamrip ; Spotify : Votify) : voir _streamrip_* dans app/main.py
-streamrip>=2.1
-votify[librespot]>=1.9
+# streamrip et Votify (sources avec abonnement) ne sont PAS ici : leurs dépendances se contredisent
+# (Pillow < 11 contre >= 12.1). Chacun s'installe à part, avec pipx : voir _tool_bin dans app/main.py.
