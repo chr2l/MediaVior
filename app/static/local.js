@@ -343,6 +343,12 @@ if (settingsDialog) {
   const videoEl = document.getElementById("settingsVideo");
   const loginSel = document.getElementById("settingsLogin");
   const loginError = document.getElementById("settingsLoginError");
+  const srRow = document.getElementById("settingsStreamripRow");
+  const srState = document.getElementById("settingsStreamripState");
+  const srForm = document.getElementById("settingsStreamripForm");
+  const srEmail = document.getElementById("settingsQobuzEmail");
+  const srPass = document.getElementById("settingsQobuzPassword");
+  const srArl = document.getElementById("settingsDeezerArl");
 
   const show = (s) => {
     folderEl.textContent = s.folder;
@@ -362,6 +368,13 @@ if (settingsDialog) {
     loginError.hidden = !(s.login_browser && s.login_error);
     loginError.textContent = s.login_error
       ? t("La dernière lecture de la connexion a échoué, le téléchargement s'est fait sans : {err}", { err: s.login_error }) : "";
+    srRow.hidden = !s.streamrip; // seulement si streamrip est installé
+    if (s.streamrip) {
+      const on = [s.streamrip.qobuz && "Qobuz", s.streamrip.deezer && "Deezer"].filter(Boolean);
+      srState.textContent = on.length
+        ? t("Sans perte activé : {sites}.", { sites: on.join(", ") }) : t("Pas encore réglé.");
+      srEmail.value = s.streamrip.qobuz || "";
+    }
     audioEl.textContent = s.audio_folder || s.folder;
     videoEl.textContent = s.video_folder || s.folder;
     showWindowRow(s.window);
@@ -478,6 +491,23 @@ if (settingsDialog) {
       showToast(e.message);
     }
   });
+
+  document.getElementById("settingsStreamripBtn").addEventListener("click", () => { srForm.hidden = !srForm.hidden; });
+  const saveStreamrip = async (body, done) => {
+    try {
+      await save(body);
+      srPass.value = "";
+      srArl.value = "";
+      showToast(done);
+    } catch (e) {
+      showToast(e.message);
+    }
+  };
+  document.getElementById("settingsStreamripSave").addEventListener("click", () =>
+    saveStreamrip({ qobuz_email: srEmail.value, qobuz_password: srPass.value, deezer_arl: srArl.value },
+      t("Identifiants enregistrés.")));
+  document.getElementById("settingsStreamripClear").addEventListener("click", () =>
+    saveStreamrip({ qobuz_email: "", deezer_arl: "" }, t("Identifiants effacés.")));
 
   // Une seule fenêtre de choix à la fois : les trois boutons « Choisir » attendent ensemble.
   const pickButtons = [pickBtn, ...settingsDialog.querySelectorAll("[data-pick-kind]")];
