@@ -3,23 +3,24 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+env/
 
-# Secrets / config locale
-.env
-.env.*
-*.pem
-*.key
-
-# Données et téléchargements
+# Médias et téléchargements de test
 downloads/
 telechargements/
-env/
 *.mp3
 *.mp4
 *.mov
 *.wav
 *.part
-*.log
+
+# Construction de l'appli prête à installer (packaging/)
+build/
+dist/
+
+# Relais Cloudflare
+relais/node_modules/
+relais/.wrangler/
 
 # OS / éditeur
 .DS_Store
@@ -27,9 +28,8 @@ Thumbs.db
 .vscode/
 .idea/
 
-
-# --- Infos sensibles (filet de sécurité, même en dépôt privé) ---
-# Variables d environnement et secrets
+# --- Infos sensibles (filet de sécurité) ---
+# Variables d'environnement et secrets
 .env
 .env.*
 *.env
@@ -56,7 +56,7 @@ secrets.*
 id_rsa*
 id_ed25519*
 *.kdbx
-# Bases, sauvegardes et exports de données
+# Bases, sauvegardes, journaux
 *.db
 *.db-*
 *.sqlite
@@ -65,12 +65,4 @@ id_ed25519*
 *.sql.gz
 *.backup*
 *.bak
-# Journaux
 *.log
-
-# Construction de l appli prête à installer (packaging/)
-build/
-dist/
-# Relais Cloudflare
-relais/node_modules/
-relais/.wrangler/
