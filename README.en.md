@@ -11,7 +11,7 @@ Paste a link, click “Put in the vault”. It runs on your PC, not on someone e
   <a href="README.md">Français</a> ·
   <a href="#install-on-your-pc">Install</a> ·
   <a href="docs/INSTALLER.en.md">Install help</a> ·
-  <a href="CONTRIBUTING.md">Contribute</a> ·
+  <a href=".github/CONTRIBUTING.md">Contribute</a> ·
   <a href="CODE_SIGNING.md">Code signing policy</a>
 </p>
 
@@ -23,6 +23,9 @@ MediaVior downloads media from YouTube, SoundCloud, Bandcamp, Vimeo and
 
 - **Video**: best original quality, MP4 that plays everywhere, or MOV for editing.
 - **Audio**: original track, MP3 (320/192/128 kb/s), FLAC, WAV or AIFF (for DJing), with title, artist and cover art.
+- **Best quality**: lossless audio when the site has it, the real quality shown, and a
+  "Find a better source" button (Bandcamp, SoundCloud). One **favorite format** per type, shown first.
+- **Track info**: title, artists, album and cover filled in automatically, even for your own files.
 - **Several links at once**, in the same format, packed into a single zip.
 - **Song list**: type titles or add screenshots of playlists; each song is found on YouTube and
   packed into a zip.
@@ -99,7 +102,7 @@ For a household or a small team, MediaVior also runs in a Docker container: see
   other sites.
 - The app has no password: on a server, never expose it to the Internet without protection in front
   of it.
-- Found a security issue? See [SECURITY.md](SECURITY.md).
+- Found a security issue? See [SECURITY.md](.github/SECURITY.md).
 
 MediaVior is made for **personal use**: saving your own content, media you have the right to keep,
 or things at risk of disappearing. Respect copyright and each site's terms of use. Details in the

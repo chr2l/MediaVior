@@ -13,7 +13,7 @@ Tu colles un lien, tu cliques sur « Mettre au coffre ». Ça tourne sur ton PC,
   <a href="docs/UTILISATION.md">Mode d'emploi</a> ·
   <a href="docs/SERVEUR.md">Sur un serveur</a> ·
   <a href="docs/DEVELOPPEMENT.md">Lire le code</a> ·
-  <a href="CONTRIBUTING.md">Contribuer</a> ·
+  <a href=".github/CONTRIBUTING.md">Contribuer</a> ·
   <a href="CODE_SIGNING.md">Code signing policy</a>
 </p>
 
@@ -25,6 +25,9 @@ charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp), dans la qualité et le fo
 
 - **Vidéo** : meilleure qualité d'origine, MP4 lisible partout, ou MOV pour le montage.
 - **Audio** : piste d'origine, MP3 (320/192/128 kb/s), FLAC, WAV ou AIFF (pour le DJing), avec titre, artiste et pochette.
+- **Meilleure qualité** : le son sans perte quand le site l'a, la vraie qualité affichée, et un bouton
+  « Chercher une meilleure source » (Bandcamp, SoundCloud). Un **format préféré** par type, mis en premier.
+- **Infos du morceau** : titre, interprètes, album et pochette remplis tout seuls, même pour tes propres fichiers.
 - **Plusieurs liens d'un coup**, dans un même format, rangés dans un seul zip.
 - **Liste de sons** : écris des titres ou ajoute des captures d'écran de playlists ; chaque son est
   retrouvé sur YouTube et rangé dans un zip.
@@ -118,7 +121,7 @@ voir [docs/SERVEUR.md](docs/SERVEUR.md).
   d'autres sites.
 - L'appli n'a pas de mot de passe : sur un serveur, ne l'expose jamais sur Internet sans protection
   devant (voir [docs/SERVEUR.md](docs/SERVEUR.md)).
-- Une faille ? Voir [SECURITY.md](SECURITY.md).
+- Une faille ? Voir [SECURITY.md](.github/SECURITY.md).
 - Signature de l'appli Windows : voir la [politique de signature](CODE_SIGNING.md) (code signing policy).
 
 MediaVior est fait pour un **usage personnel** : sauvegarder tes propres contenus, des médias que

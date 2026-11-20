@@ -15,7 +15,7 @@ Beaucoup d'échecs viennent d'un site qui a changé : essaie d'abord de mettre y
 
 ## Proposer une modification
 
-1. Lis [docs/DEVELOPPEMENT.md](docs/DEVELOPPEMENT.md) pour la carte du code.
+1. Lis [docs/DEVELOPPEMENT.md](../docs/DEVELOPPEMENT.md) pour la carte du code.
 2. Crée une branche depuis `dev`, fais des changements ciblés, puis ouvre une pull request vers `dev`.
 3. Dans la description : le problème, ce qui change pour l'utilisateur, et comment tu l'as testé.
 
@@ -25,4 +25,4 @@ Quelques règles du projet :
 - Rien qui envoie des données à un tiers sans que l'utilisateur le sache.
 - Ne fige pas yt-dlp.
 
-En contribuant, tu acceptes que ton code soit publié sous la [licence AGPL-3.0](LICENSE) du projet.
+En contribuant, tu acceptes que ton code soit publié sous la [licence AGPL-3.0](../LICENSE) du projet.
