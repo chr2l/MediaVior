@@ -67,6 +67,10 @@ Le Python de l'appli (`PY` dans la suite) est `.venv\Scripts\python.exe` sur Win
 automatiquement, ce qui peut prendre une minute. Tout doit être « ok » sauf `tesseract`, qui est
 facultatif.
 
+Lance ensuite `PY mediavior.py --outils` : il installe streamrip et Votify (sources avec abonnement
+Qobuz, Deezer, Spotify), chacun dans son propre environnement. Si ça échoue, continue : MediaVior
+marche sans, et réessaie tout seul à chaque mise à jour.
+
 - Si ffmpeg manque encore : Windows `winget install -e --id Gyan.FFmpeg`, macOS `brew install ffmpeg`,
   Linux le gestionnaire de paquets (`sudo apt install ffmpeg`).
 - Tesseract (facultatif) sert seulement à lire des captures d'écran de playlists. Propose-le-moi :
