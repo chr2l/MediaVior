@@ -29,6 +29,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 import yt_dlp
+
+if sys.platform.startswith("win"):
+    class _HiddenPopen(subprocess.Popen):
+        """Windows : aucune commande lancée par l'appli (ffmpeg, streamrip, Votify…) n'ouvre de
+        fenêtre noire, sauf si l'appel demande lui-même d'autres options (creationflags)."""
+
+        def __init__(self, *args, **kwargs):
+            if not kwargs.get("creationflags"):
+                kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+            super().__init__(*args, **kwargs)
+
+    subprocess.Popen = _HiddenPopen
 from yt_dlp.postprocessor import EmbedThumbnailPP, PostProcessor
 
 BASE_DIR = Path(__file__).resolve().parent
