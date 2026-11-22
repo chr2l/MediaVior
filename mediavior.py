@@ -204,8 +204,6 @@ def update_in_background(cfg: dict) -> None:
         threading.Thread(target=update_frozen, args=(cfg,), daemon=True).start()
         return
     if time.time() - cfg.get("last_update", 0) < UPDATE_EVERY:
-        if not all((TOOLS_DIR / c).is_dir() for c in TOOLS):  # outils absents : tout de suite
-            threading.Thread(target=install_tools, args=(False,), daemon=True).start()
         return
 
     def run():
@@ -222,7 +220,6 @@ def update_in_background(cfg: dict) -> None:
                                    cwd=ROOT, timeout=600, **quiet)
             # Les sites changent souvent : yt-dlp doit rester à jour
             subprocess.run(pip + ["-U", "yt-dlp[default]"], timeout=300, **quiet)
-            install_tools()  # streamrip et Votify : installés s'ils manquent, mis à jour sinon
             cfg["last_update"] = time.time()
             save_config(cfg)
         except Exception as exc:
@@ -231,30 +228,64 @@ def update_in_background(cfg: dict) -> None:
     threading.Thread(target=run, daemon=True).start()
 
 
-def install_tools(upgrade: bool = True, verbose: bool = False) -> bool:
-    """Installe ou met à jour streamrip et Votify, chacun dans TOOLS_DIR/<commande>.
-    Pas dans l'appli figée (pas de pip). Un échec n'empêche jamais MediaVior de marcher."""
-    if FROZEN:
+def _uv_bin() -> Optional[Path]:
+    """uv livré dans l'appli installée (packaging/prepare.py)."""
+    exe = ROOT / "bin" / ("uv.exe" if IS_WIN else "uv")
+    return exe if exe.is_file() else None
+
+
+def tool_present(cmd: str) -> bool:
+    exe = f"{cmd}.exe" if IS_WIN else cmd
+    return (TOOLS_DIR / "bin" / exe).is_file() or (TOOLS_DIR / cmd / ("Scripts" if IS_WIN else "bin") / exe).is_file()
+
+
+def install_tools(upgrade: bool = True, verbose: bool = False, uv: Optional[Path] = None) -> bool:
+    """Installe ou met à jour streamrip et Votify, chacun dans son environnement.
+    Version Python : un venv par outil (TOOLS_DIR/<commande>). Appli installée (pas de pip) : uv,
+    livré dans le paquet, télécharge un Python et installe les outils (commandes dans TOOLS_DIR/bin).
+    Un échec n'empêche jamais MediaVior de marcher."""
+    uv = uv or (_uv_bin() if FROZEN else None)
+    if FROZEN and not uv:
         return False
     out = None if verbose else subprocess.DEVNULL
     flags = {"stdout": out, "stderr": out, "creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+    env = {**os.environ, "UV_TOOL_DIR": str(TOOLS_DIR / "uv"), "UV_TOOL_BIN_DIR": str(TOOLS_DIR / "bin"),
+           "UV_PYTHON_INSTALL_DIR": str(TOOLS_DIR / "python"), "UV_CACHE_DIR": str(TOOLS_DIR / "cache")}
     ok = True
     for cmd, spec in TOOLS.items():
-        env = TOOLS_DIR / cmd
-        py = env / ("Scripts/python.exe" if IS_WIN else "bin/python")
+        if not upgrade and tool_present(cmd):
+            continue
         try:
-            if not py.is_file():
-                subprocess.run([sys.executable, "-m", "venv", str(env)], check=True, timeout=300, **flags)
-            elif not upgrade:
-                continue
-            subprocess.run([str(py), "-m", "pip", "install", "-q", "-U", "--disable-pip-version-check", spec],
-                           check=True, timeout=900, **flags)
+            if uv:
+                subprocess.run([str(uv), "tool", "install", "--upgrade", "--python", "3.12", "--quiet", spec],
+                               check=True, timeout=1200, env=env, **flags)
+            else:
+                venv = TOOLS_DIR / cmd
+                py = venv / ("Scripts/python.exe" if IS_WIN else "bin/python")
+                if not py.is_file():
+                    subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True, timeout=300, **flags)
+                subprocess.run([str(py), "-m", "pip", "install", "-q", "-U", "--disable-pip-version-check", spec],
+                               check=True, timeout=900, **flags)
             if verbose:
                 print(f"{spec} : ok")
         except Exception as exc:
             ok = False
             print(f"{spec} : installation impossible ({exc})", file=sys.stderr)
     return ok
+
+
+def tools_in_background(cfg: dict) -> None:
+    """Outils absents : installés tout de suite. Sinon mis à jour une fois par jour."""
+    due = time.time() - cfg.get("tools_update", 0) > UPDATE_EVERY
+    if not due and all(tool_present(c) for c in TOOLS):
+        return
+
+    def run():
+        if install_tools(upgrade=due):
+            cfg["tools_update"] = time.time()
+            save_config(cfg)
+
+    threading.Thread(target=run, daemon=True).start()
 
 
 # ---------------------------------------------------------------------------
@@ -1064,6 +1095,7 @@ def main() -> int:
     os.environ["LECOFFRE_AUTO_UPDATE"] = "0"  # en local, c'est ce lanceur qui met à jour
     if not args.sans_maj:
         update_in_background(cfg)
+        tools_in_background(cfg)  # streamrip et Votify (sources avec abonnement)
 
     if FROZEN:
         use_newer_ytdlp()

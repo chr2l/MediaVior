@@ -458,6 +458,8 @@ function renderResult(data) {
   } else {
     select.append(h("option", { value: "" }, t("Meilleure disponible")));
   }
+  // Qobuz, Deezer, Spotify : du son seulement
+  if (data.audio_only) resultEl.querySelector('.js-options [data-mode="audio"]')?.click();
   singleOptions.setMedia(data.duration, data.audio_size, data.audio_best, data.source, data.login, data.search, data.url);
   // Qualité préférée : la même, ou la plus proche en dessous pour ce média
   formatPickers.forEach((p) => p.select === select && applyFavorite(p, favorites.quality, favorites.quality !== null));

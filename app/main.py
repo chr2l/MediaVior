@@ -2064,7 +2064,13 @@ def _size_estimates(formats: list, duration: Optional[float]):
 
 @app.post("/api/analyze")
 async def analyze(payload: AnalyzeRequest):
-    url = await _safe_url(payload.url)
+    url = await _expand_link(await _safe_url(payload.url))
+    site = _source_site(url)
+    if site:  # Qobuz, Deezer, Spotify : protégés par DRM, yt-dlp n'y arrive pas
+        service = _streamrip_service(url)
+        if not service:
+            raise HTTPException(status_code=400, detail=_source_problem(site, url))
+        return await asyncio.get_running_loop().run_in_executor(None, _source_analysis, service, url)
     try:
         info = await asyncio.get_running_loop().run_in_executor(None, _extract_info, url)
     except Exception as exc:
@@ -2527,8 +2533,10 @@ def _run_ffmpeg(job: dict, cmd: list, total: Optional[float], log_path: Path, fa
 
 @app.post("/api/download")
 async def start_download(payload: DownloadRequest):
-    url = await _safe_url(payload.url)
+    url = await _expand_link(await _safe_url(payload.url))
     _check_format(payload.mode, payload.container, payload.quality, payload.audio_quality)
+    if _source_site(url) and payload.mode == "video":
+        raise HTTPException(status_code=400, detail="Ce lien ne donne que du son : choisis « Audio ».")
 
     data = payload.model_dump()
     data["url"] = url
@@ -2563,15 +2571,14 @@ _TRACK_LINKS = {
 
 
 def _tool_bin(name: str) -> Optional[str]:
-    """Commande installée avec le paquet Python (rip, votify). Absente de l'appli figée (PyInstaller)."""
-    if getattr(sys, "frozen", False):
-        return None
+    """Commande rip / votify : installée par mediavior.py (venv, ou uv dans l'appli installée)."""
     # Environnement propre à l'outil (installé par mediavior.py --outils et à chaque mise à jour),
     # sinon celui de l'appli, sinon pipx : streamrip et Votify ne tiennent pas ensemble
     here = Path(sys.executable).parent
     own = STATE_DIR / "outils" / name
     for exe in (name, f"{name}.exe"):
-        for folder in (own / "bin", own / "Scripts", here, here / "Scripts", Path.home() / ".local" / "bin"):
+        for folder in (STATE_DIR / "outils" / "bin", own / "bin", own / "Scripts", here, here / "Scripts",
+                       Path.home() / ".local" / "bin"):
             if (folder / exe).is_file():
                 return str(folder / exe)
     return shutil.which(name)
@@ -2638,6 +2645,88 @@ open(path, "w", encoding="utf-8").write(tomlkit.dumps(conf))
 """
 
 
+_SITE_NAMES = {"qobuz": "Qobuz", "deezer": "Deezer", "spotify": "Spotify"}
+# Liens de partage courts : on suit la redirection pour trouver le vrai lien du morceau
+_SHORT_LINK_HOSTS = {"link.deezer.com", "deezer.page.link", "spotify.link", "spoti.fi"}
+
+
+def _expand_link_sync(url: str) -> str:
+    host = (urlparse(url).hostname or "").lower()
+    if host not in _SHORT_LINK_HOSTS:
+        return url
+    from urllib.request import Request as UrlRequest
+    try:
+        with urlopen(UrlRequest(url, headers={"User-Agent": BROWSER_UA}), timeout=12) as r:
+            return r.geturl() or url
+    except Exception:
+        return url
+
+
+async def _expand_link(url: str) -> str:
+    """Lien court Deezer / Spotify → lien complet (vérifié à nouveau par _safe_url)."""
+    final = await asyncio.get_running_loop().run_in_executor(None, _expand_link_sync, url)
+    return url if final == url else await _safe_url(final)
+
+
+def _source_site(url: str) -> Optional[str]:
+    """qobuz / deezer / spotify si le lien vient d'un de ces sites (morceau ou non)."""
+    host = (urlparse(url).hostname or "").lower()
+    for service, (host_re, _) in _TRACK_LINKS.items():
+        if host_re.search(host) or (service == "spotify" and host.endswith(".spotify.com")):
+            return service
+    return None
+
+
+def _source_problem(service: str, url: str) -> str:
+    """Pourquoi ce lien Qobuz / Deezer / Spotify ne peut pas être téléchargé ici (yt-dlp n'y arrive pas : DRM)."""
+    name = _SITE_NAMES[service]
+    if not LOCAL_MODE:
+        return (f"Lien {name} : protégé par DRM. Seule la version PC de MediaVior peut le télécharger, "
+                "avec ton abonnement (Réglages, Sources avec abonnement).")
+    if not _TRACK_LINKS[service][1].search(urlparse(url).path.lower()):
+        return f"Lien {name} : seuls les liens de morceaux marchent, pas les albums ni les listes."
+    state = _streamrip_state() or {}
+    if not state.get("votify" if service == "spotify" else "streamrip"):
+        return (f"Lien {name} : l'outil qui le télécharge n'est pas encore installé. Il s'installe tout seul "
+                "en arrière-plan : réessaie dans quelques minutes, ou relance MediaVior.")
+    return f"Lien {name} : règle d'abord ton compte dans les Réglages (Sources avec abonnement)."
+
+
+def _source_analysis(service: str, url: str) -> dict:
+    """Infos affichées avant le téléchargement, sans yt-dlp : API publique de Deezer, oEmbed de Spotify."""
+    from urllib.parse import quote
+    from urllib.request import Request as UrlRequest
+    info = {"title": None, "thumbnail": None, "duration": None, "artist": None}
+    try:
+        if service == "deezer":
+            track_id = re.search(r"/track/(\d+)", urlparse(url).path).group(1)
+            with urlopen(UrlRequest(f"https://api.deezer.com/track/{track_id}",
+                                    headers={"User-Agent": BROWSER_UA}), timeout=12) as r:
+                d = json.load(r)
+            info.update(title=d.get("title"), duration=d.get("duration"),
+                        artist=(d.get("artist") or {}).get("name"),
+                        thumbnail=(d.get("album") or {}).get("cover_xl"))
+        elif service == "spotify":
+            with urlopen(UrlRequest(f"https://open.spotify.com/oembed?url={quote(url, safe='')}",
+                                    headers={"User-Agent": BROWSER_UA}), timeout=12) as r:
+                d = json.load(r)
+            info.update(title=d.get("title"), thumbnail=d.get("thumbnail_url"))
+    except Exception:
+        pass  # infos absentes : le téléchargement marche quand même
+    title = info["title"] or f"Morceau {_SITE_NAMES[service]}"
+    if info["artist"]:
+        title = f"{info['artist']} - {title}"
+    lossless = service != "spotify"
+    return {
+        "url": url, "title": title, "thumbnail": info["thumbnail"], "duration": info["duration"],
+        "source": _SITE_NAMES[service], "video_formats": [], "audio_size": None,
+        "audio_best": {"codec": "FLAC" if lossless else "Vorbis", "kbps": None if lossless else 320,
+                       "lossless": lossless, "note": None},
+        # Spotify compresse : chercher un fichier sans perte ailleurs garde un sens
+        "login": False, "search": title if info["title"] and not lossless else None, "audio_only": True,
+    }
+
+
 def _streamrip_write_config(folder: Path) -> Path:
     """Écrit la config de streamrip (dossier du travail, identifiants). tomlkit vient avec streamrip :
     c'est le Python de streamrip (son propre environnement) qui modifie le fichier."""
@@ -2658,7 +2747,11 @@ def _streamrip_write_config(folder: Path) -> Path:
         "misc": {"check_for_updates": False},
         "cli": {"progress_bars": False, "text_output": False},
     }
-    python = next((p for p in (rip.parent / "python.exe", rip.parent / "python") if p.is_file()), Path(sys.executable))
+    # Python de streamrip : à côté de rip (venv), ou dans l'environnement créé par uv (appli installée)
+    uv_env = STATE_DIR / "outils" / "uv" / "streamrip"
+    candidates = [rip.resolve().parent / "python.exe", rip.resolve().parent / "python",
+                  uv_env / "Scripts" / "python.exe", uv_env / "bin" / "python"]
+    python = next((p for p in candidates if p.is_file()), Path(sys.executable))
     result = subprocess.run([str(python), "-c", _STREAMRIP_EDIT, str(STREAMRIP_CONFIG), json.dumps(values)],
                             capture_output=True, text=True, timeout=60)
     if result.returncode != 0:
@@ -2923,7 +3016,7 @@ async def start_links(payload: LinksRequest):
     urls = []
     for raw in dict.fromkeys(u.strip() for u in payload.urls if u.strip()):
         try:
-            urls.append(await _safe_url(raw))
+            urls.append(await _expand_link(await _safe_url(raw)))
         except HTTPException as exc:
             raise HTTPException(status_code=400, detail=f"{raw} : {exc.detail}")
     if not urls:
