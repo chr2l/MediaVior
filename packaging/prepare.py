@@ -1,5 +1,5 @@
 """Prépare la construction de l'appli prête à installer (appelé par GitHub, voir
-.github/workflows/installeurs.yml) : copie ffmpeg, ffprobe et deno dans build/bin, et écrit
+.github/workflows/installeurs.yml) : copie ffmpeg, ffprobe, deno et uv dans build/bin, et écrit
 build/build.json (version de l'appli et de yt-dlp inclus).
 
     python packaging/prepare.py 1.2.0
@@ -11,6 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import deno
+import uv
 import static_ffmpeg.run
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,7 +24,7 @@ def main() -> None:
     shutil.rmtree(BIN, ignore_errors=True)
     BIN.mkdir(parents=True)
     ffmpeg, ffprobe = static_ffmpeg.run.get_or_fetch_platform_executables_else_raise()
-    for tool in (ffmpeg, ffprobe, deno.find_deno_bin()):
+    for tool in (ffmpeg, ffprobe, deno.find_deno_bin(), uv.find_uv_bin()):
         dest = BIN / Path(tool).name
         shutil.copy2(tool, dest)
         dest.chmod(0o755)
