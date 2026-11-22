@@ -31,6 +31,8 @@ WizardStyle=modern
 ; Langue de Windows (français ou anglais), sans fenêtre de choix
 ShowLanguageDialog=no
 CloseApplications=force
+; Les modules Python (.pyd, ex. _socket.pyd) comptent aussi : l'appli qui les tient ouverts est fermée
+CloseApplicationsFilter=*.exe,*.dll,*.pyd
 LicenseFile=..\LICENSE
 VersionInfoVersion={#Version}
 VersionInfoCompany=MediaVior (projet libre)
@@ -102,4 +104,28 @@ end;
 function ApresMaj: Boolean;
 begin
   Result := ExpandConstant('{param:APRESMAJ|0}') = '1';
+end;
+
+// Mise à jour depuis l'appli : l'ancienne MediaVior est en train de se fermer. On attend
+// qu'elle soit vraiment arrêtée (30 s au plus, puis on la force) avant de toucher aux fichiers.
+// Sinon des fichiers encore ouverts (ex. _socket.pyd) bloquent la copie, l'installation
+// s'arrête à moitié et l'appli ne démarre plus (« No module named '_socket' »).
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Dossier, Script: String;
+  Code: Integer;
+begin
+  Result := '';
+  if not ApresMaj then
+    exit;
+  Dossier := AddBackslash(ExpandConstant('{app}'));
+  StringChangeEx(Dossier, '''', '''''', True);
+  Script := '$d=''' + Dossier + ''';' +
+    'Get-Process -Name MediaVior -ErrorAction SilentlyContinue | ' +
+    'Where-Object { $_.Path -and $_.Path.StartsWith($d, [StringComparison]::OrdinalIgnoreCase) } | ' +
+    'ForEach-Object { if (-not $_.WaitForExit(30000)) { Stop-Process -Id $_.Id -Force; $_.WaitForExit(5000) | Out-Null } };' +
+    'Start-Sleep -Milliseconds 800';
+  Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+       '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -Command "' + Script + '"',
+       '', SW_HIDE, ewWaitUntilTerminated, Code);
 end;
