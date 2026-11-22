@@ -4,6 +4,7 @@
     python mediavior.py               démarre l'appli et ouvre sa fenêtre
     python mediavior.py --raccourci   crée le raccourci « MediaVior » sur le bureau
     python mediavior.py --verifier    vérifie l'installation (Python, ffmpeg, dossier) et quitte
+    python mediavior.py --outils      installe ou met à jour streamrip et Votify (sources avec abonnement)
 
 Options : --port 8010, --dossier CHEMIN (dossier des téléchargements, retenu pour la suite),
 --sans-fenetre (n'ouvre pas le navigateur, utilisé par Pinokio), --sans-maj (pas de mise à jour),
@@ -40,6 +41,10 @@ ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 APP_DIR = ROOT if FROZEN else ROOT / "app"
 HOME_DIR = Path.home() / ".mediavior"
 YTDLP_DIR = HOME_DIR / "yt-dlp"  # versions plus récentes de yt-dlp, téléchargées après coup
+# Sources avec abonnement : chaque outil dans son propre environnement Python (leurs dépendances
+# se contredisent : Pillow < 11 pour streamrip, >= 12.1 pour Votify). Voir _tool_bin dans app/main.py.
+TOOLS_DIR = HOME_DIR / "outils"
+TOOLS = {"rip": "streamrip", "votify": "votify[librespot]"}
 GITHUB_API = "https://api.github.com/repos/chr2l/MediaVior/releases/latest"
 RELEASE_ASSETS = {"win": "MediaVior-Windows.exe", "mac": "MediaVior-Mac.dmg", "linux": "MediaVior-Linux.AppImage"}
 CONFIG = HOME_DIR / "config.json"
@@ -199,6 +204,8 @@ def update_in_background(cfg: dict) -> None:
         threading.Thread(target=update_frozen, args=(cfg,), daemon=True).start()
         return
     if time.time() - cfg.get("last_update", 0) < UPDATE_EVERY:
+        if not all((TOOLS_DIR / c).is_dir() for c in TOOLS):  # outils absents : tout de suite
+            threading.Thread(target=install_tools, args=(False,), daemon=True).start()
         return
 
     def run():
@@ -215,12 +222,39 @@ def update_in_background(cfg: dict) -> None:
                                    cwd=ROOT, timeout=600, **quiet)
             # Les sites changent souvent : yt-dlp doit rester à jour
             subprocess.run(pip + ["-U", "yt-dlp[default]"], timeout=300, **quiet)
+            install_tools()  # streamrip et Votify : installés s'ils manquent, mis à jour sinon
             cfg["last_update"] = time.time()
             save_config(cfg)
         except Exception as exc:
             print(f"Mise à jour impossible : {exc}", file=sys.stderr)
 
     threading.Thread(target=run, daemon=True).start()
+
+
+def install_tools(upgrade: bool = True, verbose: bool = False) -> bool:
+    """Installe ou met à jour streamrip et Votify, chacun dans TOOLS_DIR/<commande>.
+    Pas dans l'appli figée (pas de pip). Un échec n'empêche jamais MediaVior de marcher."""
+    if FROZEN:
+        return False
+    out = None if verbose else subprocess.DEVNULL
+    flags = {"stdout": out, "stderr": out, "creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+    ok = True
+    for cmd, spec in TOOLS.items():
+        env = TOOLS_DIR / cmd
+        py = env / ("Scripts/python.exe" if IS_WIN else "bin/python")
+        try:
+            if not py.is_file():
+                subprocess.run([sys.executable, "-m", "venv", str(env)], check=True, timeout=300, **flags)
+            elif not upgrade:
+                continue
+            subprocess.run([str(py), "-m", "pip", "install", "-q", "-U", "--disable-pip-version-check", spec],
+                           check=True, timeout=900, **flags)
+            if verbose:
+                print(f"{spec} : ok")
+        except Exception as exc:
+            ok = False
+            print(f"{spec} : installation impossible ({exc})", file=sys.stderr)
+    return ok
 
 
 # ---------------------------------------------------------------------------
@@ -970,6 +1004,8 @@ def main() -> int:
     parser.add_argument("--apres-maj", action="store_true", help=argparse.SUPPRESS)  # relancé par la mise à jour
     parser.add_argument("--raccourci", action="store_true", help="créer le raccourci sur le bureau")
     parser.add_argument("--verifier", action="store_true", help="vérifier l'installation")
+    parser.add_argument("--outils", action="store_true",
+                        help="installer ou mettre à jour streamrip et Votify (sources avec abonnement)")
     parser.add_argument("--fenetre", metavar="URL", help=argparse.SUPPRESS)  # fenêtre Windows (open_window)
     args = parser.parse_args()
 
@@ -982,6 +1018,9 @@ def main() -> int:
 
     if args.verifier:
         return check()
+    if args.outils:
+        install_tools(verbose=True)
+        return 0  # un échec ici ne doit pas arrêter l'installation
     if args.raccourci:
         return create_shortcut()
     if args.fenetre:

@@ -2566,10 +2566,12 @@ def _tool_bin(name: str) -> Optional[str]:
     """Commande installée avec le paquet Python (rip, votify). Absente de l'appli figée (PyInstaller)."""
     if getattr(sys, "frozen", False):
         return None
-    # Même environnement que l'appli, sinon pipx (chacun le sien : streamrip et Votify ne tiennent pas ensemble)
+    # Environnement propre à l'outil (installé par mediavior.py --outils et à chaque mise à jour),
+    # sinon celui de l'appli, sinon pipx : streamrip et Votify ne tiennent pas ensemble
     here = Path(sys.executable).parent
+    own = STATE_DIR / "outils" / name
     for exe in (name, f"{name}.exe"):
-        for folder in (here, here / "Scripts", Path.home() / ".local" / "bin"):
+        for folder in (own / "bin", own / "Scripts", here, here / "Scripts", Path.home() / ".local" / "bin"):
             if (folder / exe).is_file():
                 return str(folder / exe)
     return shutil.which(name)
@@ -2626,26 +2628,45 @@ def _streamrip_service(url: str) -> Optional[str]:
     return None
 
 
+_STREAMRIP_EDIT = """
+import json, sys, tomlkit
+path, values = sys.argv[1], json.loads(sys.argv[2])
+conf = tomlkit.parse(open(path, encoding="utf-8").read())
+for section, items in values.items():
+    conf[section].update(items)
+open(path, "w", encoding="utf-8").write(tomlkit.dumps(conf))
+"""
+
+
 def _streamrip_write_config(folder: Path) -> Path:
-    """Écrit la config de streamrip (dossier du travail, identifiants)."""
-    import tomlkit
+    """Écrit la config de streamrip (dossier du travail, identifiants). tomlkit vient avec streamrip :
+    c'est le Python de streamrip (son propre environnement) qui modifie le fichier."""
+    rip = Path(_tool_bin("rip"))
     STREAMRIP_CONFIG.parent.mkdir(parents=True, exist_ok=True)
     if not STREAMRIP_CONFIG.is_file():
-        subprocess.run([_tool_bin("rip"), "--config-path", str(STREAMRIP_CONFIG), "config", "reset", "-y"],
+        subprocess.run([str(rip), "--config-path", str(STREAMRIP_CONFIG), "config", "reset", "-y"],
                        capture_output=True, timeout=60, check=False)
-    conf = tomlkit.parse(STREAMRIP_CONFIG.read_text("utf-8"))
     c = _streamrip_creds()
-    conf["downloads"]["folder"] = str(folder)
-    conf["downloads"]["source_subdirectories"] = False
-    conf["qobuz"].update({"quality": 4, "use_auth_token": False, "email_or_userid": c.get("qobuz_email", ""),
-                          "password_or_token": c.get("qobuz_password", ""), "download_booklets": False})
-    conf["deezer"].update({"quality": 2, "arl": c.get("deezer_arl", "")})
-    conf["artwork"].update({"embed": True, "save_artwork": False})
-    conf["filepaths"]["add_singles_to_folder"] = False
-    conf["conversion"]["enabled"] = False
-    conf["misc"]["check_for_updates"] = False
-    conf["cli"].update({"progress_bars": False, "text_output": False})
-    _private_write(STREAMRIP_CONFIG, tomlkit.dumps(conf))
+    values = {
+        "downloads": {"folder": str(folder), "source_subdirectories": False},
+        "qobuz": {"quality": 4, "use_auth_token": False, "email_or_userid": c.get("qobuz_email", ""),
+                  "password_or_token": c.get("qobuz_password", ""), "download_booklets": False},
+        "deezer": {"quality": 2, "arl": c.get("deezer_arl", "")},
+        "artwork": {"embed": True, "save_artwork": False},
+        "filepaths": {"add_singles_to_folder": False},
+        "conversion": {"enabled": False},
+        "misc": {"check_for_updates": False},
+        "cli": {"progress_bars": False, "text_output": False},
+    }
+    python = next((p for p in (rip.parent / "python.exe", rip.parent / "python") if p.is_file()), Path(sys.executable))
+    result = subprocess.run([str(python), "-c", _STREAMRIP_EDIT, str(STREAMRIP_CONFIG), json.dumps(values)],
+                            capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        raise RuntimeError(f"Config de streamrip impossible : {result.stderr.strip()[-200:]}")
+    try:
+        STREAMRIP_CONFIG.chmod(0o600)  # contient les identifiants
+    except OSError:
+        pass
     return STREAMRIP_CONFIG
 
 

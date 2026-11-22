@@ -67,6 +67,10 @@ macOS/Linux.
 automatically, which can take a minute. Everything must be "ok" except `tesseract`, which is
 optional. (The app's command options and messages are in French; that's expected.)
 
+Then run `PY mediavior.py --outils`: it installs streamrip and Votify (subscription sources
+Qobuz, Deezer, Spotify), each in its own environment. If it fails, carry on: MediaVior works
+without them, and retries on its own at each update.
+
 - If ffmpeg is still missing: Windows `winget install -e --id Gyan.FFmpeg`, macOS `brew install ffmpeg`,
   Linux the package manager (`sudo apt install ffmpeg`).
 - Tesseract (optional) is only used to read screenshots of playlists. Offer it to me:

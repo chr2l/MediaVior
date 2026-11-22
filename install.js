@@ -8,6 +8,7 @@ module.exports = {
         message: [
           "uv pip install -r requirements.txt -r requirements-local.txt",
           "python mediavior.py --verifier",
+          "python mediavior.py --outils",
         ],
       },
     },

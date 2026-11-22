@@ -87,6 +87,7 @@ cd MediaVior
 uv venv --seed --python 3.12 .venv            # ou : python -m venv .venv
 uv pip install -r requirements.txt -r requirements-local.txt
 .venv/bin/python mediavior.py --verifier     # Windows : .venv\Scripts\python.exe
+.venv/bin/python mediavior.py --outils       # streamrip et Votify (facultatif)
 .venv/bin/python mediavior.py --raccourci    # icône sur le bureau
 .venv/bin/python mediavior.py                # lance l'appli
 ```

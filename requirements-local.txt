@@ -6,4 +6,5 @@ segno>=1.6
 # Windows : fenêtre propre à MediaVior (barre du haut aux couleurs de l'appli), voir mediavior.py
 pywebview>=6.0; sys_platform == "win32"
 # streamrip et Votify (sources avec abonnement) ne sont PAS ici : leurs dépendances se contredisent
-# (Pillow < 11 contre >= 12.1). Chacun s'installe à part, avec pipx : voir _tool_bin dans app/main.py.
+# (Pillow < 11 contre >= 12.1). Chacun a son environnement dans ~/.mediavior/outils, installé par
+# « mediavior.py --outils » et à chaque mise à jour : voir install_tools dans mediavior.py.

@@ -9,6 +9,7 @@ module.exports = {
         message: [
           "uv pip install -r requirements.txt -r requirements-local.txt",
           "uv pip install -U \"yt-dlp[default]\"",
+          "python mediavior.py --outils",
         ],
       },
     },
