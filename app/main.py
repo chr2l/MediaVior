@@ -1662,6 +1662,7 @@ def _deezer_search(artist: str, title: str, limit: int = 6) -> list:
             "track": "",
             "genre": ", ".join(genres[:2]),
             "duration": t.get("duration"),
+            "link": t.get("link") or (f"https://www.deezer.com/track/{t['id']}" if t.get("id") else ""),
             "cover": album.get("cover_medium"),
             "cover_full": album.get("cover_xl") or album.get("cover_big"),
         })
@@ -2203,11 +2204,26 @@ def _close_duration(d: Optional[float], ref: Optional[float]) -> bool:
     return not d or not ref or abs(d - ref) <= max(20, ref * 0.15)
 
 
+def _deezer_sources(query: str, duration: Optional[float]) -> list:
+    """Version PC avec un compte Deezer réglé : le morceau sur Deezer, téléchargé en FLAC par streamrip.
+    Avec une durée connue, seulement à 5 s près (même enregistrement)."""
+    results = []
+    for r in _deezer_search("", query, limit=6):
+        if not r.get("link") or (duration and r.get("duration") and abs(r["duration"] - duration) > 5):
+            continue
+        results.append({"url": r["link"], "site": "Deezer", "title": r["title"], "artist": r["artist"],
+                        "duration": r["duration"], "thumbnail": r.get("cover"),
+                        "quality": {"codec": "FLAC", "kbps": None, "lossless": True, "note": None}})
+    return results[:3]
+
+
 def _better_sources(query: str, current: Optional[str], duration: Optional[float] = None) -> dict:
     from concurrent.futures import ThreadPoolExecutor
     searches = {"Bandcamp": _bandcamp_search, "SoundCloud": _soundcloud_search}
+    deezer = bool((_streamrip_state() or {}).get("deezer"))
     urls, failed = [], []
     with ThreadPoolExecutor(max_workers=6) as pool:
+        deezer_found = pool.submit(_deezer_sources, query, duration) if deezer else None
         found = {name: pool.submit(fn, query) for name, fn in searches.items()}
         for name, fut in found.items():
             try:
@@ -2216,13 +2232,19 @@ def _better_sources(query: str, current: Optional[str], duration: Optional[float
                 failed.append(name)
         urls = [u for u in dict.fromkeys(urls) if u != current]
         details = [d for d in pool.map(_source_details, urls) if d]
+        if deezer_found:
+            try:
+                details += [d for d in deezer_found.result(timeout=25) if d["url"] != current]
+            except Exception:
+                failed.append("Deezer")
     # Autre version (mix d'une heure, extrait…) : durée trop éloignée du média actuel
     kept = [d for d in details if _close_duration(d["duration"], duration)]
     hidden = len(details) - len(kept)
     details = kept
     # Sans perte d'abord, puis le débit le plus haut
     details.sort(key=lambda d: (not d["quality"]["lossless"], -(d["quality"]["kbps"] or 0)))
-    return {"query": query, "results": details, "failed": failed, "hidden": hidden}
+    sites = ", ".join((["Deezer"] if deezer else []) + list(searches))
+    return {"query": query, "results": details, "failed": failed, "hidden": hidden, "sites": sites}
 
 
 @app.post("/api/meilleure-source")
@@ -2643,7 +2665,9 @@ def _streamrip_service(url: str) -> Optional[str]:
     parts = urlparse(url)
     host, path = (parts.hostname or "").lower(), parts.path.lower()
     for service, (host_re, path_re) in _TRACK_LINKS.items():
-        if host_re.search(host) and path_re.search(path) and state[service]:
+        # Spotify : Votify, ou le même morceau retrouvé sur Deezer (FLAC)
+        ready = state[service] or (service == "spotify" and state["deezer"])
+        if host_re.search(host) and path_re.search(path) and ready:
             return service
     return None
 
@@ -2705,9 +2729,106 @@ def _source_problem(service: str, url: str) -> str:
     return f"Lien {name} : règle d'abord ton compte dans les Réglages (Sources avec abonnement)."
 
 
-def _source_analysis(service: str, url: str) -> dict:
-    """Infos affichées avant le téléchargement, sans yt-dlp : API publique de Deezer, oEmbed de Spotify."""
+def _find_entity(data, depth: int = 0) -> Optional[dict]:
+    """Dans le JSON de la page d'intégration Spotify : l'objet du morceau (nom, artistes, durée)."""
+    if depth > 12:
+        return None
+    if isinstance(data, dict):
+        if data.get("type") == "track" and isinstance(data.get("artists"), list) and data.get("name"):
+            return data
+        items = data.values()
+    elif isinstance(data, list):
+        items = data
+    else:
+        return None
+    for value in items:
+        found = _find_entity(value, depth + 1)
+        if found:
+            return found
+    return None
+
+
+def _spotify_meta(url: str) -> dict:
+    """Titre, artiste, durée et pochette d'un morceau Spotify, sans clé d'API : page d'intégration
+    (JSON de la page), sinon oEmbed (titre seul)."""
     from urllib.parse import quote
+    from urllib.request import Request as UrlRequest
+    info = {"title": None, "artist": None, "duration": None, "thumbnail": None}
+    match = re.search(r"/track/([A-Za-z0-9]+)", urlparse(url).path)
+    if match:
+        try:
+            req = UrlRequest(f"https://open.spotify.com/embed/track/{match.group(1)}",
+                             headers={"User-Agent": BROWSER_UA, "Accept-Language": "en"})
+            with urlopen(req, timeout=12) as r:
+                page = r.read(3 * 1024 * 1024).decode("utf-8", "replace")
+            raw = re.search(r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>', page, re.S)
+            entity = _find_entity(json.loads(raw.group(1))) if raw else None
+            if entity:
+                artists = [a.get("name") for a in entity["artists"] if isinstance(a, dict) and a.get("name")]
+                ms = entity.get("duration")
+                images = [i for i in ((entity.get("visualIdentity") or {}).get("image") or [])
+                          if isinstance(i, dict) and i.get("url")]
+                info.update(title=entity.get("name"), artist=artists[0] if artists else None,
+                            duration=ms / 1000 if isinstance(ms, (int, float)) and ms > 1000 else None,
+                            thumbnail=max(images, key=lambda i: i.get("maxWidth") or 0)["url"] if images else None)
+        except Exception:
+            pass
+    if not info["title"]:
+        try:
+            with urlopen(UrlRequest(f"https://open.spotify.com/oembed?url={quote(url, safe='')}",
+                                    headers={"User-Agent": BROWSER_UA}), timeout=12) as r:
+                d = json.load(r)
+            info.update(title=d.get("title"), thumbnail=info["thumbnail"] or d.get("thumbnail_url"))
+        except Exception:
+            pass
+    return info
+
+
+def _deezer_match(artist: str, title: str, duration: Optional[float]) -> Optional[dict]:
+    """Le même morceau sur Deezer, seulement si c'est sûr : même artiste, même titre, et durée à
+    3 s près (sans durée connue : titre identique exigé). Sinon None."""
+    if not (artist and title):
+        return None
+    try:
+        results = _deezer_search(artist, title, limit=10)
+    except Exception:
+        return None
+    na, nt = _norm(artist), _norm(title)
+    best, best_gap = None, None
+    for r in results:
+        ra, rt = _norm(r["artist"]), _norm(r["title"])
+        if not r.get("link") or not ra or not rt or not (na in ra or ra in na):
+            continue
+        if duration and r.get("duration"):
+            gap = abs(r["duration"] - duration)
+            if gap > 3 or not (rt == nt or nt in rt or rt in nt):
+                continue
+        elif rt != nt:
+            continue
+        else:
+            gap = 99
+        if best_gap is None or gap < best_gap:
+            best, best_gap = r, gap
+    return best
+
+
+_SPOTIFY_DEEZER: Dict[str, Optional[dict]] = {}  # lien Spotify → morceau Deezer trouvé (ou None)
+
+
+def _spotify_on_deezer(url: str) -> Optional[dict]:
+    """Lien Spotify → même morceau sur Deezer (comme le plugin Spotify de deemix), gardé en mémoire."""
+    if url not in _SPOTIFY_DEEZER:
+        meta = _spotify_meta(url)
+        found = _deezer_match(meta["artist"] or "", meta["title"] or "", meta["duration"])
+        if len(_SPOTIFY_DEEZER) > 500:
+            _SPOTIFY_DEEZER.clear()
+        _SPOTIFY_DEEZER[url] = {**found, "spotify": meta} if found else None
+    return _SPOTIFY_DEEZER[url]
+
+
+def _source_analysis(service: str, url: str) -> dict:
+    """Infos affichées avant le téléchargement, sans yt-dlp : API publique de Deezer, page d'intégration de
+    Spotify. Lien Spotify avec un compte Deezer réglé : le même morceau est cherché sur Deezer (FLAC)."""
     from urllib.request import Request as UrlRequest
     info = {"title": None, "thumbnail": None, "duration": None, "artist": None}
     try:
@@ -2719,20 +2840,21 @@ def _source_analysis(service: str, url: str) -> dict:
             info.update(title=d.get("title"), duration=d.get("duration"),
                         artist=(d.get("artist") or {}).get("name"),
                         thumbnail=(d.get("album") or {}).get("cover_xl"))
-        elif service == "spotify":
-            with urlopen(UrlRequest(f"https://open.spotify.com/oembed?url={quote(url, safe='')}",
-                                    headers={"User-Agent": BROWSER_UA}), timeout=12) as r:
-                d = json.load(r)
-            info.update(title=d.get("title"), thumbnail=d.get("thumbnail_url"))
     except Exception:
         pass  # infos absentes : le téléchargement marche quand même
+    via_deezer = None
+    if service == "spotify":
+        state = _streamrip_state() or {}
+        via_deezer = _spotify_on_deezer(url) if state.get("deezer") else None
+        info.update({k: v for k, v in (via_deezer["spotify"] if via_deezer else _spotify_meta(url)).items() if v})
     title = info["title"] or f"Morceau {_SITE_NAMES[service]}"
     if info["artist"]:
         title = f"{info['artist']} - {title}"
-    lossless = service != "spotify"
+    lossless = service != "spotify" or bool(via_deezer)
     return {
         "url": url, "title": title, "thumbnail": info["thumbnail"], "duration": info["duration"],
-        "source": _SITE_NAMES[service], "video_formats": [], "audio_size": None,
+        "source": "Spotify → Deezer" if via_deezer else _SITE_NAMES[service],
+        "video_formats": [], "audio_size": None,
         "audio_best": {"codec": "FLAC" if lossless else "Vorbis", "kbps": None if lossless else 320,
                        "lossless": lossless, "note": None},
         # Spotify compresse : chercher un fichier sans perte ailleurs garde un sens
@@ -2819,6 +2941,7 @@ def _tool_command(service: str, url: str, work: Path, quality: int = 2) -> list:
 
 
 DEEZER_MP3_NOTE = "FLAC indisponible, MP3 320 à la place."
+SPOTIFY_DEEZER_NOTE = "Trouvé sur Deezer : FLAC au lieu de l'OGG de Spotify."
 # Ce que streamrip écrit dans son journal quand Deezer refuse un morceau → message clair
 _DEEZER_REASONS = [
     (r"AuthenticationError|MissingCredentials|invalid arl",
@@ -2872,7 +2995,8 @@ def _clean_track_name(name: str, numbered: bool = False) -> str:
     return re.sub(r"\s+", " ", name).strip() or name
 
 
-def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, count: int, service: str) -> dict:
+def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, count: int, service: str,
+                     flac_only: bool = False) -> dict:
     """Télécharge un morceau avec streamrip ou Votify. Lève une erreur si rien n'est produit
     (l'appelant retombe alors sur yt-dlp, sauf pour Deezer : yt-dlp n'y arrive jamais, DRM).
     Deezer : FLAC d'abord ; s'il est refusé (abonnement non HiFi), nouvel essai en MP3 320."""
@@ -2882,7 +3006,8 @@ def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, co
     started = time.time()
     mp3_fallback = False
     try:
-        for quality in ((2, 1) if service == "deezer" else (2,)):
+        # flac_only : Spotify retrouvé sur Deezer, Votify en secours (un MP3 n'y gagnerait rien)
+        for quality in ((2, 1) if service == "deezer" and not flac_only else (2,)):
             shutil.rmtree(work, ignore_errors=True)
             work.mkdir(parents=True)
             files, log_text = _run_source_tool(job, _tool_command(service, url, work, quality), work, log_path, started)
@@ -2898,6 +3023,8 @@ def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, co
             raise RuntimeError("Aucun fichier n'a été produit.")
         # MP3 : abonnement sans FLAC (2e essai), ou morceau sans version FLAC (streamrip choisit seul)
         mp3_fallback = service == "deezer" and files[0].suffix.lower() == ".mp3"
+        if mp3_fallback and flac_only:
+            raise RuntimeError("Pas de FLAC sur Deezer pour ce morceau.")
         final = job_dir / files[0].name
         shutil.move(str(files[0]), str(final))
     finally:
@@ -2942,6 +3069,31 @@ def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, co
 def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, count: int = 1) -> dict:
     """Télécharge un média dans job_dir avec les options p. index/count : place dans un lot de liens."""
     service = _streamrip_service(url) if p["mode"] == "audio" else None
+    if service == "spotify":
+        state = _streamrip_state() or {}
+        via = _spotify_on_deezer(url) if state.get("deezer") else None
+        if via:
+            try:
+                info = _fetch_streamrip(job, p, via["link"], job_dir, index, count, "deezer",
+                                        flac_only=bool(state.get("spotify")))
+                if not job.get("note"):
+                    job["note"] = SPOTIFY_DEEZER_NOTE
+                if count == 1 and job["title"] == url:
+                    job["title"] = info["title"]
+                return info
+            except JobCancelled:
+                raise
+            except Exception:
+                if job["_cancel"]:
+                    raise JobCancelled()
+                if not state.get("spotify"):  # pas de Votify en secours
+                    raise
+                for leftover in job_dir.iterdir():
+                    if leftover.is_file() and leftover.suffix.lower() in AUDIO_EXTS:
+                        leftover.unlink(missing_ok=True)
+        elif not state.get("spotify"):
+            raise RuntimeError("Morceau introuvable sur Deezer avec certitude. Pour les liens Spotify qui "
+                               "n'y sont pas, règle aussi ton compte Spotify dans les Réglages.")
     if service:
         try:
             return _fetch_streamrip(job, p, url, job_dir, index, count, service)
