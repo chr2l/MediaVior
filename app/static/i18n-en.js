@@ -139,8 +139,8 @@ window.I18N_EN = {
   "Tout effacer": "Clear all",
   "Il faut un abonnement Qobuz, Deezer Premium ou Spotify Premium à ton nom. Tes identifiants restent dans un fichier de ce PC et ne sont envoyés qu'au site concerné. Outils utilisés : streamrip (Qobuz, Deezer) et Votify (Spotify).":
     "You need a Qobuz, Deezer Premium or Spotify Premium subscription in your name. Your credentials stay in a file on this PC and are only sent to the site concerned. Tools used: streamrip (Qobuz, Deezer) and Votify (Spotify).",
-  "Seuls les morceaux sont concernés (pas les albums). Le jeton Deezer (arl) et le cookie Spotify (sp_dc) se trouvent dans les outils du navigateur, onglet des cookies, quand tu es connecté à deezer.com ou open.spotify.com.":
-    "Only tracks are covered (not albums). The Deezer token (arl) and the Spotify cookie (sp_dc) are in the browser's developer tools, cookies tab, while you're signed in to deezer.com or open.spotify.com.",
+  "Morceaux, albums et playlists (un album arrive dans un zip). Le jeton Deezer (arl) et le cookie Spotify (sp_dc) se trouvent dans les outils du navigateur, onglet des cookies, quand tu es connecté à deezer.com ou open.spotify.com.":
+    "Tracks, albums and playlists (an album comes as a zip). The Deezer token (arl) and the Spotify cookie (sp_dc) are in the browser's developer tools, cookies tab, while you're signed in to deezer.com or open.spotify.com.",
   "FLAC indisponible, MP3 320 à la place.": "FLAC unavailable, MP3 320 instead.",
   "Deezer refuse ton ARL : il a sans doute expiré. Mets-en un nouveau dans les Réglages (Sources avec abonnement).":
     "Deezer rejects your ARL: it has probably expired. Enter a new one in Settings (Subscription sources).",
@@ -152,6 +152,17 @@ window.I18N_EN = {
   "Pas de FLAC sur Deezer pour ce morceau.": "No FLAC on Deezer for this track.",
   "Morceau introuvable sur Deezer avec certitude. Pour les liens Spotify qui n'y sont pas, règle aussi ton compte Spotify dans les Réglages.":
     "Couldn't find this track on Deezer for sure. For Spotify links that aren't there, also set up your Spotify account in Settings.",
+  "{n} morceau": "{n} track",
+  "{n} morceaux": "{n} tracks",
+  "Album entier": "Whole album",
+  "Playlist entière": "Whole playlist",
+  "Mettre les {n} morceaux au coffre (zip)": "Put the {n} tracks in the vault (zip)",
+  "Lien d'album ou de playlist : colle-le dans l'appli MediaVior.": "Album or playlist link: paste it in the MediaVior app.",
+  "Cette playlist est vide, ou ses médias sont privés.": "This playlist is empty, or its media are private.",
+  "Spotify n'a pas donné la liste des morceaux de ce lien.": "Spotify didn't give the track list for this link.",
+  "Qobuz n'a fourni aucun morceau : vérifie ton compte dans les Réglages.": "Qobuz didn't provide any track: check your account in Settings.",
+  "Deezer ne trouve pas cet album.": "Deezer can't find this album.",
+  "Deezer ne trouve pas cette playlist.": "Deezer can't find this playlist.",
   "Activé : {sites}.": "On: {sites}.",
   "Pas encore réglé.": "Not set up yet.",
   "Identifiants enregistrés.": "Credentials saved.",
@@ -763,12 +774,21 @@ window.I18N_EN_PATTERNS = [
   [/^Plusieurs liens · (\d+) liens?$/, (m, n) => `Several links · ${n} ${plural(n, "link", "links")}`],
   [/^Plusieurs liens · (\d+) fichiers?(?: \((\d+) ratés?\))?$/, (m, n, bad) =>
     `Several links · ${n} ${plural(n, "file", "files")}${bad ? ` (${bad} failed)` : ""}`],
+  [/^(.+) · (\d+) liens?$/, (m, name, n) => `${name} · ${n} ${plural(n, "link", "links")}`],
+  [/^(.+) · (\d+) fichiers?(?: \((\d+) ratés?\))?$/, (m, name, n, bad) =>
+    `${name} · ${n} ${plural(n, "file", "files")}${bad ? ` (${bad} failed)` : ""}`],
   [/^Liste de sons · (\d+) titres?$/, (m, n) => `Song list · ${n} ${plural(n, "title", "titles")}`],
   [/^La conversion a échoué : (.*)$/, "Conversion failed: $1"],
   [/^Lien (Qobuz|Deezer|Spotify) : protégé par DRM\. Seule la version PC de MediaVior peut le télécharger, avec ton abonnement \(Réglages, Sources avec abonnement\)\.$/,
     "$1 link: protected by DRM. Only the PC version of MediaVior can download it, with your subscription (Settings, Subscription sources)."],
-  [/^Lien (Qobuz|Deezer|Spotify) : seuls les liens de morceaux marchent, pas les albums ni les listes\.$/,
-    "$1 link: only track links work, not albums or playlists."],
+  [/^Lien (Qobuz|Deezer|Spotify) : seuls les liens de morceaux, d'albums et de playlists marchent\.$/,
+    "$1 link: only track, album and playlist links work."],
+  [/^Aucun des liens n'a pu être téléchargé\. \((.*)\)$/, "None of the links could be downloaded. ($1)"],
+  [/^FLAC indisponible pour (\d+) morceaux? : MP3 320 à la place\.$/, (m, n) =>
+    `FLAC unavailable for ${n} ${plural(n, "track", "tracks")}: MP3 320 instead.`],
+  [/^(\d+) ratés? : la liste est dans le zip \((.*)\)\.$/, (m, n, f) =>
+    `${n} failed: the list is in the zip (${f}).`],
+  [/^(Album|Playlist) (Qobuz|Deezer|Spotify)$/, "$2 $1"],
   [/^Lien (Qobuz|Deezer|Spotify) : l'outil qui le télécharge n'est pas encore installé\. Il s'installe tout seul en arrière-plan : réessaie dans quelques minutes, ou relance MediaVior\.$/,
     "$1 link: the tool that downloads it isn't installed yet. It installs itself in the background: try again in a few minutes, or restart MediaVior."],
   [/^Lien (Qobuz|Deezer|Spotify) : règle d'abord ton compte dans les Réglages \(Sources avec abonnement\)\.$/,

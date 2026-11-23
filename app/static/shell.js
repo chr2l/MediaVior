@@ -87,7 +87,7 @@ function announceNewFiles(jobs) {
   let text = jobs.length === 1 && jobs[0].title
     ? t("« {title} » est dans le coffre.", { title: jobs[0].title })
     : t("{n} nouveaux fichiers dans le coffre.", { n: jobs.length });
-  if (note) text += " " + t(note);
+  if (note) text += " " + [].concat(note).map((n) => t(n)).join(" ");
   showToast(text, libraryVisible() ? "" : t("Voir"), () => showView("bibliotheque"));
 }
 
