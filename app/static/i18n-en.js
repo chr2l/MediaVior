@@ -268,10 +268,13 @@ window.I18N_EN = {
   "MediaVior est fermé. Tu peux fermer cette fenêtre.": "MediaVior is closed. You can close this window.",
   "Pour le rouvrir : double-clic sur l'icône MediaVior du bureau.": "To reopen it: double-click the MediaVior icon on your desktop.",
   "Mettre à jour ({version})": "Update ({version})",
-  "Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).":
-    "Install the new version? MediaVior closes and reopens by itself (downloads in progress are stopped).",
-  "Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.":
-    "Download the new version? Then open the file and drag MediaVior into Applications.",
+  "Installer la nouvelle version ?": "Install the new version?",
+  "MediaVior se ferme et se rouvre tout seul. Les téléchargements en cours sont arrêtés.":
+    "MediaVior closes and reopens by itself. Downloads in progress are stopped.",
+  "Mettre à jour": "Update",
+  "Télécharger la nouvelle version ?": "Download the new version?",
+  "Ouvre ensuite le fichier et glisse MediaVior dans Applications.":
+    "Then open the file and drag MediaVior into Applications.",
   "Mise à jour…": "Updating…",
   "Mise à jour vers MediaVior {version}": "Updating to MediaVior {version}",
   "Téléchargement de la nouvelle version…": "Downloading the new version…",

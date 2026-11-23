@@ -273,12 +273,48 @@ function showInstall(version) {
   tick();
 }
 
+// Petite fenêtre de confirmation dans le style de l'appli (remplace confirm() du navigateur).
+// Renvoie true si la personne clique sur le bouton principal.
+function askConfirm(title, text, okLabel) {
+  return new Promise((resolve) => {
+    const dlg = document.createElement("dialog");
+    dlg.className = "yt-dialog risk-dialog";
+    const h = document.createElement("h2");
+    h.className = "panel__title";
+    h.textContent = title;
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = text;
+    const foot = document.createElement("div");
+    foot.className = "yt-dialog__foot";
+    const no = document.createElement("button");
+    no.type = "button";
+    no.className = "btn btn--ghost btn--sm";
+    no.textContent = t("Annuler");
+    const yes = document.createElement("button");
+    yes.type = "button";
+    yes.className = "btn btn--solid btn--sm";
+    yes.textContent = okLabel;
+    foot.append(no, yes);
+    dlg.append(h, p, foot);
+    let ok = false;
+    no.onclick = () => dlg.close();
+    yes.onclick = () => { ok = true; dlg.close(); };
+    dlg.addEventListener("close", () => { dlg.remove(); resolve(ok); });
+    document.body.append(dlg);
+    dlg.showModal();
+    yes.focus();
+  });
+}
+
 // Installe la nouvelle version (même chose depuis le panneau ou depuis les Réglages)
 async function installUpdate(rel, btn) {
-  const msg = rel.auto
-    ? t("Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).")
-    : t("Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.");
-  if (!confirm(msg)) return;
+  const ok = rel.auto
+    ? await askConfirm(t("Installer la nouvelle version ?"),
+      t("MediaVior se ferme et se rouvre tout seul. Les téléchargements en cours sont arrêtés."), t("Mettre à jour"))
+    : await askConfirm(t("Télécharger la nouvelle version ?"),
+      t("Ouvre ensuite le fichier et glisse MediaVior dans Applications."), t("Télécharger"));
+  if (!ok) return;
   const label = btn.textContent;
   btn.disabled = true;
   btn.textContent = t("Mise à jour…");
