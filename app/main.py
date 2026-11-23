@@ -227,6 +227,7 @@ templates.env.globals["local"] = LOCAL_MODE  # version PC : toutes les pages le 
 
 class AnalyzeRequest(BaseModel):
     url: str
+    playlist: bool = False  # l'appli sait mettre une playlist entière dans un zip (pas l'extension)
 
 
 class DownloadRequest(BaseModel):
@@ -242,7 +243,9 @@ class DownloadRequest(BaseModel):
 
 class LinksRequest(BaseModel):
     """Plusieurs liens, un même format : tout finit dans un seul zip."""
-    urls: list[str] = Field(min_length=1, max_length=100)
+    urls: list[str] = Field(min_length=1, max_length=500)
+    name: Optional[str] = Field(None, max_length=200)  # album / playlist : nom du zip
+    titles: Optional[list[str]] = Field(None, max_length=500)  # « Artiste - Titre » de chaque lien
     mode: Literal["video", "audio"]
     quality: Optional[str] = None
     container: Literal["original", "mp4", "mov", "mp3", "flac", "wav", "aiff"]
@@ -2079,6 +2082,15 @@ def _size_estimates(formats: list, duration: Optional[float]):
 async def analyze(payload: AnalyzeRequest):
     url = await _expand_link(await _safe_url(payload.url))
     site = _source_site(url)
+    if site and _collection_kind(site, url):  # album ou playlist Qobuz / Deezer / Spotify : un zip
+        if not payload.playlist:  # extension, téléphone : un morceau à la fois
+            raise HTTPException(status_code=400, detail="Lien d'album ou de playlist : colle-le dans l'appli MediaVior.")
+        if not (LOCAL_MODE and _collection_ready(site)):
+            raise HTTPException(status_code=400, detail=_source_problem(site, url))
+        try:
+            return await asyncio.get_running_loop().run_in_executor(None, _collection_analysis, site, url)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=_humanize_error(exc))
     if site:  # Qobuz, Deezer, Spotify : protégés par DRM, yt-dlp n'y arrive pas
         service = _streamrip_service(url)
         if not service:
@@ -2089,6 +2101,11 @@ async def analyze(payload: AnalyzeRequest):
     except Exception as exc:
         raise HTTPException(status_code=400, detail=_humanize_error(exc))
 
+    if info.get("_type") == "playlist" and payload.playlist:  # l'appli : tout dans un zip
+        try:
+            return _ytdlp_collection(info, url)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=_humanize_error(exc))
     if info.get("_type") == "playlist":
         raise HTTPException(
             status_code=400,
@@ -2592,7 +2609,7 @@ async def start_download(payload: DownloadRequest):
 # Un lien de morceau Qobuz ou Deezer est confié à streamrip (FLAC), un lien de morceau Spotify à
 # Votify (OGG Vorbis jusqu'à 320 kb/s, le fichier d'origine de Spotify, avec un compte Premium), si
 # l'outil est installé et ses identifiants dans les Réglages. Sinon, ou en cas d'échec, yt-dlp reste
-# le moteur. SoundCloud, albums et listes : yt-dlp. Ces options peuvent aller contre les conditions
+# le moteur. SoundCloud : yt-dlp. Albums et playlists : un zip (_links_sync). Ces options peuvent aller contre les conditions
 # des sites : la page demande un accord explicite (accept_risks) avant chaque activation.
 # Les identifiants restent dans `streamrip.json` à côté de l'historique, jamais renvoyés à la page.
 STREAMRIP_FILE = STATE_DIR / "streamrip.json"
@@ -2720,8 +2737,8 @@ def _source_problem(service: str, url: str) -> str:
     if not LOCAL_MODE:
         return (f"Lien {name} : protégé par DRM. Seule la version PC de MediaVior peut le télécharger, "
                 "avec ton abonnement (Réglages, Sources avec abonnement).")
-    if not _TRACK_LINKS[service][1].search(urlparse(url).path.lower()):
-        return f"Lien {name} : seuls les liens de morceaux marchent, pas les albums ni les listes."
+    if not _TRACK_LINKS[service][1].search(urlparse(url).path.lower()) and not _collection_kind(service, url):
+        return f"Lien {name} : seuls les liens de morceaux, d'albums et de playlists marchent."
     state = _streamrip_state() or {}
     if not state.get("votify" if service == "spotify" else "streamrip"):
         return (f"Lien {name} : l'outil qui le télécharge n'est pas encore installé. Il s'installe tout seul "
@@ -2754,6 +2771,8 @@ def _spotify_meta(url: str) -> dict:
     from urllib.parse import quote
     from urllib.request import Request as UrlRequest
     info = {"title": None, "artist": None, "duration": None, "thumbnail": None}
+    if url in _SPOTIFY_META:  # déjà lu dans la liste d'une playlist
+        return dict(_SPOTIFY_META[url])
     match = re.search(r"/track/([A-Za-z0-9]+)", urlparse(url).path)
     if match:
         try:
@@ -2824,6 +2843,156 @@ def _spotify_on_deezer(url: str) -> Optional[dict]:
             _SPOTIFY_DEEZER.clear()
         _SPOTIFY_DEEZER[url] = {**found, "spotify": meta} if found else None
     return _SPOTIFY_DEEZER[url]
+
+
+_COLLECTION_LINKS = {
+    "qobuz": re.compile(r"/(album|playlist)/"),
+    "deezer": re.compile(r"/(album|playlist)/\d+"),
+    "spotify": re.compile(r"/(album|playlist)/[a-z0-9]+"),
+}
+_SPOTIFY_META: Dict[str, dict] = {}  # morceaux lus dans une playlist Spotify : pas besoin de relire leur page
+COLLECTION_MAX = 500
+
+
+def _collection_kind(service: str, url: str) -> Optional[str]:
+    """album / playlist si le lien Qobuz, Deezer ou Spotify en est un, sinon None."""
+    m = _COLLECTION_LINKS[service].search(urlparse(url).path.lower())
+    return m.group(1) if m else None
+
+
+def _collection_ready(service: str) -> bool:
+    state = _streamrip_state() or {}
+    return bool(state.get(service) or (service == "spotify" and state.get("deezer")))
+
+
+def _page_meta(url: str) -> dict:
+    """og:title et og:image d'une page (titre d'un album Qobuz)."""
+    from urllib.request import Request as UrlRequest
+    from html import unescape
+    try:
+        with urlopen(UrlRequest(url, headers={"User-Agent": BROWSER_UA}), timeout=12) as r:
+            page = r.read(2 * 1024 * 1024).decode("utf-8", "replace")
+    except Exception:
+        return {}
+    meta = {}
+    for key in ("title", "image"):
+        m = re.search(rf'<meta[^>]+property="og:{key}"[^>]+content="([^"]+)"', page)
+        if m:
+            meta[key] = unescape(m.group(1))
+    return meta
+
+
+def _collection_analysis(service: str, url: str) -> dict:
+    """Album ou playlist Qobuz / Deezer / Spotify : nom, pochette et liste des morceaux, pour un zip."""
+    from urllib.request import Request as UrlRequest
+    kind = _collection_kind(service, url)
+    name, thumb, tracks = None, None, []  # tracks : (lien, « Artiste - Titre »)
+    if service == "deezer":
+        cid = re.search(r"/(?:album|playlist)/(\d+)", urlparse(url).path).group(1)
+        d = _http_json(f"https://api.deezer.com/{kind}/{cid}")
+        if d.get("error"):
+            raise RuntimeError("Deezer ne trouve pas cet album." if kind == "album" else "Deezer ne trouve pas cette playlist.")
+        name = d.get("title")
+        if kind == "album" and (d.get("artist") or {}).get("name"):
+            name = f"{d['artist']['name']} - {name}"
+        thumb = d.get("cover_xl") or d.get("picture_xl")
+        page = d.get("tracks") or {}
+        while True:
+            for t in page.get("data") or []:
+                if t.get("id"):
+                    tracks.append((f"https://www.deezer.com/track/{t['id']}",
+                                   f"{(t.get('artist') or {}).get('name', '')} - {t.get('title', '')}".strip(" -")))
+            nxt = page.get("next")
+            if not nxt or len(tracks) >= COLLECTION_MAX or not str(nxt).startswith("https://api.deezer.com/"):
+                break
+            page = _http_json(nxt)
+    elif service == "spotify":
+        cid = re.search(r"/(?:album|playlist)/([A-Za-z0-9]+)", urlparse(url).path).group(1)
+        req = UrlRequest(f"https://open.spotify.com/embed/{kind}/{cid}",
+                         headers={"User-Agent": BROWSER_UA, "Accept-Language": "en"})
+        with urlopen(req, timeout=12) as r:
+            page = r.read(4 * 1024 * 1024).decode("utf-8", "replace")
+        raw = re.search(r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>', page, re.S)
+        entity = _find_list(json.loads(raw.group(1))) if raw else None
+        if not entity:
+            raise RuntimeError("Spotify n'a pas donné la liste des morceaux de ce lien.")
+        name = entity.get("name") or entity.get("title")
+        if entity.get("subtitle") and kind == "album":
+            name = f"{entity['subtitle']} - {name}"
+        images = [i for i in ((entity.get("visualIdentity") or {}).get("image") or []) if isinstance(i, dict) and i.get("url")]
+        thumb = max(images, key=lambda i: i.get("maxWidth") or 0)["url"] if images else None
+        for t in entity.get("trackList") or []:
+            m = re.match(r"spotify:track:([A-Za-z0-9]+)$", str(t.get("uri") or ""))
+            if not m:
+                continue
+            link = f"https://open.spotify.com/track/{m.group(1)}"
+            artist = (t.get("subtitle") or "").split(",")[0].strip()
+            ms = t.get("duration")
+            _SPOTIFY_META[link] = {"title": t.get("title"), "artist": artist or None, "thumbnail": thumb,
+                                   "duration": ms / 1000 if isinstance(ms, (int, float)) and ms > 1000 else None}
+            tracks.append((link, f"{artist} - {t.get('title') or ''}".strip(" -")))
+    else:  # Qobuz : streamrip prend l'album entier
+        meta = _page_meta(url)
+        name, thumb = meta.get("title"), meta.get("image")
+        if not name:
+            slug = [s for s in urlparse(url).path.split("/") if s]
+            name = slug[-2].replace("-", " ").title() if len(slug) >= 2 else None
+    label = "Album" if kind == "album" else "Playlist"
+    return {
+        "url": url, "collection": kind, "title": name or f"{label} {_SITE_NAMES[service]}",
+        "thumbnail": thumb, "source": _SITE_NAMES[service], "audio_only": True,
+        "urls": [t[0] for t in tracks[:COLLECTION_MAX]] or [url],
+        "titles": [t[1] for t in tracks[:COLLECTION_MAX]] or None,
+        "count": len(tracks[:COLLECTION_MAX]) or None,
+        "video_formats": [], "audio_size": None, "duration": None, "login": False, "search": None,
+        "audio_best": {"codec": "FLAC" if service != "spotify" else "", "kbps": None,
+                       "lossless": service != "spotify", "note": None},
+    }
+
+
+def _find_list(data, depth: int = 0) -> Optional[dict]:
+    """Dans le JSON de la page d'intégration Spotify : l'objet de l'album / la playlist (trackList)."""
+    if depth > 12:
+        return None
+    if isinstance(data, dict):
+        if isinstance(data.get("trackList"), list):
+            return data
+        items = data.values()
+    elif isinstance(data, list):
+        items = data
+    else:
+        return None
+    for value in items:
+        found = _find_list(value, depth + 1)
+        if found:
+            return found
+    return None
+
+
+def _ytdlp_collection(info: dict, url: str) -> dict:
+    """Playlist YouTube, album Bandcamp, liste SoundCloud… : la liste de ses médias, pour un zip."""
+    urls, titles = [], []
+    for e in info.get("entries") or []:
+        if not isinstance(e, dict):
+            continue
+        link = e.get("webpage_url") or e.get("url")
+        if not isinstance(link, str) or not link.startswith("http"):
+            continue
+        urls.append(link)
+        titles.append(e.get("title") or link)
+        if len(urls) >= COLLECTION_MAX:
+            break
+    if not urls:
+        raise RuntimeError("Cette playlist est vide, ou ses médias sont privés.")
+    thumbs = info.get("thumbnails") or []
+    thumb = info.get("thumbnail") or (thumbs[-1].get("url") if thumbs and isinstance(thumbs[-1], dict) else None)
+    return {
+        "url": url, "collection": "playlist", "title": info.get("title") or "Playlist",
+        "thumbnail": thumb, "source": info.get("extractor_key") or info.get("extractor"),
+        "urls": urls, "titles": titles, "count": len(urls),
+        "video_formats": [], "audio_size": None, "duration": None, "login": False, "search": None,
+        "audio_best": None, "audio_only": False,
+    }
 
 
 def _source_analysis(service: str, url: str) -> dict:
@@ -2953,7 +3122,8 @@ _DEEZER_REASONS = [
 ]
 
 
-def _run_source_tool(job: dict, cmd: list, work: Path, log_path: Path, started: float) -> tuple:
+def _run_source_tool(job: dict, cmd: list, work: Path, log_path: Path, started: float,
+                     timeout: float = TOOL_TIMEOUT) -> tuple:
     """Lance streamrip ou Votify, attend la fin. Renvoie (fichiers audio produits, journal)."""
     with log_path.open("wb") as log:
         # Lignes longues : le journal de streamrip (rich) n'est pas coupé, les messages restent lisibles
@@ -2961,7 +3131,7 @@ def _run_source_tool(job: dict, cmd: list, work: Path, log_path: Path, started: 
         proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, cwd=str(work),
                                 env=env, **({"creationflags": 0x08000000} if sys.platform.startswith("win") else {}))
         while proc.poll() is None:
-            if job["_cancel"] or time.time() - started > TOOL_TIMEOUT:
+            if job["_cancel"] or time.time() - started > timeout:
                 proc.kill()
                 proc.wait()
                 if job["_cancel"]:
@@ -3032,6 +3202,22 @@ def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, co
         log_path.unlink(missing_ok=True)
     if mp3_fallback:
         job["note"] = DEEZER_MP3_NOTE
+    final, info = _name_from_tags(final, service)
+    if count == 1 and job["title"] == url:
+        job["title"] = info["title"]
+    job["progress"] = round((index + 1) / count * 100, 1)
+    # MP3 de secours gardé tel quel : le convertir en FLAC / WAV / AIFF grossirait le fichier sans
+    # rien gagner en qualité
+    keep_mp3 = mp3_fallback and p["container"] in ("flac", "wav", "aiff")
+    if p["container"] != "original" and not keep_mp3:
+        job.update(status="converting", speed=None, eta=None)
+        _tool_convert(job_dir, p["container"])
+    _auto_album(_media_file(job_dir), info.get("duration"))
+    return info
+
+
+def _name_from_tags(final: Path, service: str) -> tuple:
+    """Titre lu dans les tags, et fichier renommé « Artiste - Titre.ext », comme le reste du coffre."""
     info: dict = {"extractor_key": "Votify" if service == "spotify" else "streamrip", "title": final.stem}
     try:
         import mutagen
@@ -3053,17 +3239,46 @@ def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, co
             final = renamed
         except OSError:
             pass
-    if count == 1 and job["title"] == url:
-        job["title"] = info["title"]
-    job["progress"] = round((index + 1) / count * 100, 1)
-    # MP3 de secours gardé tel quel : le convertir en FLAC / WAV / AIFF grossirait le fichier sans
-    # rien gagner en qualité
-    keep_mp3 = mp3_fallback and p["container"] in ("flac", "wav", "aiff")
-    if p["container"] != "original" and not keep_mp3:
-        job.update(status="converting", speed=None, eta=None)
-        _tool_convert(job_dir, p["container"])
-    _auto_album(_media_file(job_dir), info.get("duration"))
-    return info
+    return final, info
+
+
+def _fetch_qobuz_collection(job: dict, p: dict, url: str, work_root: Path) -> tuple:
+    """Album ou playlist Qobuz : streamrip télécharge tout d'un coup (pas de liste publique des
+    morceaux sans clé d'API). Renvoie (fichiers, morceaux ratés lus dans le journal)."""
+    work = work_root / ".source"
+    log_path = work_root / ".source.log"
+    shutil.rmtree(work, ignore_errors=True)
+    work.mkdir(parents=True)
+    job.update(status="downloading", step="Qobuz", speed=None, eta=None)
+    try:
+        files, log_text = _run_source_tool(job, _tool_command("qobuz", url, work), work, log_path,
+                                           time.time(), timeout=3 * 3600)  # un album entier : 3 h
+        failed = list(dict.fromkeys(
+            re.findall(r"(?:Persistent error downloading track|Error downloading track) '([^']+)'", log_text)
+            + [f"Morceau Qobuz {t}" for t in re.findall(r"Track (\S+) not available", log_text)]))
+        if not files:
+            raise RuntimeError("Qobuz n'a fourni aucun morceau : vérifie ton compte dans les Réglages.")
+        out = []
+        for i, f in enumerate(sorted(files)):
+            folder = work_root / f"q{i:03d}"
+            folder.mkdir(exist_ok=True)
+            final = folder / f.name
+            shutil.move(str(f), str(final))
+            final, info = _name_from_tags(final, "qobuz")
+            if p["container"] != "original":
+                job.update(status="converting", step=f"{i + 1}/{len(files)}")
+                try:
+                    _tool_convert(folder, p["container"])
+                except Exception:
+                    failed.append(info["title"])
+                    continue
+            media = _media_file(folder)
+            if media:
+                out.append(media)
+        return out, failed
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+        log_path.unlink(missing_ok=True)
 
 
 def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, count: int = 1) -> dict:
@@ -3249,17 +3464,23 @@ def _check_format(mode: str, container: str, quality: Optional[str], audio_quali
 @app.post("/api/links")
 async def start_links(payload: LinksRequest):
     _check_format(payload.mode, payload.container, payload.quality, payload.audio_quality)
-    urls = []
-    for raw in dict.fromkeys(u.strip() for u in payload.urls if u.strip()):
+    urls, titles, seen = [], [], set()
+    given = payload.titles or []
+    for i, raw in enumerate(u.strip() for u in payload.urls):
+        if not raw or raw in seen:
+            continue
+        seen.add(raw)
         try:
             urls.append(await _expand_link(await _safe_url(raw)))
         except HTTPException as exc:
             raise HTTPException(status_code=400, detail=f"{raw} : {exc.detail}")
+        titles.append(str(given[i])[:200] if i < len(given) and given[i] else urls[-1])
     if not urls:
         raise HTTPException(status_code=400, detail="Aucun lien.")
     n = len(urls)
-    title = f"Plusieurs liens · {n} lien{'s' if n > 1 else ''}"
-    data = {**payload.model_dump(), "urls": urls}
+    name = _safe_filename(payload.name or "")
+    title = f"{name} · {n} lien{'s' if n > 1 else ''}" if name else f"Plusieurs liens · {n} lien{'s' if n > 1 else ''}"
+    data = {**payload.model_dump(), "urls": urls, "titles": titles, "name": name or None}
     job = _new_job("links", title, None, data)
     job.update(step=None, found=0, missing=0)
     job_dir = ITEMS_DIR / job["id"]
@@ -3269,6 +3490,9 @@ async def start_links(payload: LinksRequest):
     return {"job_id": job["id"]}
 
 
+FAILED_LIST = "Morceaux ratés.txt"
+
+
 def _links_sync(job: dict) -> None:
     """Télécharge chaque lien dans son sous-dossier, puis range tout dans un zip."""
     p = job["_payload"]
@@ -3276,9 +3500,12 @@ def _links_sync(job: dict) -> None:
     work = job_dir / ".pistes"
     work.mkdir(exist_ok=True)
     urls = p["urls"]
+    names = p.get("titles") or urls
     total = len(urls)
     found: List[Path] = []
     errors: List[str] = []
+    failed_lines: List[str] = []  # « Artiste - Titre : raison », écrit dans le zip
+    mp3_count = 0
 
     for index, url in enumerate(urls):
         if job["_cancel"]:
@@ -3287,29 +3514,49 @@ def _links_sync(job: dict) -> None:
                    encoding=False, progress=round(index / total * 100, 1))
         target = work / f"{index:03d}"
         target.mkdir(exist_ok=True)
+        label = names[index] if index < len(names) else url
+        job["note"] = None
         try:
-            _fetch_media(job, p, url, target, index, total)
-            media = _media_file(target)
-            if media:
-                found.append(media)
+            site = _source_site(url)
+            if site == "qobuz" and _collection_kind(site, url):  # album Qobuz : streamrip prend tout
+                files, missed = _fetch_qobuz_collection(job, p, url, target)
+                found += files
+                errors += missed
+                failed_lines += [f"{m} : pas fourni par Qobuz" for m in missed]
             else:
-                errors.append(url)
+                _fetch_media(job, p, url, target, index, total)
+                media = _media_file(target)
+                if media:
+                    found.append(media)
+                    mp3_count += job.get("note") == DEEZER_MP3_NOTE
+                else:
+                    errors.append(url)
+                    failed_lines.append(f"{label} : aucun fichier produit")
         except JobCancelled:
             raise
-        except Exception:
+        except Exception as exc:
             if job["_cancel"]:
                 raise JobCancelled()
             errors.append(url)
+            failed_lines.append(f"{label} : {_humanize_error(exc)}")
         job.update(found=len(found), missing=len(errors))
 
     if job["_cancel"]:
         raise JobCancelled()
     if not found:
-        raise RuntimeError("Aucun des liens n'a pu être téléchargé.")
+        detail = f" ({failed_lines[0]})" if len(failed_lines) == 1 else ""
+        raise RuntimeError(f"Aucun des liens n'a pu être téléchargé.{detail}")
+    notes = []
+    if mp3_count:
+        notes.append(f"FLAC indisponible pour {mp3_count} morceau{'x' if mp3_count > 1 else ''} : MP3 320 à la place.")
+    if failed_lines:
+        notes.append(f"{len(failed_lines)} raté{'s' if len(failed_lines) > 1 else ''} : la liste est dans le zip "
+                     f"({FAILED_LIST}).")
+    job["note"] = notes or None  # liste : chaque phrase est traduite à part par la page
 
     job.update(status="converting", step=None, speed=None, encoding=False)
     stamp = time.strftime("%Y-%m-%d %Hh%M", time.localtime(job["created"]))
-    zip_path = job_dir / f"{APP_NAME} {stamp}.zip"
+    zip_path = job_dir / (f"{p['name']}.zip" if p.get("name") else f"{APP_NAME} {stamp}.zip")
     used = set()
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED, allowZip64=True) as zf:
         for media in found:
@@ -3319,10 +3566,13 @@ def _links_sync(job: dict) -> None:
                 n += 1
             used.add(name.casefold())
             zf.write(media, name)
+        if failed_lines:  # morceaux ratés et pourquoi, à côté des fichiers
+            zf.writestr(FAILED_LIST, "\r\n".join(failed_lines) + "\r\n")
     shutil.rmtree(work, ignore_errors=True)
 
     count = len(found)
-    job["title"] = f"Plusieurs liens · {count} fichier{'s' if count > 1 else ''}"
+    prefix = p.get("name") or "Plusieurs liens"
+    job["title"] = f"{prefix} · {count} fichier{'s' if count > 1 else ''}"
     if errors:
         job["title"] += f" ({len(errors)} raté{'s' if len(errors) > 1 else ''})"
     job["filename"] = zip_path.name
@@ -3331,7 +3581,7 @@ def _links_sync(job: dict) -> None:
         "kind": "links",
         "title": job["title"],
         "count": count,
-        "failed": errors,
+        "failed": failed_lines,
         "created": job["created"],
     })
 

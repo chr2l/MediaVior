@@ -423,7 +423,8 @@ async function analyze(url) {
   resultEl.classList.add("hidden");
 
   try {
-    renderResult(await api("/api/analyze", { method: "POST", body: { url } }));
+    // playlist : une playlist ou un album entier peut partir dans un zip
+    renderResult(await api("/api/analyze", { method: "POST", body: { url, playlist: true } }));
   } catch (e) {
     showError(e.message);
   } finally {
@@ -439,7 +440,10 @@ function renderResult(data) {
   resultEl.classList.remove("hidden");
   document.getElementById("title").textContent = data.title;
   document.getElementById("source").textContent = data.source || "";
-  document.getElementById("duration").textContent = formatDuration(data.duration);
+  // Album ou playlist : le nombre de morceaux à la place de la durée
+  document.getElementById("duration").textContent = data.collection
+    ? (data.count ? t(data.count > 1 ? "{n} morceaux" : "{n} morceau", { n: data.count }) : t(data.collection === "album" ? "Album entier" : "Playlist entière"))
+    : formatDuration(data.duration);
 
   const thumb = document.getElementById("thumb");
   thumb.classList.toggle("hidden", !data.thumbnail);
@@ -465,8 +469,15 @@ function renderResult(data) {
   formatPickers.forEach((p) => p.select === select && applyFavorite(p, favorites.quality, favorites.quality !== null));
 
   downloadBtn.disabled = false;
-  downloadBtn.textContent = t("Mettre au coffre");
+  downloadBtn.textContent = downloadLabel();
   resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function downloadLabel() {
+  const data = currentAnalysis;
+  if (!data || !data.collection) return t("Mettre au coffre");
+  if (data.count > 1) return t("Mettre les {n} morceaux au coffre (zip)", { n: data.count });
+  return t("Mettre au coffre en zip");
 }
 
 downloadBtn.addEventListener("click", async () => {
@@ -474,22 +485,35 @@ downloadBtn.addEventListener("click", async () => {
   clearError();
   downloadBtn.disabled = true;
   try {
-    await api("/api/download", {
-      method: "POST",
-      body: {
-        url: currentAnalysis.url,
-        title: currentAnalysis.title,
-        thumbnail: currentAnalysis.thumbnail,
-        ...singleOptions.values(),
-      },
-    });
+    if (currentAnalysis.collection) {
+      // Album ou playlist : chaque morceau, puis tout dans un zip au nom de l'album (comme « Plusieurs liens »)
+      await api("/api/links", {
+        method: "POST",
+        body: {
+          urls: currentAnalysis.urls,
+          titles: currentAnalysis.titles,
+          name: currentAnalysis.title,
+          ...singleOptions.values(),
+        },
+      });
+    } else {
+      await api("/api/download", {
+        method: "POST",
+        body: {
+          url: currentAnalysis.url,
+          title: currentAnalysis.title,
+          thumbnail: currentAnalysis.thumbnail,
+          ...singleOptions.values(),
+        },
+      });
+    }
     downloadBtn.textContent = t("En route vers le coffre ✓");
     urlInput.value = "";
     autoGrow();
     startPolling();
     revealQueue();
     setTimeout(() => {
-      downloadBtn.textContent = t("Mettre au coffre");
+      downloadBtn.textContent = downloadLabel();
       downloadBtn.disabled = false;
     }, 1500);
   } catch (e) {
