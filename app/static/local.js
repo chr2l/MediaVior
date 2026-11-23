@@ -362,6 +362,46 @@ if (localBar) {
 }
 
 // ---------------------------------------------------------------------------
+// Sources avec abonnement branchées : pastilles dans les Réglages, et ligne sous la case du lien
+// ---------------------------------------------------------------------------
+
+const SERVICES = [["qobuz", "Qobuz", "streamrip"], ["deezer", "Deezer", "streamrip"], ["spotify", "Spotify", "votify"]];
+
+// all : aussi les services pas encore réglés (dans les Réglages), sinon seulement les branchés
+function renderServiceChips(box, state, all) {
+  box.replaceChildren();
+  SERVICES.forEach(([key, name, tool]) => {
+    // Spotify marche aussi sans Votify : le morceau est retrouvé sur Deezer
+    const viaDeezer = key === "spotify" && !state.spotify && Boolean(state.deezer);
+    const on = Boolean(state[key]) || viaDeezer;
+    const available = state[tool] || (key === "spotify" && state.streamrip);
+    if ((!all && !on) || !available) return;
+    box.append(h("span", { class: `svc-chip${on ? " is-on" : ""}` },
+      h("span", { class: "svc-chip__dot", "aria-hidden": "true" }),
+      h("span", { class: "svc-chip__name" }, name),
+      h("span", { class: "svc-chip__state" }, viaDeezer ? t("via Deezer") : on ? t("branché") : t("pas réglé"))));
+  });
+}
+
+const subsLine = document.getElementById("subsLine");
+function renderSubsLine(state) {
+  if (!subsLine) return;
+  const on = state && SERVICES.some(([key]) => state[key]);
+  subsLine.classList.toggle("hidden", !on);
+  if (!on) return;
+  const chips = h("span", { class: "svc-chips" });
+  renderServiceChips(chips, state, false);
+  subsLine.replaceChildren(h("span", { class: "subs__label" }, t("Abonnements branchés")), chips);
+}
+if (subsLine && localBar) {
+  subsLine.addEventListener("click", () => {
+    document.getElementById("settingsBtn")?.click();
+    setTimeout(() => document.getElementById("settingsStreamripRow")?.scrollIntoView({ block: "center" }), 300);
+  });
+  api("/api/local/settings").then((s) => renderSubsLine(s.streamrip)).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
 // Réglages : dossiers des médias, connexion du navigateur, démarrage, langue, mise à jour
 // ---------------------------------------------------------------------------
 
@@ -426,10 +466,8 @@ if (settingsDialog) {
       ? t("La dernière lecture de la connexion a échoué, le téléchargement s'est fait sans : {err}", { err: s.login_error }) : "";
     srRow.hidden = !s.streamrip; // seulement si streamrip est installé
     if (s.streamrip) {
-      const on = [s.streamrip.qobuz && "Qobuz", s.streamrip.deezer && "Deezer", s.streamrip.spotify && "Spotify"]
-        .filter(Boolean);
-      srState.textContent = on.length
-        ? t("Activé : {sites}.", { sites: on.join(", ") }) : t("Pas encore réglé.");
+      renderServiceChips(srState, s.streamrip, true);
+      renderSubsLine(s.streamrip);
       srForm.querySelectorAll("[data-tool]").forEach((el) => { el.hidden = !s.streamrip[el.dataset.tool]; });
       srEmail.value = s.streamrip.qobuz || "";
     }
@@ -445,17 +483,18 @@ if (settingsDialog) {
   const installBtn = document.getElementById("settingsInstall");
   const updateMsg = document.getElementById("settingsUpdateMsg");
   let foundRel = null;
+  // Une seule ligne de texte et un seul bouton à la même place : la boîte garde sa taille
   const showFound = (rel) => {
     foundRel = rel;
-    updateMsg.textContent = t("Nouvelle version disponible : {version}.", { version: rel.version });
+    updateMsg.textContent = t("Version {version} disponible.", { version: rel.version });
     updateMsg.hidden = false;
-    installBtn.textContent = t("Mettre à jour ({version})", { version: rel.version });
+    installBtn.textContent = t("Mettre à jour");
     installBtn.hidden = false;
+    checkBtn.hidden = true;
   };
   checkBtn.addEventListener("click", async () => {
     checkBtn.disabled = true;
     checkBtn.textContent = t("Recherche…");
-    updateMsg.hidden = true;
     installBtn.hidden = true;
     try {
       const res = await api("/api/local/maj/verifier", { method: "POST" });
@@ -533,6 +572,11 @@ if (settingsDialog) {
   document.getElementById("settingsBtn").addEventListener("click", async () => {
     settingsDialog.showModal();
     try {
+      // Nouvelle version déjà connue du lanceur (vérifiée au lancement puis toutes les 6 h)
+      if (!pendingRelease) api("/api/local/maj").then((rel) => {
+        showUpdateButton(rel);
+        if (rel.version && !foundRel) showFound(rel);
+      }).catch(() => {});
       show(await api("/api/local/settings"));
     } catch (e) {
       showToast(e.message);
@@ -571,6 +615,12 @@ if (settingsDialog) {
       spotify_sp_dc: srSpDc.value };
     // Champs vides = garder l'existant : rien à envoyer pour eux
     ["qobuz_password", "deezer_arl", "spotify_sp_dc"].forEach((k) => { if (!body[k].trim()) delete body[k]; });
+    // Valeur trop courte : souvent un copier-coller incomplet (le jeton arl fait environ 190 caractères)
+    if ((body.deezer_arl && body.deezer_arl.trim().length < 100) || (body.spotify_sp_dc && body.spotify_sp_dc.trim().length < 50)) {
+      document.getElementById("settingsTokenHelp").open = true;
+      showToast(t("Cette clé semble incomplète : copie toute la valeur (double-clic dessus, puis copier)."));
+      return;
+    }
     if (Object.values(body).some((v) => v.trim()) && !(await askRisk())) return;
     saveStreamrip({ ...body, accept_risks: true }, t("Identifiants enregistrés."));
   });
