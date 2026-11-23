@@ -141,6 +141,13 @@ window.I18N_EN = {
     "You need a Qobuz, Deezer Premium or Spotify Premium subscription in your name. Your credentials stay in a file on this PC and are only sent to the site concerned. Tools used: streamrip (Qobuz, Deezer) and Votify (Spotify).",
   "Seuls les morceaux sont concernés (pas les albums). Le jeton Deezer (arl) et le cookie Spotify (sp_dc) se trouvent dans les outils du navigateur, onglet des cookies, quand tu es connecté à deezer.com ou open.spotify.com.":
     "Only tracks are covered (not albums). The Deezer token (arl) and the Spotify cookie (sp_dc) are in the browser's developer tools, cookies tab, while you're signed in to deezer.com or open.spotify.com.",
+  "FLAC indisponible, MP3 320 à la place.": "FLAC unavailable, MP3 320 instead.",
+  "Deezer refuse ton ARL : il a sans doute expiré. Mets-en un nouveau dans les Réglages (Sources avec abonnement).":
+    "Deezer rejects your ARL: it has probably expired. Enter a new one in Settings (Subscription sources).",
+  "Ce morceau Deezer n'est pas disponible dans ton pays.": "This Deezer track isn't available in your country.",
+  "Deezer ne propose pas ce morceau en téléchargement (retiré, ou réservé à certains pays).":
+    "Deezer doesn't offer this track for download (removed, or limited to some countries).",
+  "Deezer n'a pas fourni ce morceau, ni en FLAC ni en MP3 320.": "Deezer didn't provide this track, neither in FLAC nor in MP3 320.",
   "Activé : {sites}.": "On: {sites}.",
   "Pas encore réglé.": "Not set up yet.",
   "Identifiants enregistrés.": "Credentials saved.",

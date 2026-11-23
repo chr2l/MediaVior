@@ -2253,6 +2253,7 @@ def _new_job(kind: str, title: str, thumbnail: Optional[str], payload: dict) -> 
         "title": title,
         "thumbnail": thumbnail,
         "error": None,
+        "note": None,  # remarque affichée à la fin (ex. : MP3 à la place du FLAC)
         "speed": None,
         "eta": None,
         "filename": None,
@@ -2739,8 +2740,8 @@ def _source_analysis(service: str, url: str) -> dict:
     }
 
 
-def _streamrip_write_config(folder: Path) -> Path:
-    """Écrit la config de streamrip (dossier du travail, identifiants). tomlkit vient avec streamrip :
+def _streamrip_write_config(folder: Path, deezer_quality: int = 2) -> Path:
+    """Écrit la config de streamrip (dossier du travail, identifiants, qualité Deezer : 2 = FLAC, 1 = MP3 320). tomlkit vient avec streamrip :
     c'est le Python de streamrip (son propre environnement) qui modifie le fichier."""
     rip = Path(_tool_bin("rip"))
     STREAMRIP_CONFIG.parent.mkdir(parents=True, exist_ok=True)
@@ -2752,7 +2753,7 @@ def _streamrip_write_config(folder: Path) -> Path:
         "downloads": {"folder": str(folder), "source_subdirectories": False},
         "qobuz": {"quality": 4, "use_auth_token": False, "email_or_userid": c.get("qobuz_email", ""),
                   "password_or_token": c.get("qobuz_password", ""), "download_booklets": False},
-        "deezer": {"quality": 2, "arl": c.get("deezer_arl", "")},
+        "deezer": {"quality": deezer_quality, "arl": c.get("deezer_arl", "")},
         "artwork": {"embed": True, "save_artwork": False},
         "filepaths": {"add_singles_to_folder": False},
         "conversion": {"enabled": False},
@@ -2803,7 +2804,7 @@ def _tool_convert(job_dir: Path, container: str) -> None:
     src.unlink(missing_ok=True)
 
 
-def _tool_command(service: str, url: str, work: Path) -> list:
+def _tool_command(service: str, url: str, work: Path, quality: int = 2) -> list:
     if service == "spotify":
         cookies = work / ".cookies.txt"  # le cookie sp_dc du compte, au format attendu par Votify
         _private_write(cookies, "# Netscape HTTP Cookie File\n.spotify.com\tTRUE\t/\tTRUE\t0\tsp_dc\t"
@@ -2812,42 +2813,87 @@ def _tool_command(service: str, url: str, work: Path) -> list:
                 "--temp", str(work / ".tmp"), "--ffmpeg-path", FFMPEG, "--session-type", "librespot",
                 "--audio-quality", "vorbis-high,vorbis-medium", "--no-synced-lyrics-file",
                 "--log-level", "ERROR", url]
-    config = _streamrip_write_config(work)
+    config = _streamrip_write_config(work, quality)
     return [_tool_bin("rip"), "--config-path", str(config), "--no-db", "--no-progress", "url", url]
+
+
+DEEZER_MP3_NOTE = "FLAC indisponible, MP3 320 à la place."
+# Ce que streamrip écrit dans son journal quand Deezer refuse un morceau → message clair
+_DEEZER_REASONS = [
+    (r"AuthenticationError|MissingCredentials|invalid arl",
+     "Deezer refuse ton ARL : il a sans doute expiré. Mets-en un nouveau dans les Réglages (Sources avec abonnement)."),
+    (r"country|location|geolocation",
+     "Ce morceau Deezer n'est pas disponible dans ton pays."),
+    (r"Missing download info|not available for stream|NonStreamable",
+     "Deezer ne propose pas ce morceau en téléchargement (retiré, ou réservé à certains pays)."),
+]
+
+
+def _run_source_tool(job: dict, cmd: list, work: Path, log_path: Path, started: float) -> tuple:
+    """Lance streamrip ou Votify, attend la fin. Renvoie (fichiers audio produits, journal)."""
+    with log_path.open("wb") as log:
+        # Lignes longues : le journal de streamrip (rich) n'est pas coupé, les messages restent lisibles
+        env = {**os.environ, "COLUMNS": "1000"}
+        proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, cwd=str(work),
+                                env=env, **({"creationflags": 0x08000000} if sys.platform.startswith("win") else {}))
+        while proc.poll() is None:
+            if job["_cancel"] or time.time() - started > TOOL_TIMEOUT:
+                proc.kill()
+                proc.wait()
+                if job["_cancel"]:
+                    raise JobCancelled()
+                raise RuntimeError("Le téléchargement met trop de temps.")
+            time.sleep(0.5)
+    files = sorted((f for f in work.rglob("*") if f.is_file() and f.suffix.lower() in AUDIO_EXTS
+                    and ".tmp" not in f.parts),
+                   key=lambda f: f.stat().st_size, reverse=True)
+    try:
+        text = re.sub(r"\s+", " ", log_path.read_text("utf-8", errors="replace"))
+    except OSError:
+        text = ""
+    return files, text
+
+
+def _deezer_reason(log_text: str) -> str:
+    for pattern, message in _DEEZER_REASONS:
+        if re.search(pattern, log_text, re.IGNORECASE):
+            return message
+    return "Deezer n'a pas fourni ce morceau, ni en FLAC ni en MP3 320."
 
 
 def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, count: int, service: str) -> dict:
     """Télécharge un morceau avec streamrip ou Votify. Lève une erreur si rien n'est produit
-    (l'appelant retombe alors sur yt-dlp)."""
+    (l'appelant retombe alors sur yt-dlp, sauf pour Deezer : yt-dlp n'y arrive jamais, DRM).
+    Deezer : FLAC d'abord ; s'il est refusé (abonnement non HiFi), nouvel essai en MP3 320."""
     work = job_dir / ".source"
-    shutil.rmtree(work, ignore_errors=True)
-    work.mkdir(parents=True)
     log_path = job_dir / ".source.log"
     job.update(status="downloading", speed=None, eta=None)
     started = time.time()
+    mp3_fallback = False
     try:
-        cmd = _tool_command(service, url, work)
-        with log_path.open("wb") as log:
-            proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, cwd=str(work),
-                                    **({"creationflags": 0x08000000} if sys.platform.startswith("win") else {}))
-            while proc.poll() is None:
-                if job["_cancel"] or time.time() - started > TOOL_TIMEOUT:
-                    proc.kill()
-                    proc.wait()
-                    if job["_cancel"]:
-                        raise JobCancelled()
-                    raise RuntimeError("Le téléchargement met trop de temps.")
-                time.sleep(0.5)
-        files = sorted((f for f in work.rglob("*") if f.is_file() and f.suffix.lower() in AUDIO_EXTS
-                        and ".tmp" not in f.parts),
-                       key=lambda f: f.stat().st_size, reverse=True)
+        for quality in ((2, 1) if service == "deezer" else (2,)):
+            shutil.rmtree(work, ignore_errors=True)
+            work.mkdir(parents=True)
+            files, log_text = _run_source_tool(job, _tool_command(service, url, work, quality), work, log_path, started)
+            if files:
+                break
+            if service == "deezer" and quality == 2:
+                if re.search(r"AuthenticationError|MissingCredentials", log_text):
+                    break  # ARL refusé : inutile de réessayer en MP3
+                continue
         if not files:
+            if service == "deezer":
+                raise RuntimeError(_deezer_reason(log_text))
             raise RuntimeError("Aucun fichier n'a été produit.")
+        # MP3 : abonnement sans FLAC (2e essai), ou morceau sans version FLAC (streamrip choisit seul)
+        mp3_fallback = service == "deezer" and files[0].suffix.lower() == ".mp3"
         final = job_dir / files[0].name
         shutil.move(str(files[0]), str(final))
     finally:
         shutil.rmtree(work, ignore_errors=True)
         log_path.unlink(missing_ok=True)
+    if mp3_fallback:
+        job["note"] = DEEZER_MP3_NOTE
     info: dict = {"extractor_key": "Votify" if service == "spotify" else "streamrip", "title": final.stem}
     try:
         import mutagen
@@ -2862,7 +2908,10 @@ def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, co
     if count == 1 and job["title"] == url:
         job["title"] = info["title"]
     job["progress"] = round((index + 1) / count * 100, 1)
-    if p["container"] != "original":
+    # MP3 de secours gardé tel quel : le convertir en FLAC / WAV / AIFF grossirait le fichier sans
+    # rien gagner en qualité
+    keep_mp3 = mp3_fallback and p["container"] in ("flac", "wav", "aiff")
+    if p["container"] != "original" and not keep_mp3:
         job.update(status="converting", speed=None, eta=None)
         _tool_convert(job_dir, p["container"])
     _auto_album(_media_file(job_dir), info.get("duration"))
@@ -2880,6 +2929,8 @@ def _fetch_media(job: dict, p: dict, url: str, job_dir: Path, index: int = 0, co
         except Exception:
             if job["_cancel"]:
                 raise JobCancelled()
+            if service == "deezer":  # yt-dlp échoue toujours sur Deezer (DRM) : la vraie raison
+                raise
             for leftover in job_dir.iterdir():  # reste d'un essai raté : yt-dlp repart à neuf
                 if leftover.is_file() and leftover.suffix.lower() in AUDIO_EXTS:
                     leftover.unlink(missing_ok=True)
