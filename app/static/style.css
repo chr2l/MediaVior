@@ -2273,3 +2273,32 @@ body.own-titlebar .side__tabs { padding-top: 20px; }
 .risk-dialog .settings-check { margin: 8px 0 4px; color: var(--paper); }
 .risk-dialog .yt-dialog__foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .risk-dialog .yt-dialog__foot .btn { width: auto; margin-top: 0; }
+
+/* Sources avec abonnement : pastilles « branché » (Réglages) et ligne sous la case du lien */
+.svc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.svc-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px;
+  font-size: 0.78rem; line-height: 1.4; color: var(--paper-dim);
+  background: var(--ink); border: 1px solid var(--hairline-soft);
+}
+.svc-chip__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
+.svc-chip__name { font-weight: 600; color: var(--paper); }
+.svc-chip.is-on { border-color: color-mix(in srgb, var(--teal) 45%, transparent); background: color-mix(in srgb, var(--teal) 10%, transparent); }
+.svc-chip.is-on .svc-chip__dot { background: var(--teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 25%, transparent); }
+.svc-chip.is-on .svc-chip__state { color: var(--teal); }
+.subs {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; padding: 0;
+  background: none; border: 0; font: inherit; color: var(--paper-dim); font-size: 0.8rem; cursor: pointer; text-align: left;
+}
+.subs.hidden { display: none; }
+.subs:hover .svc-chip.is-on { border-color: var(--teal); }
+.subs:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; border-radius: 6px; }
+#intake:has(~ #result:not(.hidden)) .subs { display: none; }
+/* Mode d'emploi du jeton Deezer / cookie Spotify */
+.token-help { margin-top: 10px; }
+.token-help ol { margin: 6px 0 0; padding-left: 20px; }
+.token-help li { margin: 3px 0; }
+.token-help a { color: var(--brass); }
+/* Mise à jour : un seul bouton à la même place, la boîte garde sa taille */
+.update-actions { flex-wrap: nowrap; }
+.update-actions .btn { white-space: nowrap; }
