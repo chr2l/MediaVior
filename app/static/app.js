@@ -799,10 +799,11 @@ function sinceText(timestamp) {
   return t(days > 1 ? "il y a {n} jours" : "il y a {n} jour", { n: days });
 }
 
-function listenText(seconds) {
+// Durée seule (« 10 min », « 2 h ») pour la case « à écouter » du coffre
+function listenValue(seconds) {
   const hours = Math.floor(seconds / 3600);
-  if (hours >= 1) return t("{n} h à écouter", { n: hours });
-  return t("{n} min à écouter", { n: Math.max(1, Math.round(seconds / 60)) });
+  if (hours >= 1) return t("{n} h", { n: hours });
+  return t("{n} min", { n: Math.max(1, Math.round(seconds / 60)) });
 }
 
 // Stats : d'après l'historique (les fichiers déplacés ailleurs comptent toujours), sinon le coffre
@@ -841,7 +842,10 @@ function renderStats() {
   if (sons) chips.push(chip("son", "music", sons, t(sons > 1 ? "sons" : "son")));
   if (videos) chips.push(chip("video", "film", videos, t(videos > 1 ? "vidéos" : "vidéo")));
   if (zips) chips.push(chip("zip", "box", zips, `zip${zips > 1 ? "s" : ""}`));
-  chips.push(chip("neutral", "disk", formatBytes(size), seconds ? listenText(seconds) : t("sur le disque")));
+  chips.push(chip("neutral", "disk", formatBytes(size), t("sur le disque")));
+  if (seconds) chips.push(chip("neutral", "music", listenValue(seconds), t("à écouter")));
+  // Le total en titre, le détail en petites cases sur deux colonnes (chiffre au-dessus, mot en dessous)
+  chips[0].classList.add("stat--total");
   statsEl.replaceChildren(...chips);
 }
 
