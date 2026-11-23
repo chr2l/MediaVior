@@ -2074,6 +2074,17 @@ label.set-item__text { cursor: pointer; }
 .apercu-bar .btn { margin-top: 0; }
 .apercu-bar .btn .icon { width: 15px; height: 15px; }
 
+/* Réglages : dossiers de musique lus par l'appli */
+.settings-linked { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.settings-linked:empty { display: none; }
+.settings-linked__row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.settings-linked__count { font-size: 0.82rem; opacity: 0.75; white-space: nowrap; }
+.settings-linked__row .btn, .settings-linked__rescan { margin-top: 0; width: auto; justify-self: start; }
+@media (max-width: 520px) {
+  .settings-linked__row { grid-template-columns: 1fr auto; }
+  .settings-linked__row .settings-path { grid-column: 1 / -1; }
+}
+
 /* Réglages : dossiers à part pour les sons et les vidéos */
 .settings-error { color: var(--danger); opacity: 1; margin: 0; }
 .settings-kinds { display: grid; gap: 8px; }

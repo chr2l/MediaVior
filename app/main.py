@@ -139,6 +139,8 @@ class JobCancelled(Exception):
 async def lifespan(_app: FastAPI):
     _cleanup_unfinished()
     tasks = [asyncio.create_task(_worker()), asyncio.create_task(_ytdlp_updater())]
+    if LOCAL_MODE and _linked_folders():  # dossiers de musique ajoutés : nouveaux morceaux, effacés…
+        threading.Thread(target=_scan_all_linked, daemon=True).start()
     if LOCAL_MODE:
         tasks += jumelage.setup(sys.modules[__name__])  # liaison avec le téléphone
         if EXTENSION_TARGET.is_dir():  # extension déjà ajoutée : on la garde à jour avec l'appli
@@ -739,7 +741,7 @@ def _pick_folder_sync(start: str, title: str) -> Optional[str]:
 
 
 class PickFolder(BaseModel):
-    kind: Optional[str] = None  # "audio" / "video" : part du dossier déjà choisi pour ce type
+    kind: Optional[str] = None  # "audio" / "video" : part du dossier déjà choisi ; "music" : dossier Musique
     title: Optional[str] = None  # titre de la fenêtre, dans la langue de l'interface
 
 
@@ -751,6 +753,9 @@ async def pick_folder(payload: Optional[PickFolder] = None):
     _local_only()
     payload = payload or PickFolder()
     current = {"audio": AUDIO_DIR, "video": VIDEO_DIR}.get(payload.kind or "")
+    if payload.kind == "music":  # dossier de musique à lire : on part du dossier Musique
+        music = Path.home() / "Music"
+        current = music if music.is_dir() else Path.home()
     start = str(current or DOWNLOAD_DIR)
     title = (payload.title or "Dossier des médias MediaVior").strip()[:120] or "MediaVior"
     if not _PICKING.acquire(blocking=False):
@@ -1077,6 +1082,7 @@ def _item_view(d: Path) -> Optional[dict]:
         else "audio" if media.suffix.lower() in AUDIO_EXTS else "video",
         "edited": bool(meta.get("parent")),
         "count": meta.get("count"),  # nombre de fichiers dans un zip
+        "linked": bool(meta.get("linked")),  # morceau lu dans un dossier ajouté : le fichier reste à sa place
     }
 
 
@@ -1159,6 +1165,8 @@ def _cleanup_unfinished() -> None:
         if meta and meta.get("status") != "done":
             shutil.rmtree(d, ignore_errors=True)
             continue
+        if meta.get("linked") and not Path(meta["linked"]).is_dir():
+            continue  # dossier ajouté absent (disque débranché…) : ses morceaux reviendront avec lui
         try:
             if not _publish(d):
                 shutil.rmtree(d, ignore_errors=True)  # média supprimé depuis l'explorateur
@@ -1278,7 +1286,10 @@ async def delete_item(item_id: str):
         raise HTTPException(status_code=409, detail="Ce fichier est encore en cours de traitement.")
     meta = _read_meta(d)
     media = _media_file(d, meta)
-    if media and meta.get("file"):  # média rangé (dossier principal, sons ou vidéos)
+    if meta.get("linked"):  # morceau d'un dossier ajouté : on ne touche pas au fichier
+        if media:
+            _ignore_linked(meta["linked"], media)
+    elif media and meta.get("file"):  # média rangé (dossier principal, sons ou vidéos)
         media.unlink(missing_ok=True)
     shutil.rmtree(d, ignore_errors=True)
     JOBS.pop(item_id, None)
@@ -1777,7 +1788,7 @@ def _apply_tags(d: Path, values: dict, cover: Optional[tuple], rename: bool) -> 
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Impossible d'écrire les infos dans ce fichier : {exc}")
     tags = _read_tags(media)
-    if rename and meta.get("file") and tags.get("title"):
+    if rename and meta.get("file") and not meta.get("linked") and tags.get("title"):
         name = _safe_filename(_tag_title(tags, media.stem))
         if name and name != media.stem:
             target = _free_name(name + media.suffix, media.parent)
@@ -1916,6 +1927,263 @@ async def import_file(request: Request, name: str, auto: bool = True):
         shutil.rmtree(d, ignore_errors=True)
         raise
     return {"item": _item_view(d), "filled": filled}
+
+
+# ---------------------------------------------------------------------------
+# Dossiers de musique ajoutés (version PC) : MediaVior lit leurs sons sans rien copier ni déplacer.
+# Chaque morceau a sa fiche dans le coffre, qui pointe vers le fichier là où il est.
+# « Enlever du coffre » le retire de la liste (il est noté à part pour ne pas revenir), sans l'effacer.
+# ---------------------------------------------------------------------------
+
+LINKED_FILE = STATE_DIR / "dossiers-musique.json"
+LINKED_LOCK = threading.Lock()
+MAX_LINKED_FILES = 50000  # par dossier : au-delà, on s'arrête (dossier trop gros ou mal choisi)
+
+
+def _linked_state() -> dict:
+    try:
+        data = json.loads(LINKED_FILE.read_text("utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    folders = data.get("folders") if isinstance(data, dict) else None
+    ignored = data.get("ignored") if isinstance(data, dict) else None
+    return {"folders": [f for f in folders or [] if isinstance(f, str)],
+            "ignored": [f for f in ignored or [] if isinstance(f, str)]}
+
+
+def _save_linked(state: dict) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = LINKED_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(state, ensure_ascii=False), "utf-8")
+    tmp.replace(LINKED_FILE)
+
+
+def _linked_folders() -> list:
+    return _linked_state()["folders"] if LOCAL_MODE else []
+
+
+def _ignore_linked(folder: str, media: Path) -> None:
+    with LINKED_LOCK:
+        state = _linked_state()
+        key = str(media)
+        if folder in state["folders"] and key not in state["ignored"]:
+            state["ignored"].append(key)
+            try:
+                _save_linked(state)
+            except OSError:
+                pass
+
+
+def _linked_items(folder: Optional[str] = None) -> Dict[str, Path]:
+    """Fiches des morceaux lus dans les dossiers ajoutés : chemin du fichier → dossier de la fiche."""
+    found = {}
+    for d in ITEMS_DIR.iterdir():
+        if not (d.is_dir() and ITEM_ID.match(d.name)):
+            continue
+        meta = _read_meta(d)
+        if meta.get("linked") and (folder is None or meta["linked"] == folder) and meta.get("dir"):
+            found[str(Path(meta["dir"]) / meta.get("file", ""))] = d
+    return found
+
+
+def _known_media() -> set:
+    """Fichiers déjà dans le coffre (téléchargés, ajoutés…) : pour ne pas les compter deux fois."""
+    known = set()
+    for d in ITEMS_DIR.iterdir():
+        if d.is_dir() and ITEM_ID.match(d.name):
+            media = _media_file(d)
+            if media:
+                try:
+                    known.add(str(media.resolve()))
+                except OSError:
+                    pass
+    return known
+
+
+def _audio_files(root: Path):
+    """Sons du dossier et de ses sous-dossiers, sans les dossiers cachés (dont .mediavior)."""
+    count = 0
+    for base, dirs, files in os.walk(root):
+        dirs[:] = sorted(x for x in dirs if not x.startswith("."))
+        for name in sorted(files):
+            if name.startswith(".") or Path(name).suffix.lower() not in AUDIO_EXTS:
+                continue
+            yield Path(base) / name
+            count += 1
+            if count >= MAX_LINKED_FILES:
+                return
+
+
+def _add_linked_file(folder: str, media: Path) -> bool:
+    """Crée la fiche d'un morceau trouvé dans un dossier ajouté (infos lues dans le fichier)."""
+    try:
+        tags = _read_tags(media)
+    except Exception:
+        tags = {}
+    f = _mutagen_file(media)
+    duration = getattr(getattr(f, "info", None), "length", None)
+    if f is None and not tags.get("title"):  # pas lisible par mutagen : on vérifie qu'il y a du son
+        try:
+            probe = _probe(media)
+        except Exception:
+            return False
+        if not probe.get("has_audio"):
+            return False
+        duration = probe.get("duration")
+    try:
+        created = media.stat().st_mtime
+    except OSError:
+        return False
+    item_id = uuid.uuid4().hex
+    d = ITEMS_DIR / item_id
+    d.mkdir(parents=True)
+    meta = {"status": "done", "kind": "linked", "linked": folder, "dir": str(media.parent), "file": media.name,
+            "title": _tag_title(tags, media.stem), "created": created, "duration": duration or None}
+    if tags.get("cover"):
+        meta["thumbnail"] = f"/api/library/{item_id}/cover?v={int(created)}"
+    _write_meta(d, meta)
+    return True
+
+
+def _scan_linked(folder: str) -> dict:
+    """Relit un dossier ajouté : ajoute les nouveaux sons, oublie ceux qui n'y sont plus."""
+    root = Path(folder)
+    if not root.is_dir():
+        return {"added": 0, "removed": 0, "missing": True}
+    with LINKED_LOCK:
+        ignored = set(_linked_state()["ignored"])
+        items = _linked_items(folder)
+        known = _known_media()
+        removed = 0
+        for path, d in items.items():
+            if not Path(path).is_file():
+                shutil.rmtree(d, ignore_errors=True)
+                _forget(d.name)
+                removed += 1
+        added = 0
+        for media in _audio_files(root):
+            key = str(media)
+            if key in items or key in ignored:
+                continue
+            try:
+                if str(media.resolve()) in known:
+                    continue
+            except OSError:
+                continue
+            if _add_linked_file(folder, media):
+                added += 1
+    return {"added": added, "removed": removed, "missing": False}
+
+
+def _scan_all_linked() -> None:
+    for folder in _linked_folders():
+        try:
+            _scan_linked(folder)
+        except OSError:
+            pass
+
+
+def _linked_view() -> list:
+    items = _linked_items()
+    out = []
+    for folder in _linked_folders():
+        n = sum(1 for d in items.values() if _read_meta(d).get("linked") == folder)
+        out.append({"path": folder, "count": n, "missing": not Path(folder).is_dir()})
+    return out
+
+
+class LinkedFolder(BaseModel):
+    path: str = Field(..., max_length=2000)
+
+
+@app.get("/api/local/dossiers")
+async def linked_folders():
+    _local_only()
+    return await asyncio.get_running_loop().run_in_executor(None, _linked_view)
+
+
+@app.post("/api/local/dossiers")
+async def add_linked_folder(payload: LinkedFolder):
+    """Ajoute un dossier de musique : ses sons apparaissent dans le coffre, sans être copiés."""
+    _local_only()
+    raw = Path(payload.path.strip()).expanduser()
+    if not raw.is_absolute():
+        raise HTTPException(status_code=400, detail="Donne le chemin complet du dossier.")
+    try:
+        root = raw.resolve()
+    except OSError:
+        raise HTTPException(status_code=400, detail="Ce dossier est introuvable.")
+    if not root.is_dir():
+        raise HTTPException(status_code=400, detail="Ce dossier est introuvable.")
+    items_dir = ITEMS_DIR.resolve()
+    if root == items_dir or items_dir in root.parents:
+        raise HTTPException(status_code=400, detail="Choisis un autre dossier.")
+    if any(d and root == d.resolve() for d in (DOWNLOAD_DIR, AUDIO_DIR, VIDEO_DIR)):
+        raise HTTPException(status_code=400, detail="Ce dossier est déjà celui où MediaVior range tes médias.")
+    folder = str(root)
+    with LINKED_LOCK:
+        state = _linked_state()
+        for other in state["folders"]:
+            o = Path(other)
+            if o == root or o in root.parents:
+                raise HTTPException(status_code=400, detail="Ce dossier est déjà lu par MediaVior.")
+        # Un dossier plus large que ceux déjà ajoutés les remplace (pas de morceau en double)
+        inside = [o for o in state["folders"] if root in Path(o).parents]
+        state["folders"] = [o for o in state["folders"] if o not in inside] + [folder]
+        try:
+            _save_linked(state)
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
+    loop = asyncio.get_running_loop()
+    for old in inside:
+        await loop.run_in_executor(None, _drop_linked, old)
+    result = await loop.run_in_executor(None, _scan_linked, folder)
+    return {**result, "folders": await loop.run_in_executor(None, _linked_view)}
+
+
+def _drop_linked(folder: str) -> int:
+    """Retire du coffre les morceaux d'un dossier (les fichiers restent où ils sont)."""
+    with LINKED_LOCK:
+        items = _linked_items(folder)
+        for d in items.values():
+            shutil.rmtree(d, ignore_errors=True)
+            _forget(d.name)
+        state = _linked_state()
+        state["ignored"] = [p for p in state["ignored"] if not (Path(p) == Path(folder) or Path(folder) in Path(p).parents)]
+        try:
+            _save_linked(state)
+        except OSError:
+            pass
+    return len(items)
+
+
+@app.post("/api/local/dossiers/retirer")
+async def remove_linked_folder(payload: LinkedFolder):
+    _local_only()
+    with LINKED_LOCK:
+        state = _linked_state()
+        if payload.path not in state["folders"]:
+            raise HTTPException(status_code=404, detail="Ce dossier n'est pas dans la liste.")
+        state["folders"].remove(payload.path)
+        try:
+            _save_linked(state)
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail=f"Réglage impossible : {exc}")
+    loop = asyncio.get_running_loop()
+    removed = await loop.run_in_executor(None, _drop_linked, payload.path)
+    return {"removed": removed, "folders": await loop.run_in_executor(None, _linked_view)}
+
+
+@app.post("/api/local/dossiers/relire")
+async def rescan_linked_folders():
+    _local_only()
+    loop = asyncio.get_running_loop()
+    added = removed = 0
+    for folder in _linked_folders():
+        r = await loop.run_in_executor(None, _scan_linked, folder)
+        added += r["added"]
+        removed += r["removed"]
+    return {"added": added, "removed": removed, "folders": await loop.run_in_executor(None, _linked_view)}
 
 
 def _auto_album(media: Optional[Path], duration: Optional[float]) -> None:

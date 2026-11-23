@@ -951,7 +951,10 @@ function libraryRow(item, isNew) {
 }
 
 async function deleteItem(item) {
-  if (!confirm(t("Enlever « {title} » du coffre ?\nLe fichier sera définitivement effacé.", { title: item.title }))) return;
+  const question = item.linked
+    ? t("Enlever « {title} » du coffre ?\nLe fichier reste dans ton dossier.", { title: item.title })
+    : t("Enlever « {title} » du coffre ?\nLe fichier sera définitivement effacé.", { title: item.title });
+  if (!confirm(question)) return;
   try {
     await api(`/api/library/${item.id}`, { method: "DELETE" });
     libraryItems = libraryItems.filter((i) => i.id !== item.id);
@@ -1047,9 +1050,11 @@ selDelete.addEventListener("click", async () => {
   const items = libraryItems.filter((i) => selected.has(i.id));
   if (!items.length) return;
   const n = items.length;
-  const question = n === 1
+  const linked = items.filter((i) => i.linked).length;
+  const question = (n === 1
     ? t("Enlever « {title} » du coffre ?\nCette action est définitive.", { title: items[0].title })
-    : t("Enlever ces {n} fichiers du coffre ?\nCette action est définitive.", { n });
+    : t("Enlever ces {n} fichiers du coffre ?\nCette action est définitive.", { n }))
+    + (linked ? `\n${t("Les sons de tes dossiers de musique restent dans leur dossier.")}` : "");
   if (!confirm(question)) return;
   selDelete.disabled = true;
   selDelete.classList.add("is-loading");
