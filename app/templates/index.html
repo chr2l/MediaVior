@@ -238,6 +238,7 @@
         <p class="pane__stats" id="libraryStats"></p>
         <div class="pane__actions">
           <button type="button" class="btn-link" id="importBtn" title="Ajouter des sons de ton ordinateur : titre, interprètes et album sont complétés tout seuls">Ajouter mes sons</button>
+          {% if local %}<button type="button" class="btn-link" id="linkFolderBtn" title="Choisir un dossier de ton ordinateur : ses sons apparaissent dans le coffre, sans être copiés ni déplacés">Ajouter un dossier</button>{% endif %}
           <button type="button" class="btn-link hidden" id="selectBtn" aria-pressed="false">Sélectionner</button>
         </div>
         <input type="file" id="importInput" accept="audio/*,.mp3,.aiff,.aif,.wav,.flac,.m4a,.opus,.ogg,.aac" multiple hidden>
@@ -507,6 +508,16 @@
             <button type="button" class="btn btn--quiet btn--sm" data-pick-kind="video">Changer</button>
           </div>
         </div>
+      </div>
+      <!-- Dossiers de musique lus par l'appli : rien n'est copié ni déplacé (local.js, « Dossiers de musique ») -->
+      <div class="set-item">
+        <div class="set-item__text">
+          <span class="set-item__name">Dossiers de musique</span>
+          <span class="set-item__desc">Leurs sons apparaissent dans le coffre. Ils restent à leur place : rien n'est copié ni déplacé.</span>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" id="settingsLinkAdd">Ajouter</button>
+        <ul class="settings-linked set-item__full" id="settingsLinked"></ul>
+        <button type="button" class="btn btn--quiet btn--sm set-item__full settings-linked__rescan" id="settingsLinkRescan" hidden>Relire les dossiers</button>
       </div>
     </div>
   </section>

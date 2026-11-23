@@ -683,6 +683,85 @@ if (settingsDialog) {
     });
   });
 
+  // Dossiers de musique : MediaVior lit leurs sons sans rien copier ni déplacer
+  const linkedList = document.getElementById("settingsLinked");
+  const linkAdd = document.getElementById("settingsLinkAdd");
+  const linkRescan = document.getElementById("settingsLinkRescan");
+  const linkFolderBtn = document.getElementById("linkFolderBtn");
+  pickButtons.push(linkAdd);
+  if (linkFolderBtn) pickButtons.push(linkFolderBtn);
+  const showLinked = (folders) => {
+    linkedList.replaceChildren(...folders.map((f) => h("li", { class: "settings-linked__row" },
+      h("code", { class: "settings-path", title: f.path }, f.path),
+      h("span", { class: "settings-linked__count" }, f.missing ? t("introuvable")
+        : t(f.count > 1 ? "{n} sons" : "{n} son", { n: f.count })),
+      h("button", { type: "button", class: "btn btn--quiet btn--sm", onclick: () => removeLinked(f) }, t("Retirer")))));
+    linkRescan.hidden = !folders.length;
+  };
+  const loadLinked = async () => {
+    try {
+      showLinked(await api("/api/local/dossiers"));
+    } catch (e) {
+      /* rien à afficher */
+    }
+  };
+  const doneMsg = (r) => {
+    const parts = [];
+    if (r.added) parts.push(t(r.added > 1 ? "{n} sons ajoutés au coffre" : "{n} son ajouté au coffre", { n: r.added }));
+    if (r.removed) parts.push(t(r.removed > 1 ? "{n} sons qui n'y sont plus enlevés" : "{n} son qui n'y est plus enlevé", { n: r.removed }));
+    return parts.length ? `${parts.join(", ")}.` : t("Rien de nouveau dans tes dossiers.");
+  };
+  const busy = (btn, on, label) => {
+    btn.disabled = on;
+    btn.classList.toggle("is-loading", on);
+    if (label) btn.textContent = label;
+  };
+  const addLinked = async (btn) => {
+    const label = btn.textContent;
+    try {
+      let { path, manual } = await pickFolder({ kind: "music", title: t("Dossier de musique à lire") });
+      if (manual) path = prompt(t("Chemin complet du dossier de musique :"), "");
+      if (!path) return;
+      busy(btn, true, t("Lecture du dossier…"));
+      const r = await api("/api/local/dossiers", { method: "POST", body: { path: path.trim() } });
+      showLinked(r.folders);
+      showToast(doneMsg(r));
+      if (typeof loadLibrary === "function") loadLibrary();
+    } catch (e) {
+      showToast(e.message);
+    } finally {
+      busy(btn, false, label);
+    }
+  };
+  const removeLinked = async (f) => {
+    if (!confirm(t("Ne plus lire ce dossier ?\n{path}\nSes sons quittent le coffre, mais les fichiers restent où ils sont.", { path: f.path }))) return;
+    try {
+      const r = await api("/api/local/dossiers/retirer", { method: "POST", body: { path: f.path } });
+      showLinked(r.folders);
+      showToast(t("Dossier retiré. Tes fichiers n'ont pas bougé."));
+      if (typeof loadLibrary === "function") loadLibrary();
+    } catch (e) {
+      showToast(e.message);
+    }
+  };
+  linkAdd.addEventListener("click", () => addLinked(linkAdd));
+  if (linkFolderBtn) linkFolderBtn.addEventListener("click", () => addLinked(linkFolderBtn));
+  linkRescan.addEventListener("click", async () => {
+    const label = linkRescan.textContent;
+    busy(linkRescan, true, t("Lecture du dossier…"));
+    try {
+      const r = await api("/api/local/dossiers/relire", { method: "POST" });
+      showLinked(r.folders);
+      showToast(doneMsg(r));
+      if (typeof loadLibrary === "function") loadLibrary();
+    } catch (e) {
+      showToast(e.message);
+    } finally {
+      busy(linkRescan, false, label);
+    }
+  });
+  document.getElementById("settingsBtn").addEventListener("click", loadLinked);
+
   // Langue de l'appli (même choix que le lien « English / Français » en bas de page)
   const langSel = document.getElementById("settingsLang");
   langSel.value = window.LANG === "en" ? "en" : "fr";
