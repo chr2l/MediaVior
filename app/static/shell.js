@@ -77,13 +77,18 @@ function setBadge(view, count) {
 }
 
 function announceNewFiles(jobs) {
-  if (!jobs.length || libraryVisible()) return;
-  libraryUnseen += jobs.length;
-  setBadge("bibliotheque", libraryUnseen);
-  const text = jobs.length === 1 && jobs[0].title
+  // Remarque du serveur (ex. : MP3 à la place du FLAC) : montrée même coffre ouvert
+  const note = (jobs.find((j) => j.note) || {}).note;
+  if (!jobs.length || (libraryVisible() && !note)) return;
+  if (!libraryVisible()) {
+    libraryUnseen += jobs.length;
+    setBadge("bibliotheque", libraryUnseen);
+  }
+  let text = jobs.length === 1 && jobs[0].title
     ? t("« {title} » est dans le coffre.", { title: jobs[0].title })
     : t("{n} nouveaux fichiers dans le coffre.", { n: jobs.length });
-  showToast(text, t("Voir"), () => showView("bibliotheque"));
+  if (note) text += " " + t(note);
+  showToast(text, libraryVisible() ? "" : t("Voir"), () => showView("bibliotheque"));
 }
 
 function showToast(text, actionLabel, onAction) {
