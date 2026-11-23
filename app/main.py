@@ -2755,7 +2755,8 @@ def _streamrip_write_config(folder: Path, deezer_quality: int = 2) -> Path:
                   "password_or_token": c.get("qobuz_password", ""), "download_booklets": False},
         "deezer": {"quality": deezer_quality, "arl": c.get("deezer_arl", "")},
         "artwork": {"embed": True, "save_artwork": False},
-        "filepaths": {"add_singles_to_folder": False},
+        # « Artiste - Titre », comme le reste du coffre (pas de « 01. » ni de « (Explicit) »)
+        "filepaths": {"add_singles_to_folder": False, "track_format": "{artist} - {title}"},
         "conversion": {"enabled": False},
         "misc": {"check_for_updates": False},
         "cli": {"progress_bars": False, "text_output": False},
@@ -2861,6 +2862,16 @@ def _deezer_reason(log_text: str) -> str:
     return "Deezer n'a pas fourni ce morceau, ni en FLAC ni en MP3 320."
 
 
+def _clean_track_name(name: str, numbered: bool = False) -> str:
+    """« 01. Artiste - Titre (Explicit) » → « Artiste - Titre » (noms de streamrip / Votify).
+    numbered : nom de fichier, qui commence peut-être par le numéro de piste (pas un titre lu
+    dans les tags : « 112 - Cupid » est un vrai nom d'artiste)."""
+    if numbered:
+        name = re.sub(r"^\s*\d{1,3}(\s*[.\-_]\s*|\s+)", "", name)
+    name = re.sub(r"\s*[(\[]\s*explicit\s*[)\]]", "", name, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", name).strip() or name
+
+
 def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, count: int, service: str) -> dict:
     """Télécharge un morceau avec streamrip ou Votify. Lève une erreur si rien n'est produit
     (l'appelant retombe alors sur yt-dlp, sauf pour Deezer : yt-dlp n'y arrive jamais, DRM).
@@ -2905,6 +2916,16 @@ def _fetch_streamrip(job: dict, p: dict, url: str, job_dir: Path, index: int, co
             info["title"] = f"{artist} - {title}" if artist and title else title or final.stem
     except Exception:
         pass
+    info["title"] = _clean_track_name(info["title"], numbered=info["title"] == final.stem)
+    # Nom du fichier « Artiste - Titre.ext », comme le reste du coffre
+    name = _safe_filename(info["title"])
+    if name and name != final.stem:
+        renamed = final.with_name(name + final.suffix)
+        try:
+            final.rename(renamed)
+            final = renamed
+        except OSError:
+            pass
     if count == 1 and job["title"] == url:
         job["title"] = info["title"]
     job["progress"] = round((index + 1) / count * 100, 1)
