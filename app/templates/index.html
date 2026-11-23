@@ -112,6 +112,8 @@
             <button id="analyzeBtn" class="btn btn--ghost">Analyser</button>
           </div>
           <p class="hint sites"><span>YouTube</span><span>SoundCloud</span><span>Bandcamp</span><span>Vimeo</span><span>et plus de 1 000 autres sites</span></p>
+          <!-- Version PC : abonnements branchés (Qobuz, Deezer, Spotify), rempli par local.js -->
+          <button type="button" class="subs hidden" id="subsLine" title="Sources avec abonnement (Réglages)"></button>
           <p id="error" class="error hidden" role="alert"></p>
         </section>
 
@@ -544,12 +546,25 @@
         <div class="settings-actions">
           <button type="button" class="btn btn--ghost btn--sm" id="settingsStreamripBtn">Régler</button>
         </div>
-        <p class="hint set-item__full" id="settingsStreamripState" role="status"></p>
+        <div class="svc-chips set-item__full" id="settingsStreamripState" role="status"></div>
         <div class="set-item__full" id="settingsStreamripForm" hidden>
           <label class="field" data-tool="streamrip"><span class="field-label">E-mail Qobuz</span><input type="text" id="settingsQobuzEmail" autocomplete="off" spellcheck="false"></label>
           <label class="field" data-tool="streamrip"><span class="field-label">Mot de passe Qobuz</span><input type="password" id="settingsQobuzPassword" autocomplete="new-password" placeholder="Laisser vide pour ne pas le changer"></label>
           <label class="field" data-tool="streamrip"><span class="field-label">Jeton Deezer (arl)</span><input type="password" id="settingsDeezerArl" autocomplete="off" placeholder="Laisser vide pour ne pas le changer"></label>
           <label class="field" data-tool="votify"><span class="field-label">Cookie Spotify (sp_dc)</span><input type="password" id="settingsSpotifySpDc" autocomplete="off" placeholder="Laisser vide pour ne pas le changer"></label>
+          <details class="set-more token-help" id="settingsTokenHelp">
+            <summary>Où trouver mon jeton Deezer et mon cookie Spotify ?</summary>
+            <p>Ce sont des clés de connexion que ton navigateur garde quand tu es connecté. Il faut les copier une seule fois, depuis un ordinateur.</p>
+            <ol>
+              <li>Ouvre deezer.com ou open.spotify.com dans Chrome, Edge ou Firefox, et connecte-toi à ton compte.</li>
+              <li>Appuie sur F12 (sur Mac : Cmd + Option + I). Un panneau s'ouvre.</li>
+              <li>Clique sur l'onglet « Application » (Firefox : « Stockage »). Tu ne le vois pas ? Clique sur la double flèche au bout de la rangée d'onglets.</li>
+              <li>À gauche, ouvre « Cookies », puis clique sur l'adresse du site.</li>
+              <li>Deezer : trouve la ligne « arl ». Spotify : trouve la ligne « sp_dc ».</li>
+              <li>Double-clique sur sa valeur (une longue suite de lettres et de chiffres), copie-la, puis colle-la dans la case ci-dessus.</li>
+            </ol>
+            <p>Garde-les pour toi : elles ouvrent ton compte comme un mot de passe. Si un jour le téléchargement refuse ton compte, la clé a expiré : refais simplement ces étapes.</p>
+          </details>
           <div class="settings-actions">
             <button type="button" class="btn btn--ghost btn--sm" id="settingsStreamripClear">Tout effacer</button>
             <button type="button" class="btn btn--solid btn--sm" id="settingsStreamripSave">Enregistrer</button>
@@ -558,7 +573,7 @@
         <details class="set-more set-item__full">
           <summary>Comment ça marche ?</summary>
           <p>Il faut un abonnement Qobuz, Deezer Premium ou Spotify Premium à ton nom. Tes identifiants restent dans un fichier de ce PC et ne sont envoyés qu'au site concerné. Outils utilisés : streamrip (Qobuz, Deezer) et Votify (Spotify).</p>
-          <p>Morceaux, albums et playlists (un album arrive dans un zip). Le jeton Deezer (arl) et le cookie Spotify (sp_dc) se trouvent dans les outils du navigateur, onglet des cookies, quand tu es connecté à deezer.com ou open.spotify.com.</p>
+          <p>Morceaux, albums et playlists (un album arrive dans un zip). Pour trouver le jeton Deezer (arl) et le cookie Spotify (sp_dc), clique sur « Régler » : le mode d'emploi est sous les cases.</p>
         </details>
       </div>
     </div>
@@ -603,7 +618,7 @@
           <span class="set-item__name settings-version" id="settingsVersion"></span>
           <span class="set-item__desc" id="settingsUpdateMsg" role="status" hidden></span>
         </div>
-        <div class="settings-actions">
+        <div class="settings-actions update-actions">
           <button type="button" class="btn btn--ghost btn--sm" id="settingsCheck">Rechercher une mise à jour</button>
           <button type="button" class="btn btn--solid btn--sm" id="settingsInstall" hidden></button>
         </div>

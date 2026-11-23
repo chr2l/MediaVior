@@ -139,8 +139,8 @@ window.I18N_EN = {
   "Tout effacer": "Clear all",
   "Il faut un abonnement Qobuz, Deezer Premium ou Spotify Premium à ton nom. Tes identifiants restent dans un fichier de ce PC et ne sont envoyés qu'au site concerné. Outils utilisés : streamrip (Qobuz, Deezer) et Votify (Spotify).":
     "You need a Qobuz, Deezer Premium or Spotify Premium subscription in your name. Your credentials stay in a file on this PC and are only sent to the site concerned. Tools used: streamrip (Qobuz, Deezer) and Votify (Spotify).",
-  "Morceaux, albums et playlists (un album arrive dans un zip). Le jeton Deezer (arl) et le cookie Spotify (sp_dc) se trouvent dans les outils du navigateur, onglet des cookies, quand tu es connecté à deezer.com ou open.spotify.com.":
-    "Tracks, albums and playlists (an album comes as a zip). The Deezer token (arl) and the Spotify cookie (sp_dc) are in the browser's developer tools, cookies tab, while you're signed in to deezer.com or open.spotify.com.",
+  "Morceaux, albums et playlists (un album arrive dans un zip). Pour trouver le jeton Deezer (arl) et le cookie Spotify (sp_dc), clique sur « Régler » : le mode d'emploi est sous les cases.":
+    "Tracks, albums and playlists (an album comes as a zip). To find the Deezer token (arl) and the Spotify cookie (sp_dc), click “Set up”: the how-to is below the fields.",
   "FLAC indisponible, MP3 320 à la place.": "FLAC unavailable, MP3 320 instead.",
   "Deezer refuse ton ARL : il a sans doute expiré. Mets-en un nouveau dans les Réglages (Sources avec abonnement).":
     "Deezer rejects your ARL: it has probably expired. Enter a new one in Settings (Subscription sources).",
@@ -164,6 +164,27 @@ window.I18N_EN = {
   "Deezer ne trouve pas cet album.": "Deezer can't find this album.",
   "Deezer ne trouve pas cette playlist.": "Deezer can't find this playlist.",
   "Activé : {sites}.": "On: {sites}.",
+  "Sources avec abonnement (Réglages)": "Subscription sources (Settings)",
+  "Abonnements branchés": "Connected subscriptions",
+  "branché": "connected",
+  "pas réglé": "not set up",
+  "via Deezer": "via Deezer",
+  "Version {version} disponible.": "Version {version} available.",
+  "Cette clé semble incomplète : copie toute la valeur (double-clic dessus, puis copier).": "This key looks incomplete: copy the whole value (double-click it, then copy).",
+  "Où trouver mon jeton Deezer et mon cookie Spotify ?": "Where do I find my Deezer token and Spotify cookie?",
+  "Ce sont des clés de connexion que ton navigateur garde quand tu es connecté. Il faut les copier une seule fois, depuis un ordinateur.":
+    "These are sign-in keys your browser keeps while you're signed in. You only need to copy them once, from a computer.",
+  "Ouvre deezer.com ou open.spotify.com dans Chrome, Edge ou Firefox, et connecte-toi à ton compte.":
+    "Open deezer.com or open.spotify.com in Chrome, Edge or Firefox, and sign in to your account.",
+  "Appuie sur F12 (sur Mac : Cmd + Option + I). Un panneau s'ouvre.": "Press F12 (on Mac: Cmd + Option + I). A panel opens.",
+  "Clique sur l'onglet « Application » (Firefox : « Stockage »). Tu ne le vois pas ? Clique sur la double flèche au bout de la rangée d'onglets.":
+    "Click the “Application” tab (Firefox: “Storage”). Can't see it? Click the double arrow at the end of the tab row.",
+  "À gauche, ouvre « Cookies », puis clique sur l'adresse du site.": "On the left, open “Cookies”, then click the site's address.",
+  "Deezer : trouve la ligne « arl ». Spotify : trouve la ligne « sp_dc ».": "Deezer: find the “arl” row. Spotify: find the “sp_dc” row.",
+  "Double-clique sur sa valeur (une longue suite de lettres et de chiffres), copie-la, puis colle-la dans la case ci-dessus.":
+    "Double-click its value (a long string of letters and numbers), copy it, then paste it in the field above.",
+  "Garde-les pour toi : elles ouvrent ton compte comme un mot de passe. Si un jour le téléchargement refuse ton compte, la clé a expiré : refais simplement ces étapes.":
+    "Keep them to yourself: they open your account like a password. If downloads one day reject your account, the key has expired: just repeat these steps.",
   "Pas encore réglé.": "Not set up yet.",
   "Identifiants enregistrés.": "Credentials saved.",
   "Identifiants effacés.": "Credentials cleared.",
@@ -268,10 +289,13 @@ window.I18N_EN = {
   "MediaVior est fermé. Tu peux fermer cette fenêtre.": "MediaVior is closed. You can close this window.",
   "Pour le rouvrir : double-clic sur l'icône MediaVior du bureau.": "To reopen it: double-click the MediaVior icon on your desktop.",
   "Mettre à jour ({version})": "Update ({version})",
-  "Installer la nouvelle version ? MediaVior se ferme et se rouvre tout seul (les téléchargements en cours sont arrêtés).":
-    "Install the new version? MediaVior closes and reopens by itself (downloads in progress are stopped).",
-  "Télécharger la nouvelle version ? Ouvre ensuite le fichier et glisse MediaVior dans Applications.":
-    "Download the new version? Then open the file and drag MediaVior into Applications.",
+  "Installer la nouvelle version ?": "Install the new version?",
+  "MediaVior se ferme et se rouvre tout seul. Les téléchargements en cours sont arrêtés.":
+    "MediaVior closes and reopens by itself. Downloads in progress are stopped.",
+  "Mettre à jour": "Update",
+  "Télécharger la nouvelle version ?": "Download the new version?",
+  "Ouvre ensuite le fichier et glisse MediaVior dans Applications.":
+    "Then open the file and drag MediaVior into Applications.",
   "Mise à jour…": "Updating…",
   "Mise à jour vers MediaVior {version}": "Updating to MediaVior {version}",
   "Téléchargement de la nouvelle version…": "Downloading the new version…",

@@ -474,13 +474,15 @@ def start_app_update(info: dict, quit_hook) -> None:
 
 
 def update_frozen(cfg: dict) -> None:
-    try:  # nouvelle version de l'appli : vérifiée à chaque lancement (une petite requête)
-        STATE["release"] = check_app_release()
-    except Exception as exc:
-        print(f"Vérification de la version impossible : {exc}", file=sys.stderr)
-    # yt-dlp : vérifié à chaque lancement puis toutes les 6 h (l'appli peut rester ouverte des
-    # jours si elle démarre avec l'ordinateur). Une version trop ancienne donne des erreurs 403.
+    # Nouvelle version de l'appli et yt-dlp : vérifiés à chaque lancement puis toutes les 6 h
+    # (l'appli peut rester ouverte des jours si elle démarre avec l'ordinateur). Une version trop
+    # ancienne de yt-dlp donne des erreurs 403.
     while True:
+        try:  # une petite requête à GitHub ; la page la lit par /api/local/maj
+            if not STATE.get("install"):
+                STATE["release"] = check_app_release() or STATE.get("release")
+        except Exception as exc:
+            print(f"Vérification de la version impossible : {exc}", file=sys.stderr)
         try:
             update_ytdlp_wheel()
             cfg["last_update"] = time.time()
