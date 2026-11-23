@@ -107,8 +107,8 @@ window.I18N_EN = {
   "Meilleure qualité du site": "Best quality from the site",
   "Chercher une meilleure source": "Look for a better source",
   "Lire la suite": "Read more",
-  "Recherche de « {q} » sur Bandcamp et SoundCloud…": "Searching Bandcamp and SoundCloud for “{q}”…",
-  "Rien trouvé sur Bandcamp ni SoundCloud pour « {q} ».": "Nothing found on Bandcamp or SoundCloud for “{q}”.",
+  "Recherche de « {q} » en meilleure qualité…": "Searching for “{q}” in better quality…",
+  "Rien trouvé sur {sites} pour « {q} ».": "Nothing found on {sites} for “{q}”.",
   "Trouvé, mais pas en meilleure qualité qu'ici. Le lien actuel reste le meilleur choix.":
     "Found, but not in better quality than here. The current link is still the best choice.",
   "Vérifie que c'est bien le même morceau (pas un remix) avant de le prendre.":
@@ -128,8 +128,8 @@ window.I18N_EN = {
   "Connexion activée : les prochains téléchargements l'utiliseront.": "Sign-in turned on: the next downloads will use it.",
   "Connexion désactivée.": "Sign-in turned off.",
   "Sources avec abonnement (Qobuz, Deezer, Spotify)": "Subscription sources (Qobuz, Deezer, Spotify)",
-  "Avec ton propre abonnement, un lien de morceau Qobuz ou Deezer se télécharge en FLAC, et un lien Spotify dans le fichier d'origine de Spotify (OGG, jusqu'à 320 kb/s). Sans ça, ou si ça échoue, MediaVior fait comme d'habitude.":
-    "With your own subscription, a Qobuz or Deezer track link downloads as FLAC, and a Spotify link as Spotify's original file (OGG, up to 320 kb/s). Without it, or if it fails, MediaVior works as usual.",
+  "Avec ton propre abonnement, un lien de morceau Qobuz ou Deezer se télécharge en FLAC. Un lien Spotify est d'abord cherché sur Deezer (FLAC), sinon il arrive dans le fichier d'origine de Spotify (OGG, jusqu'à 320 kb/s). Sans ça, ou si ça échoue, MediaVior fait comme d'habitude.":
+    "With your own subscription, a Qobuz or Deezer track link downloads as FLAC. A Spotify link is first looked up on Deezer (FLAC), otherwise it comes as Spotify's original file (OGG, up to 320 kb/s). Without it, or if it fails, MediaVior works as usual.",
   "Régler": "Set up",
   "E-mail Qobuz": "Qobuz email",
   "Mot de passe Qobuz": "Qobuz password",
@@ -148,6 +148,10 @@ window.I18N_EN = {
   "Deezer ne propose pas ce morceau en téléchargement (retiré, ou réservé à certains pays).":
     "Deezer doesn't offer this track for download (removed, or limited to some countries).",
   "Deezer n'a pas fourni ce morceau, ni en FLAC ni en MP3 320.": "Deezer didn't provide this track, neither in FLAC nor in MP3 320.",
+  "Trouvé sur Deezer : FLAC au lieu de l'OGG de Spotify.": "Found on Deezer: FLAC instead of Spotify's OGG.",
+  "Pas de FLAC sur Deezer pour ce morceau.": "No FLAC on Deezer for this track.",
+  "Morceau introuvable sur Deezer avec certitude. Pour les liens Spotify qui n'y sont pas, règle aussi ton compte Spotify dans les Réglages.":
+    "Couldn't find this track on Deezer for sure. For Spotify links that aren't there, also set up your Spotify account in Settings.",
   "Activé : {sites}.": "On: {sites}.",
   "Pas encore réglé.": "Not set up yet.",
   "Identifiants enregistrés.": "Credentials saved.",

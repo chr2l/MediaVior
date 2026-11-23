@@ -210,18 +210,18 @@ function setupOptions(root) {
   betterBtn.querySelector("[data-icon]").append(icon("search"));
   betterBtn.addEventListener("click", () => findBetter());
 
-  // Même titre sur Bandcamp / SoundCloud, avec la qualité de chaque résultat. La personne choisit.
+  // Même titre sur Bandcamp / SoundCloud (et Deezer en FLAC avec un compte réglé, version PC), avec la qualité de chaque résultat. La personne choisit.
   async function findBetter() {
     betterBtn.disabled = true;
     betterList.replaceChildren();
     betterInfo.hidden = false;
-    betterInfo.textContent = t("Recherche de « {q} » sur Bandcamp et SoundCloud…", { q: searchQuery });
+    betterInfo.textContent = t("Recherche de « {q} » en meilleure qualité…", { q: searchQuery });
     try {
       const res = await api("/api/meilleure-source", { method: "POST", body: { query: searchQuery, url: mediaUrl, duration: mediaDuration || null } });
       const current = audioBest;
       const upgrades = res.results.filter((r) => r.quality.lossless
         || (!current?.lossless && (r.quality.kbps || 0) > (current?.kbps || 0)));
-      if (!res.results.length) betterInfo.textContent = t("Rien trouvé sur Bandcamp ni SoundCloud pour « {q} ».", { q: res.query });
+      if (!res.results.length) betterInfo.textContent = t("Rien trouvé sur {sites} pour « {q} ».", { sites: res.sites || "Bandcamp, SoundCloud", q: res.query });
       else if (!upgrades.length) betterInfo.textContent = t("Trouvé, mais pas en meilleure qualité qu'ici. Le lien actuel reste le meilleur choix.");
       else betterInfo.textContent = t("Vérifie que c'est bien le même morceau (pas un remix) avant de le prendre.");
       if (res.hidden) betterInfo.textContent += " " + t("{n} résultat(s) écarté(s) : durée trop différente (autre version ou extrait).", { n: res.hidden });
