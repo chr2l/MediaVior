@@ -125,6 +125,7 @@
               <div class="media-summary__meta">
                 <span id="source" class="tag"></span>
                 <span id="duration" class="tag tag--muted"></span>
+                <button type="button" class="btn-link hidden" id="otherSourceBtn" title="Voir les résultats sur YouTube, Deezer ou Qobuz et en prendre un autre">Autre source</button>
               </div>
             </div>
           </div>
@@ -192,7 +193,7 @@
             <div class="progress progress--slim"><div class="progress__track"><div class="progress__fill" id="sonsProgressFill"></div></div></div>
             <p class="hint" id="sonsProgressText"></p>
           </div>
-          <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube (ou Deezer / Qobuz si tu l'as choisi) puis téléchargé. Les sons trouvés partent dans un zip (dans le coffre) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre pour choisir le bon morceau à la main (la loupe le fait aussi pour n'importe quel titre). Un morceau choisi est marqué « Choisi » et sera pris tel quel à la prochaine recherche.</p>
+          <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube (ou Deezer / Qobuz si tu l'as choisi) puis téléchargé. Les sons trouvés partent dans un zip (dans le coffre) et quittent la liste : il ne reste que ceux à revoir. Ceux qui manquent s'ouvrent dans une fenêtre pour choisir le bon morceau à la main (la loupe le fait aussi pour n'importe quel titre). Un morceau choisi est marqué « Choisi » : la prochaine recherche prend celui-là, tel quel.</p>
           <p id="sonsZip" class="sons-zip hidden"></p>
         </section>
       </div>
