@@ -2330,3 +2330,28 @@ body.own-titlebar .side__tabs { padding-top: 20px; }
 /* Mise à jour : un seul bouton à la même place, la boîte garde sa taille */
 .update-actions { flex-wrap: nowrap; }
 .update-actions .btn { white-space: nowrap; }
+
+/* Liste de titres : morceau choisi à la main, bien visible */
+.sons-list__pick { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.sons-list__picked {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px 1px 5px; border-radius: 999px;
+  font-weight: 600; color: var(--teal); background: color-mix(in srgb, var(--teal) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--teal) 45%, transparent);
+}
+.sons-list__picked svg { width: 12px; height: 12px; }
+.sons-list__pick-title { color: var(--paper-dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sons-list__item.is-picked { box-shadow: inset 3px 0 0 var(--teal); }
+/* Fenêtre de choix : source (YouTube / Deezer / Qobuz), morceau déjà choisi, extrait audio */
+.ways-mini { display: inline-flex; gap: 4px; padding: 3px; margin-top: 12px; border-radius: 999px; background: var(--ink); border: 1px solid var(--hairline-soft); }
+.ways-mini.hidden { display: none; }
+.ways-mini__btn { padding: 4px 14px; border: 0; border-radius: 999px; background: none; color: var(--paper-dim); font: inherit; font-size: 0.82rem; cursor: pointer; }
+.ways-mini__btn.is-active { background: var(--brass); color: var(--on-accent); }
+.yt-results__item.is-chosen { box-shadow: inset 3px 0 0 var(--teal); background: color-mix(in srgb, var(--teal) 8%, transparent); }
+.yt-dialog__player:has(audio) { aspect-ratio: auto; background: none; }
+.yt-dialog__player audio { width: 100%; display: block; }
+a.yt-results__preview { display: grid; place-items: center; color: var(--paper-dim); }
+/* Avec « Chercher sur » : les deux choix côte à côte, le bouton en dessous sur toute la largeur */
+.sons-actions:has(#sonsSourceField:not(.hidden)) { flex-wrap: wrap; }
+.sons-actions:has(#sonsSourceField:not(.hidden)) .field { flex: 1 1 200px; }
+.sons-actions:has(#sonsSourceField:not(.hidden)) .btn { flex: 1 1 100%; }
+.sons-list__picked svg { margin-top: -1px; }

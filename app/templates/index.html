@@ -168,6 +168,13 @@
           <p id="sonsInfo" class="hint hidden"></p>
           <ul class="sons-list" id="sonsList"></ul>
           <div class="sons-actions hidden" id="sonsActions">
+            <!-- Version PC, compte Deezer / Qobuz réglé : chercher les titres là-bas (FLAC) -->
+            <label class="field hidden" id="sonsSourceField">
+              <span class="field-label">Chercher sur</span>
+              <select id="sonsSource">
+                <option value="youtube">YouTube</option>
+              </select>
+            </label>
             <label class="field">
               <span class="field-label">Format</span>
               <select id="sonsFormat">
@@ -176,6 +183,7 @@
                 <option value="mp3:192">MP3 · 192 kbps</option>
                 <option value="wav:">WAV (sans perte)</option>
                 <option value="aiff:">AIFF (DJ, sans perte)</option>
+                <option value="flac:" id="sonsFlacOption" hidden>FLAC (sans perte)</option>
               </select>
             </label>
             <button id="sonsFetchBtn" class="btn btn--solid">Chercher et télécharger</button>
@@ -184,7 +192,7 @@
             <div class="progress progress--slim"><div class="progress__track"><div class="progress__fill" id="sonsProgressFill"></div></div></div>
             <p class="hint" id="sonsProgressText"></p>
           </div>
-          <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube puis téléchargé. Les sons trouvés partent dans un zip (dans le coffre) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre YouTube pour choisir la bonne vidéo à la main (la loupe le fait aussi pour n'importe quel titre).</p>
+          <p class="hint hidden" id="sonsHint">Chaque titre est cherché sur YouTube (ou Deezer / Qobuz si tu l'as choisi) puis téléchargé. Les sons trouvés partent dans un zip (dans le coffre) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre pour choisir le bon morceau à la main (la loupe le fait aussi pour n'importe quel titre). Un morceau choisi est marqué « Choisi » et sera pris tel quel à la prochaine recherche.</p>
           <p id="sonsZip" class="sons-zip hidden"></p>
         </section>
       </div>
@@ -355,6 +363,7 @@
     </div>
     <button type="button" class="icon-btn" id="ytClose" aria-label="Fermer" title="Fermer"></button>
   </div>
+  <div class="ways-mini hidden" id="ytSources" role="tablist" aria-label="Chercher sur"></div>
   <form class="yt-dialog__search" id="ytForm">
     <input type="search" id="ytQuery" spellcheck="false" autocomplete="off" aria-label="Recherche YouTube">
     <button type="submit" class="btn btn--ghost btn--sm">Chercher</button>
