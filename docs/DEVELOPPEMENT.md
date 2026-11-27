@@ -43,7 +43,7 @@ Deux façons de lancer le même serveur :
 | `app/static/shell.js` | Navigation (panneau de droite sur ordinateur, onglets du bas sur téléphone), pastilles, notifications |
 | `app/static/app.js` | Analyse, options, file d'attente, bibliothèque |
 | `app/static/formats.js`, `app/static/formats.css` | Listes avec le signet « préféré » : format du son, format de la vidéo, qualité de la vidéo. Le préféré est gardé par l'appli (`/api/preferences`, fichier `preferences.json` à côté de l'historique) : la page, l'extension et le téléphone relié voient le même. Copies identiques dans `relais/public/` et `extension/` |
-| `app/static/sons.js` | Liste de sons, captures d'écran, fenêtre de choix YouTube |
+| `app/static/sons.js` | Liste de sons, captures d'écran, fenêtre de choix (YouTube, ou Deezer / Qobuz si le compte est réglé : `source` de `/api/sons/fetch` et `/api/sons/search`, `pick.source` ; `_source_track_url`, `_deezer_results`, `_qobuz_results` par `rip search -o`, téléchargement par `_fetch_streamrip`, YouTube en secours) |
 | `app/static/tags.js` | Fenêtre « Infos du morceau » (titre, interprètes, album, pochette) et bouton « Ajouter mes sons » (glisser-déposer sur le coffre) |
 | `app/static/editor.js` | Forme d'onde et commandes de l'éditeur |
 | `app/static/local.js` | Boutons de la version PC et fenêtre « Copier le prompt » |

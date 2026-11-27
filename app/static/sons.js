@@ -17,6 +17,12 @@ const sonsProgress = document.getElementById("sonsProgress");
 const sonsProgressFill = document.getElementById("sonsProgressFill");
 const sonsProgressText = document.getElementById("sonsProgressText");
 
+const sonsSource = document.getElementById("sonsSource");
+const sonsSourceField = document.getElementById("sonsSourceField");
+const sonsFlacOption = document.getElementById("sonsFlacOption");
+const SOURCE_NAMES = { youtube: "YouTube", deezer: "Deezer", qobuz: "Qobuz" };
+let sonsSources = ["youtube"]; // + deezer / qobuz quand le compte est réglé (version PC)
+
 let sons = [];
 let sonsJobActive = false;
 const sonsSeenFinished = new Set();
@@ -50,24 +56,26 @@ function renderSons() {
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") input.blur();
       });
-      return h("li", { class: `sons-list__item${son.note ? " is-missing" : ""}` },
+      return h("li", { class: `sons-list__item${son.note ? " is-missing" : ""}${son.pick ? " is-picked" : ""}` },
         h("div", { class: "sons-list__body" },
           input,
           son.note
             ? h("div", { class: "sons-list__note" }, t("Introuvable : {why} · ", { why: t(son.note) }),
-                h("button", { type: "button", class: "btn-link", onclick: () => openPicker([son]) }, t("chercher sur YouTube")))
+                h("button", { type: "button", class: "btn-link", onclick: () => openPicker([son]) }, t("choisir à la main")))
             : null,
           son.pick
-            ? h("div", { class: "sons-list__pick" }, t("Vidéo choisie : {title} · ", { title: son.pick.title }),
+            ? h("div", { class: "sons-list__pick" },
+                h("span", { class: "sons-list__picked" }, icon("check"), t("Choisi")),
+                h("span", { class: "sons-list__pick-title", title: son.pick.title },
+                  t("{site} : {title}", { site: SOURCE_NAMES[son.pick.source || "youtube"], title: son.pick.title })),
                 h("button", { type: "button", class: "btn-link", onclick: () => openPicker([son]) }, t("changer")),
-                " · ",
                 h("button", { type: "button", class: "btn-link", onclick: () => unpickSon(son) }, t("retirer")))
             : null),
         h("button", {
           type: "button",
           class: "icon-btn icon-btn--sm",
-          "aria-label": t("Choisir la vidéo sur YouTube"),
-          title: t("Choisir la vidéo sur YouTube"),
+          "aria-label": t("Choisir le morceau à la main"),
+          title: t("Choisir le morceau à la main"),
           onclick: () => openPicker([son]),
         }, icon("search")),
         h("button", {
@@ -231,7 +239,7 @@ sonsFetchBtn.addEventListener("click", async () => {
   try {
     await api("/api/sons/fetch", {
       method: "POST",
-      body: { container, audio_quality: quality || null },
+      body: { container, audio_quality: quality || null, source: sonsSource.value || "youtube" },
     });
     sonsJobActive = true;
     sonsMessage("");
@@ -314,11 +322,32 @@ const ytRemaining = document.getElementById("ytRemaining");
 const ytSkip = document.getElementById("ytSkip");
 document.getElementById("ytClose").append(icon("close"));
 
+const ytSources = document.getElementById("ytSources");
 let ytQueue = [];
 let ytSearchId = 0;
+let ytSource = "youtube";
+
+function renderPickerSources() {
+  ytSources.classList.toggle("hidden", sonsSources.length < 2);
+  ytSources.replaceChildren(...sonsSources.map((k) => h("button", {
+    type: "button",
+    role: "tab",
+    class: `ways-mini__btn${k === ytSource ? " is-active" : ""}`,
+    "aria-selected": String(k === ytSource),
+    onclick: () => {
+      ytSource = k;
+      renderPickerSources();
+      searchYoutube();
+    },
+  }, SOURCE_NAMES[k])));
+}
 
 function openPicker(list) {
   ytQueue = [...list];
+  // Même source que la recherche de la liste ; celle du morceau déjà choisi s'il y en a un
+  const picked = list[0] && list[0].pick && list[0].pick.source;
+  ytSource = sonsSources.includes(picked) ? picked : (sonsSources.includes(sonsSource.value) ? sonsSource.value : "youtube");
+  renderPickerSources();
   if (!ytDialog.open) ytDialog.showModal();
   showPickerSon();
 }
@@ -361,10 +390,10 @@ async function searchYoutube() {
   ytPlayer.replaceChildren();
   ytPlayer.classList.add("hidden");
   ytResults.replaceChildren();
-  ytMessage(t("Recherche sur YouTube…"));
+  ytMessage(t("Recherche sur {site}…", { site: SOURCE_NAMES[ytSource] }));
   let results;
   try {
-    results = await api(`/api/sons/search?q=${encodeURIComponent(q)}`);
+    results = await api(`/api/sons/search?q=${encodeURIComponent(q)}&source=${ytSource}`);
   } catch (e) {
     if (searchId === ytSearchId) ytMessage(e.message);
     return;
@@ -376,25 +405,33 @@ async function searchYoutube() {
 
 function ytResultNode(video) {
   const meta = [video.channel, video.duration ? formatDuration(video.duration) : null].filter(Boolean).join(" · ");
-  const li = h("li", { class: "yt-results__item" },
-    h("button", {
-      type: "button",
-      class: "yt-results__preview",
-      title: t("Écouter"),
-      onclick: () => previewVideo(video, li),
-    },
-      h("img", { src: video.thumbnail, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }),
-      icon("play")),
+  const current = ytQueue[0] && ytQueue[0].pick;
+  const chosen = current && current.id === video.id && (current.source || "youtube") === (video.source || "youtube");
+  const canPreview = !video.source || video.source === "youtube" || video.preview;
+  const preview = canPreview
+    ? h("button", { type: "button", class: "yt-results__preview", title: t("Écouter"), onclick: () => previewVideo(video, li) },
+      video.thumbnail ? h("img", { src: video.thumbnail, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }) : null,
+      icon("play"))
+    : h("a", { class: "yt-results__preview", href: video.link, target: "_blank", rel: "noopener", title: t("Écouter sur {site}", { site: SOURCE_NAMES[video.source] }) },
+      icon("play"));
+  const li = h("li", { class: `yt-results__item${chosen ? " is-chosen" : ""}` },
+    preview,
     h("div", { class: "yt-results__body" },
       h("div", { class: "yt-results__title", title: video.title }, video.title),
       meta ? h("div", { class: "yt-results__meta" }, meta) : null),
-    h("button", { type: "button", class: "btn btn--solid btn--sm", onclick: () => pickVideo(video) }, t("Choisir")));
+    h("button", { type: "button", class: "btn btn--solid btn--sm", onclick: () => pickVideo(video) },
+      chosen ? t("Choisi ✓") : t("Choisir")));
   return li;
 }
 
 function previewVideo(video, li) {
   ytResults.querySelectorAll(".is-playing").forEach((el) => el.classList.remove("is-playing"));
   li.classList.add("is-playing");
+  if (video.source && video.source !== "youtube") { // extrait de 30 s (Deezer)
+    ytPlayer.replaceChildren(h("audio", { src: video.preview, controls: true, autoplay: true }));
+    ytPlayer.classList.remove("hidden");
+    return;
+  }
   ytPlayer.replaceChildren(h("iframe", {
     src: `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1`,
     title: video.title,
@@ -408,8 +445,13 @@ async function pickVideo(video) {
   const son = ytQueue[0];
   if (!son) return;
   try {
-    sons = await api(`/api/sons/${son.id}/pick`, { method: "PUT", body: { video_id: video.id, title: video.title } });
+    sons = await api(`/api/sons/${son.id}/pick`, {
+      method: "PUT", body: { video_id: video.id, title: video.title, source: video.source || "youtube" },
+    });
     renderSons();
+    showToast(t(sonsJobActive
+      ? "Retenu pour « {q} ». La recherche en cours ne le prend pas : relance-la une fois finie."
+      : "Retenu pour « {q} » : il sera pris tel quel à la prochaine recherche.", { q: son.query }));
     nextPickerSon();
   } catch (e) {
     ytMessage(e.message);
@@ -428,7 +470,33 @@ ytDialog.addEventListener("close", () => {
   ytPlayer.classList.add("hidden");
 });
 
+// Sources proposées : YouTube, plus Deezer / Qobuz si le compte est branché (Réglages, version PC)
+function setSonsSources(state) {
+  sonsSources = ["youtube", ...["deezer", "qobuz"].filter((k) => state && state[k])];
+  let saved = null;
+  try { saved = localStorage.getItem("mediavior-sons-source"); } catch (e) { /* stockage bloqué */ }
+  sonsSource.replaceChildren(...sonsSources.map((k) =>
+    h("option", { value: k }, k === "youtube" ? "YouTube" : t("{site} (FLAC)", { site: SOURCE_NAMES[k] }))));
+  sonsSource.value = sonsSources.includes(saved) ? saved : sonsSources[sonsSources.length > 1 ? 1 : 0];
+  sonsSourceField.classList.toggle("hidden", sonsSources.length < 2);
+  onSonsSource();
+}
+function onSonsSource() {
+  // FLAC : seulement depuis Deezer / Qobuz (depuis YouTube, il grossirait le fichier sans rien gagner)
+  const lossless = sonsSource.value !== "youtube";
+  sonsFlacOption.hidden = !lossless;
+  if (lossless && sonsFormat.value.startsWith("mp3")) sonsFormat.value = "flac:";
+  if (!lossless && sonsFormat.value === "flac:") sonsFormat.value = "mp3:0";
+}
+sonsSource.addEventListener("change", () => {
+  try { localStorage.setItem("mediavior-sons-source", sonsSource.value); } catch (e) { /* stockage bloqué */ }
+  onSonsSource();
+});
+
 async function initSons() {
+  if (document.getElementById("settingsBtn")) {
+    api("/api/local/settings").then((s) => setSonsSources(s.streamrip)).catch(() => {});
+  }
   await loadSons();
   try {
     sonsOnJobs(await api("/api/jobs"));
