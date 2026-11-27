@@ -201,12 +201,14 @@ body.shell {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap; /* fenêtre étroite : les boutons passent dessous plutôt que d'écraser le compte */
+  gap: 6px 12px;
   margin-bottom: 12px;
 }
-.pane__actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.pane__actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 4px 12px; margin-left: auto; }
 .pane__stats {
   margin: 0;
+  white-space: nowrap;
   font-size: 0.82rem;
   color: var(--paper-dim);
   font-variant-numeric: tabular-nums;
@@ -1112,6 +1114,7 @@ input[type="text"].sons-list__input:hover { border-color: var(--hairline); }
 .job__thumb img, .item__thumb img { width: 100%; height: 100%; object-fit: cover; }
 
 .job__body { flex: 1; min-width: 0; }
+.job__actions { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
 
 .job__title, .item__title {
   font-size: 0.9rem;
@@ -2338,7 +2341,7 @@ body.own-titlebar .side__tabs { padding-top: 20px; }
   font-weight: 600; color: var(--teal); background: color-mix(in srgb, var(--teal) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--teal) 45%, transparent);
 }
-.sons-list__picked svg { width: 12px; height: 12px; }
+.sons-list__picked .icon { width: 12px; height: 12px; } /* la coche, centrée dans la pastille */
 .sons-list__pick-title { color: var(--paper-dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .sons-list__item.is-picked { box-shadow: inset 3px 0 0 var(--teal); }
 /* Fenêtre de choix : source (YouTube / Deezer / Qobuz), morceau déjà choisi, extrait audio */
@@ -2354,4 +2357,3 @@ a.yt-results__preview { display: grid; place-items: center; color: var(--paper-d
 .sons-actions:has(#sonsSourceField:not(.hidden)) { flex-wrap: wrap; }
 .sons-actions:has(#sonsSourceField:not(.hidden)) .field { flex: 1 1 200px; }
 .sons-actions:has(#sonsSourceField:not(.hidden)) .btn { flex: 1 1 100%; }
-.sons-list__picked svg { margin-top: -1px; }
