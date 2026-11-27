@@ -228,6 +228,22 @@ def update_in_background(cfg: dict) -> None:
     threading.Thread(target=run, daemon=True).start()
 
 
+_REPAIRING = threading.Lock()
+
+
+def repair_tools() -> None:
+    """Appelé par l'appli quand un outil répond « No Python at … » : réparé en arrière-plan."""
+    def run():
+        if not _REPAIRING.acquire(blocking=False):
+            return  # déjà en cours
+        try:
+            install_tools(upgrade=False)
+        finally:
+            _REPAIRING.release()
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 def _uv_bin() -> Optional[Path]:
     """uv livré dans l'appli installée (packaging/prepare.py)."""
     exe = ROOT / "bin" / ("uv.exe" if IS_WIN else "uv")
@@ -237,6 +253,23 @@ def _uv_bin() -> Optional[Path]:
 def tool_present(cmd: str) -> bool:
     exe = f"{cmd}.exe" if IS_WIN else cmd
     return (TOOLS_DIR / "bin" / exe).is_file() or (TOOLS_DIR / cmd / ("Scripts" if IS_WIN else "bin") / exe).is_file()
+
+
+def tool_healthy(cmd: str) -> bool:
+    """L'outil est là ET son Python aussi. Le Python de base peut disparaître (dossier de uv
+    effacé ou lien cassé) : le venv affiche alors « No Python at … » et l'outil ne marche plus."""
+    if not tool_present(cmd):
+        return False
+    for cfg_file in (TOOLS_DIR / "uv" / cmd / "pyvenv.cfg", TOOLS_DIR / cmd / "pyvenv.cfg"):
+        try:
+            text = cfg_file.read_text("utf-8", errors="replace")
+        except OSError:
+            continue
+        home = re.search(r"^\s*home\s*=\s*(.+?)\s*$", text, re.MULTILINE)
+        if home:
+            base = Path(home.group(1).strip().strip('"'))
+            return any((base / exe).is_file() for exe in ("python.exe", "python", "python3"))
+    return True
 
 
 def install_tools(upgrade: bool = True, verbose: bool = False, uv: Optional[Path] = None) -> bool:
@@ -253,15 +286,22 @@ def install_tools(upgrade: bool = True, verbose: bool = False, uv: Optional[Path
            "UV_PYTHON_INSTALL_DIR": str(TOOLS_DIR / "python"), "UV_CACHE_DIR": str(TOOLS_DIR / "cache")}
     ok = True
     for cmd, spec in TOOLS.items():
-        if not upgrade and tool_present(cmd):
+        broken = tool_present(cmd) and not tool_healthy(cmd)
+        if not upgrade and tool_present(cmd) and not broken:
             continue
         try:
             if uv:
-                subprocess.run([str(uv), "tool", "install", "--upgrade", "--python", "3.12", "--quiet", spec],
+                if broken:  # Python de base disparu : on le remet, puis on refait l'environnement
+                    subprocess.run([str(uv), "python", "install", "--reinstall", "3.12"],
+                                   check=False, timeout=1200, env=env, **flags)
+                subprocess.run([str(uv), "tool", "install", "--upgrade", "--python", "3.12", "--quiet",
+                                *(["--reinstall", "--force"] if broken else []), spec],
                                check=True, timeout=1200, env=env, **flags)
             else:
                 venv = TOOLS_DIR / cmd
                 py = venv / ("Scripts/python.exe" if IS_WIN else "bin/python")
+                if broken:
+                    shutil.rmtree(venv, ignore_errors=True)
                 if not py.is_file():
                     subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True, timeout=300, **flags)
                 subprocess.run([str(py), "-m", "pip", "install", "-q", "-U", "--disable-pip-version-check", spec],
@@ -277,7 +317,7 @@ def install_tools(upgrade: bool = True, verbose: bool = False, uv: Optional[Path
 def tools_in_background(cfg: dict) -> None:
     """Outils absents : installés tout de suite. Sinon mis à jour une fois par jour."""
     due = time.time() - cfg.get("tools_update", 0) > UPDATE_EVERY
-    if not due and all(tool_present(c) for c in TOOLS):
+    if not due and all(tool_healthy(c) for c in TOOLS):
         return
 
     def run():
@@ -1107,6 +1147,7 @@ def main() -> int:
 
     server = uvicorn.Server(uvicorn.Config(web.app, host="127.0.0.1", port=port, log_level="warning"))
     web.QUIT_HOOK = lambda: setattr(server, "should_exit", True)
+    web.TOOLS_REPAIR_HOOK = repair_tools
     web.APP_VERSION = build_info().get("version") if FROZEN else None
 
     def remember_folder(path: str) -> None:

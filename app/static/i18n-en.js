@@ -179,6 +179,7 @@ window.I18N_EN = {
   "Retenu pour « {q} ». À la prochaine recherche, c'est ce morceau-là qui sera téléchargé.": "Kept for “{q}”. On the next search, this exact track is the one downloaded.",
   "Écris l'artiste et le titre, puis Chercher.": "Type the artist and title, then Search.",
   "Autre source": "Other source",
+  "streamrip ou Votify ne trouve plus son Python (dossier effacé ou abîmé). MediaVior le réinstalle tout seul : réessaie dans quelques minutes.": "streamrip or Votify can no longer find its Python (folder deleted or damaged). MediaVior reinstalls it by itself: try again in a few minutes.",
   "Voir les résultats sur YouTube, Deezer ou Qobuz et en prendre un autre": "See the results on YouTube, Deezer or Qobuz and take another one",
   "Chercher ailleurs": "Search elsewhere",
   "Chercher le raté": "Search for the failed one",
