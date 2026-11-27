@@ -468,9 +468,27 @@ function renderResult(data) {
   // Qualité préférée : la même, ou la plus proche en dessous pour ce média
   formatPickers.forEach((p) => p.select === select && applyFavorite(p, favorites.quality, favorites.quality !== null));
 
+  otherSourceBtn.classList.toggle("hidden", Boolean(data.collection));
+
   downloadBtn.disabled = false;
   downloadBtn.textContent = downloadLabel();
   resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// Pas le bon morceau, ou pas la bonne source : les résultats YouTube / Deezer / Qobuz, au choix
+const otherSourceBtn = document.getElementById("otherSourceBtn");
+otherSourceBtn.addEventListener("click", () => {
+  const data = currentAnalysis;
+  if (data) openLinkPicker(data.search || data.title, analyzeOther);
+});
+
+// Un autre lien choisi dans la fenêtre : on l'analyse à la place
+function analyzeOther(url) {
+  showView("telecharger");
+  setWay("lien");
+  urlInput.value = url;
+  autoGrow();
+  analyze(url);
 }
 
 function downloadLabel() {
@@ -611,8 +629,12 @@ async function pollJobs() {
   if (next !== null) pollTimer = setTimeout(pollJobs, next);
 }
 
+// Plusieurs liens fini avec des ratés : reste affiché, pour aller les chercher ailleurs
+const hasRetry = (job) => job.kind === "links" && !ACTIVE.has(job.status) && job.status !== "cancelled"
+  && Array.isArray(job.retry) && job.retry.length > 0;
+
 function renderQueue(jobs) {
-  const visible = jobs.filter((j) => j.status !== "done");
+  const visible = jobs.filter((j) => j.status !== "done" || hasRetry(j));
   queueEmpty.classList.toggle("hidden", visible.length > 0);
   setBadge("encours", visible.filter((j) => ACTIVE.has(j.status)).length);
 
@@ -644,6 +666,7 @@ function createJobNode() {
     fill: h("div", { class: "progress__fill" }),
     meta: h("div", { class: "job__meta" }),
     action: h("button", { type: "button", class: "btn-link" }),
+    retry: h("button", { type: "button", class: "btn-link hidden" }),
     thumbSrc: undefined,
   };
   node.progress = h("div", { class: "progress progress--slim" },
@@ -651,8 +674,13 @@ function createJobNode() {
   node.root = h("li", { class: "job" },
     node.thumb,
     h("div", { class: "job__body" }, node.title, node.progress, node.meta),
-    node.action);
+    h("div", { class: "job__actions" }, node.retry, node.action));
   node.action.addEventListener("click", () => onJobAction(node));
+  node.retry.addEventListener("click", () => {
+    const job = node.job;
+    if (hasRetry(job)) searchFailedAsTitles(job.retry);
+    else openLinkPicker(job.title, analyzeOther);
+  });
   return node;
 }
 
@@ -677,6 +705,10 @@ function jobStatusText(job) {
       return t("Annulé");
     case "error":
       return t(job.error || "Erreur");
+    case "done":
+      return hasRetry(job)
+        ? t(job.retry.length > 1 ? "Zip dans le coffre. {n} liens n'ont pas marché." : "Zip dans le coffre. {n} lien n'a pas marché.", { n: job.retry.length })
+        : "";
     default:
       return "";
   }
@@ -705,6 +737,13 @@ function updateJobNode(node, job) {
   node.meta.textContent = node.cancelling && active ? t("Annulation…") : jobStatusText(job);
   node.meta.classList.toggle("is-error", job.status === "error");
   node.root.classList.toggle("is-muted", job.status === "cancelled");
+
+  // Raté : chercher le même morceau ailleurs (YouTube / Deezer / Qobuz)
+  const retry = hasRetry(job);
+  node.retry.classList.toggle("hidden", !retry && !(job.kind === "download" && job.status === "error"));
+  node.retry.textContent = retry
+    ? t(job.retry.length > 1 ? "Chercher les {n} ratés" : "Chercher le raté", { n: job.retry.length })
+    : t("Chercher ailleurs");
 
   node.action.textContent = active ? t("Annuler") : t("Retirer");
   node.action.disabled = Boolean(node.cancelling && active);

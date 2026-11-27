@@ -64,8 +64,8 @@ window.I18N_EN = {
   "MP3 · meilleure qualité": "MP3 · best quality",
   "WAV (sans perte)": "WAV (lossless)",
   "Chercher et télécharger": "Search and download",
-  "Chaque titre est cherché sur YouTube (ou Deezer / Qobuz si tu l'as choisi) puis téléchargé. Les sons trouvés partent dans un zip (dans le coffre) ; la liste reste telle quelle. Ceux qui manquent s'ouvrent dans une fenêtre pour choisir le bon morceau à la main (la loupe le fait aussi pour n'importe quel titre). Un morceau choisi est marqué « Choisi » et sera pris tel quel à la prochaine recherche.":
-    "Each title is searched on YouTube (or Deezer / Qobuz if you picked it) then downloaded. Found songs go into a zip (in the vault); the list stays as is. Missing ones open in a window to pick the right track by hand (the magnifier does it for any title too). A picked track is marked “Picked” and will be used as is on the next search.",
+  "Chaque titre est cherché sur YouTube (ou Deezer / Qobuz si tu l'as choisi) puis téléchargé. Les sons trouvés partent dans un zip (dans le coffre) et quittent la liste : il ne reste que ceux à revoir. Ceux qui manquent s'ouvrent dans une fenêtre pour choisir le bon morceau à la main (la loupe le fait aussi pour n'importe quel titre). Un morceau choisi est marqué « Choisi » : la prochaine recherche prend celui-là, tel quel.":
+    "Each title is searched on YouTube (or Deezer / Qobuz if you picked it) then downloaded. Found songs go into a zip (in the vault) and leave the list: only the ones to check again remain. Missing ones open in a window to pick the right track by hand (the magnifier does it for any title too). A picked track is marked “Picked”: the next search takes that one, as is.",
   "Tu aimes MediaVior ? Mets une étoile ⭐ sur GitHub": "Like MediaVior? Give it a star ⭐ on GitHub",
   "Avoir MediaVior sur ton PC": "Get MediaVior on your PC",
   "Mentions légales": "Legal notice",
@@ -176,7 +176,15 @@ window.I18N_EN = {
   "Écouter sur {site}": "Listen on {site}",
   "Retenu pour « {q} ». La recherche en cours ne le prend pas : relance-la une fois finie.":
     "Kept for “{q}”. The running search won't use it: run it again once it's done.",
-  "Retenu pour « {q} » : il sera pris tel quel à la prochaine recherche.": "Kept for “{q}”: it will be used as is on the next search.",
+  "Retenu pour « {q} ». À la prochaine recherche, c'est ce morceau-là qui sera téléchargé.": "Kept for “{q}”. On the next search, this exact track is the one downloaded.",
+  "Écris l'artiste et le titre, puis Chercher.": "Type the artist and title, then Search.",
+  "Autre source": "Other source",
+  "Voir les résultats sur YouTube, Deezer ou Qobuz et en prendre un autre": "See the results on YouTube, Deezer or Qobuz and take another one",
+  "Chercher ailleurs": "Search elsewhere",
+  "Chercher le raté": "Search for the failed one",
+  "Chercher les {n} ratés": "Search for the {n} failed ones",
+  "Zip dans le coffre. {n} lien n'a pas marché.": "Zip in the vault. {n} link didn't work.",
+  "Zip dans le coffre. {n} liens n'ont pas marché.": "Zip in the vault. {n} links didn't work.",
   "Sources avec abonnement (Réglages)": "Subscription sources (Settings)",
   "Abonnements branchés": "Connected subscriptions",
   "branché": "connected",

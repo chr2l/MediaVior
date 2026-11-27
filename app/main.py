@@ -3777,6 +3777,7 @@ def _links_sync(job: dict) -> None:
     found: List[Path] = []
     errors: List[str] = []
     failed_lines: List[str] = []  # « Artiste - Titre : raison », écrit dans le zip
+    retry: List[str] = []  # titres (ou liens) ratés : la page propose de les chercher ailleurs
     mp3_count = 0
 
     for index, url in enumerate(urls):
@@ -3795,6 +3796,7 @@ def _links_sync(job: dict) -> None:
                 found += files
                 errors += missed
                 failed_lines += [f"{m} : pas fourni par Qobuz" for m in missed]
+                retry += missed
             else:
                 _fetch_media(job, p, url, target, index, total)
                 media = _media_file(target)
@@ -3804,6 +3806,7 @@ def _links_sync(job: dict) -> None:
                 else:
                     errors.append(url)
                     failed_lines.append(f"{label} : aucun fichier produit")
+                    retry.append(label)
         except JobCancelled:
             raise
         except Exception as exc:
@@ -3811,7 +3814,8 @@ def _links_sync(job: dict) -> None:
                 raise JobCancelled()
             errors.append(url)
             failed_lines.append(f"{label} : {_humanize_error(exc)}")
-        job.update(found=len(found), missing=len(errors))
+            retry.append(label)
+        job.update(found=len(found), missing=len(errors), retry=retry or None)
 
     if job["_cancel"]:
         raise JobCancelled()
@@ -4490,19 +4494,19 @@ def _sons_sync(job: dict) -> None:
     if job["_cancel"]:
         raise JobCancelled()
 
-    # Tous les sons restent dans la liste ; ceux qui manquent y gagnent la raison. Un son choisi à la
-    # main pendant la recherche garde son choix, sans vieille raison (il sera pris la prochaine fois).
-    used_picks = {s["id"]: s.get("video_id") for s in sons}
+    # Les sons trouvés quittent la liste (ils sont dans le zip) : il ne reste que ceux à revoir, avec la
+    # raison. Un son retouché pendant la recherche (autre choix, autre titre) reste, sans vieille raison.
+    used = {s["id"]: (s.get("video_id"), s["query"]) for s in sons}
     with SONS_LOCK:
-        current = _load_sons()
-        for son in current:
-            if (son.get("pick") or {}).get("id") != used_picks.get(son["id"]):
-                continue
-            if son["id"] in missing:
-                son["note"] = missing[son["id"]]
-            elif son["id"] in found:
-                son["note"] = None
-        _save_sons(current)
+        kept = []
+        for son in _load_sons():
+            if used.get(son["id"]) == ((son.get("pick") or {}).get("id"), son["query"]):
+                if son["id"] in found:
+                    continue
+                if son["id"] in missing:
+                    son["note"] = missing[son["id"]]
+            kept.append(son)
+        _save_sons(kept)
 
     if not found:
         raise RuntimeError("Aucun son trouvé.")

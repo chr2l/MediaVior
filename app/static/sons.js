@@ -326,6 +326,7 @@ const ytSources = document.getElementById("ytSources");
 let ytQueue = [];
 let ytSearchId = 0;
 let ytSource = "youtube";
+let ytOnChoose = null; // fenêtre ouverte pour un lien (pas pour la liste) : reçoit le lien choisi
 
 function renderPickerSources() {
   ytSources.classList.toggle("hidden", sonsSources.length < 2);
@@ -342,8 +343,9 @@ function renderPickerSources() {
   }, SOURCE_NAMES[k])));
 }
 
-function openPicker(list) {
+function openPicker(list, onChoose = null) {
   ytQueue = [...list];
+  ytOnChoose = onChoose;
   // Même source que la recherche de la liste ; celle du morceau déjà choisi s'il y en a un
   const picked = list[0] && list[0].pick && list[0].pick.source;
   ytSource = sonsSources.includes(picked) ? picked : (sonsSources.includes(sonsSource.value) ? sonsSource.value : "youtube");
@@ -358,12 +360,17 @@ function showPickerSon() {
     closePicker();
     return;
   }
-  ytFor.textContent = t("Pour : {q}", { q: son.query });
+  ytFor.textContent = son.query ? t("Pour : {q}", { q: son.query }) : "";
   const left = ytQueue.length - 1;
   ytRemaining.textContent = left ? t(left > 1 ? "Encore {n} sons à retrouver après celui-ci" : "Encore {n} son à retrouver après celui-ci", { n: left }) : "";
   ytSkip.textContent = left ? t("Passer") : t("Fermer");
   ytQuery.value = son.query;
-  searchYoutube();
+  if (son.query) searchYoutube();
+  else {
+    ytResults.replaceChildren();
+    ytMessage(t("Écris l'artiste et le titre, puis Chercher."));
+    ytQuery.focus();
+  }
 }
 
 function closePicker() {
@@ -444,6 +451,12 @@ function previewVideo(video, li) {
 async function pickVideo(video) {
   const son = ytQueue[0];
   if (!son) return;
+  if (ytOnChoose) { // un lien : on repart avec celui choisi
+    const choose = ytOnChoose;
+    closePicker();
+    choose(!video.source || video.source === "youtube" ? `https://www.youtube.com/watch?v=${video.id}` : video.link);
+    return;
+  }
   try {
     sons = await api(`/api/sons/${son.id}/pick`, {
       method: "PUT", body: { video_id: video.id, title: video.title, source: video.source || "youtube" },
@@ -451,7 +464,7 @@ async function pickVideo(video) {
     renderSons();
     showToast(t(sonsJobActive
       ? "Retenu pour « {q} ». La recherche en cours ne le prend pas : relance-la une fois finie."
-      : "Retenu pour « {q} » : il sera pris tel quel à la prochaine recherche.", { q: son.query }));
+      : "Retenu pour « {q} ». À la prochaine recherche, c'est ce morceau-là qui sera téléchargé.", { q: son.query }));
     nextPickerSon();
   } catch (e) {
     ytMessage(e.message);
@@ -466,9 +479,34 @@ ytSkip.addEventListener("click", nextPickerSon);
 document.getElementById("ytClose").addEventListener("click", closePicker);
 ytDialog.addEventListener("close", () => {
   ytQueue = [];
+  ytOnChoose = null;
   ytPlayer.replaceChildren(); // coupe le son de l'aperçu
   ytPlayer.classList.add("hidden");
 });
+
+// Un lien qui échoue, ou qu'on veut prendre ailleurs : mêmes résultats YouTube / Deezer / Qobuz
+function openLinkPicker(query, onChoose) {
+  const q = /^https?:\/\//i.test(query || "") ? "" : (query || "").trim();
+  openPicker([{ query: q }], onChoose);
+}
+
+// Liens ratés (Plusieurs liens) : ils passent dans la liste de titres, puis la fenêtre de choix s'ouvre
+async function searchFailedAsTitles(titles) {
+  const queries = titles.map((q) => q.replace(/\s+/g, " ").trim()).filter(Boolean);
+  if (!queries.length) return;
+  try {
+    sons = await api("/api/sons", { method: "POST", body: { queries } });
+  } catch (e) {
+    showToast(e.message);
+    return;
+  }
+  renderSons();
+  showView("telecharger");
+  setWay("titres");
+  const wanted = new Set(queries.map((q) => q.slice(0, 200).toLowerCase()));
+  const toPick = sons.filter((s) => wanted.has(s.query.toLowerCase()));
+  if (toPick.length) openPicker(toPick);
+}
 
 // Sources proposées : YouTube, plus Deezer / Qobuz si le compte est branché (Réglages, version PC)
 function setSonsSources(state) {
