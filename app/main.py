@@ -263,13 +263,16 @@ class SonUpdateRequest(BaseModel):
 
 
 class SonPickRequest(BaseModel):
-    video_id: str = Field(pattern=r"^[A-Za-z0-9_-]{11}$")
+    video_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,20}$")  # vidéo YouTube, ou morceau Deezer / Qobuz
     title: str = ""
+    source: Literal["youtube", "deezer", "qobuz"] = "youtube"
 
 
 class SonsFetchRequest(BaseModel):
-    container: Literal["mp3", "wav", "aiff"] = "mp3"
+    container: Literal["mp3", "wav", "aiff", "flac"] = "mp3"
     audio_quality: Optional[Literal["0", "320", "192", "128"]] = None
+    # Où chercher chaque titre : YouTube, ou Deezer / Qobuz avec le compte réglé (version PC)
+    source: Literal["youtube", "deezer", "qobuz"] = "youtube"
 
 
 class EditRequest(BaseModel):
@@ -1677,6 +1680,7 @@ def _deezer_search(artist: str, title: str, limit: int = 6) -> list:
             "genre": ", ".join(genres[:2]),
             "duration": t.get("duration"),
             "link": t.get("link") or (f"https://www.deezer.com/track/{t['id']}" if t.get("id") else ""),
+            "preview": t.get("preview") or None,  # extrait de 30 s
             "cover": album.get("cover_medium"),
             "cover_full": album.get("cover_xl") or album.get("cover_big"),
         })
@@ -4055,8 +4059,12 @@ async def update_son(son_id: str, payload: SonUpdateRequest):
 
 @app.put("/api/sons/{son_id}/pick")
 async def pick_son(son_id: str, payload: SonPickRequest):
-    """Vidéo YouTube choisie à la main pour ce titre : elle sera téléchargée telle quelle."""
-    pick = {"id": payload.video_id, "title": _clean_query(payload.title) or payload.video_id}
+    """Vidéo YouTube (ou morceau Deezer / Qobuz) choisi à la main pour ce titre : téléchargé tel quel."""
+    ok = (re.fullmatch(r"[A-Za-z0-9_-]{11}", payload.video_id) if payload.source == "youtube"
+          else re.fullmatch(r"\d{1,20}", payload.video_id))
+    if not ok:
+        raise HTTPException(status_code=400, detail="Choix invalide.")
+    pick = {"id": payload.video_id, "title": _clean_query(payload.title) or payload.video_id, "source": payload.source}
     with SONS_LOCK:
         sons = _load_sons()
         for son in sons:
@@ -4078,13 +4086,16 @@ async def unpick_son(son_id: str):
 
 
 @app.get("/api/sons/search")
-async def search_youtube(q: str):
-    """Résultats YouTube pour la fenêtre de choix d'un son introuvable."""
+async def search_youtube(q: str, source: Literal["youtube", "deezer", "qobuz"] = "youtube"):
+    """Résultats YouTube (ou Deezer / Qobuz, compte réglé) pour la fenêtre de choix d'un son."""
     query = _clean_query(q)
     if not query:
         return []
+    if source != "youtube" and not (_streamrip_state() or {}).get(source):
+        raise HTTPException(status_code=400, detail=_source_problem(source, f"https://{source}.com/track/1"))
+    search = {"youtube": _youtube_results, "deezer": _deezer_results, "qobuz": _qobuz_results}[source]
     try:
-        return await asyncio.get_running_loop().run_in_executor(None, _youtube_results, query)
+        return await asyncio.get_running_loop().run_in_executor(None, search, query)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=_humanize_error(exc))
 
@@ -4247,7 +4258,10 @@ async def fetch_sons(payload: SonsFetchRequest):
     sons = _load_sons()
     if not sons:
         raise HTTPException(status_code=400, detail="La liste est vide.")
-    entries = [{"id": s["id"], "query": s["query"], "video_id": (s.get("pick") or {}).get("id")} for s in sons]
+    if payload.source != "youtube" and not (_streamrip_state() or {}).get(payload.source):
+        raise HTTPException(status_code=400, detail=_source_problem(payload.source, f"https://{payload.source}.com/track/1"))
+    entries = [{"id": s["id"], "query": s["query"], "video_id": (s.get("pick") or {}).get("id"),
+                "pick_source": (s.get("pick") or {}).get("source") or "youtube"} for s in sons]
     return await queue_sons(entries, payload)
 
 
@@ -4282,6 +4296,64 @@ def _youtube_results(query: str, count: int = 12) -> list:
             "thumbnail": f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg",
         })
     return results
+
+
+def _deezer_results(query: str, count: int = 12) -> list:
+    """Recherche Deezer (API publique) pour la fenêtre de choix : extrait de 30 s pour écouter."""
+    results = []
+    for r in _deezer_search("", query, limit=count):
+        track_id = (re.search(r"/track/(\d+)", r.get("link") or "") or [None, None])[1]
+        if not track_id:
+            continue
+        results.append({"id": track_id, "title": f"{r['artist']} - {r['title']}".strip(" -"),
+                        "channel": r.get("album") or "Deezer", "duration": r.get("duration"),
+                        "thumbnail": r.get("cover"), "preview": r.get("preview"), "link": r["link"],
+                        "source": "deezer"})
+    return results
+
+
+def _qobuz_results(query: str, count: int = 10) -> list:
+    """Recherche Qobuz : faite par streamrip (connecté au compte), résultats écrits dans un fichier."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "resultats.json"
+        config = _streamrip_write_config(Path(tmp))
+        subprocess.run([_tool_bin("rip"), "--config-path", str(config), "--no-db", "search", "-o", str(out),
+                        "-n", str(count), "qobuz", "track", query],
+                       capture_output=True, timeout=90, stdin=subprocess.DEVNULL,
+                       **({"creationflags": 0x08000000} if sys.platform.startswith("win") else {}))
+        try:
+            items = json.loads(out.read_text("utf-8"))
+        except (OSError, ValueError):
+            return []
+    results = []
+    for it in items if isinstance(items, list) else []:
+        track_id = str(it.get("id") or "")
+        if not track_id.isdigit():
+            continue
+        # « Titre by Artiste » (streamrip) → « Artiste - Titre »
+        desc = str(it.get("desc") or "")
+        title, _, artist = desc.rpartition(" by ")
+        results.append({"id": track_id, "title": f"{artist} - {title}" if title else desc, "channel": "Qobuz",
+                        "duration": None, "thumbnail": None, "preview": None,
+                        "link": f"https://open.qobuz.com/track/{track_id}", "source": "qobuz"})
+    return results
+
+
+def _source_track_url(source: str, query: str) -> Optional[str]:
+    """Premier morceau trouvé sur Deezer / Qobuz pour « Artiste - Titre » (pas de mix ni d'album entier)."""
+    try:
+        if source == "deezer":
+            artist, sep, title = query.partition(" - ")
+            found = _deezer_search(artist.strip(), title.strip()) if sep else _deezer_search("", query)
+            for r in found:
+                if r.get("link") and (not r.get("duration") or r["duration"] <= MAX_SON_DURATION):
+                    return r["link"]
+        elif source == "qobuz":
+            found = _qobuz_results(query, count=3)
+            return found[0]["link"] if found else None
+    except Exception:
+        return None
+    return None
 
 
 def _search_son(query: str) -> list:
@@ -4341,6 +4413,43 @@ def _sons_sync(job: dict) -> None:
             opts["postprocessors"].append({"key": "FFmpegThumbnailsConvertor", "format": "jpg", "when": "before_dl"})
         _tag_options(opts, opts["postprocessors"], p["container"])
         reason = "aucun résultat sur YouTube"
+        pick_source = son.get("pick_source") or "youtube"
+        # Deezer / Qobuz (compte réglé) : le morceau choisi, sinon le premier trouvé par son nom.
+        # Pas trouvé ou refusé : YouTube prend le relais (sauf si un morceau précis a été choisi).
+        rip_source = pick_source if son.get("video_id") and pick_source != "youtube" else (
+            p.get("source") if not son.get("video_id") and p.get("source") in ("deezer", "qobuz") else None)
+        if rip_source:
+            if son.get("video_id"):
+                rip_url = (f"https://www.deezer.com/track/{son['video_id']}" if rip_source == "deezer"
+                           else f"https://open.qobuz.com/track/{son['video_id']}")
+            else:
+                job.update(step=f"{index + 1}/{total} · {son['query']} · {_SITE_NAMES[rip_source]}")
+                rip_url = _source_track_url(rip_source, son["query"])
+            if rip_url:
+                try:
+                    _fetch_streamrip(job, {"container": p["container"], "mode": "audio"}, rip_url, target,
+                                     index, total, rip_source)
+                    media = _media_file(target)
+                    if media:
+                        found[son["id"]] = media
+                except JobCancelled:
+                    raise
+                except Exception as exc:
+                    if job["_cancel"]:
+                        raise JobCancelled()
+                    reason = _humanize_error(exc)
+                    if _SITE_NAMES[rip_source] not in reason:
+                        reason = f"{_SITE_NAMES[rip_source]} : {reason}"
+                    for leftover in target.iterdir():
+                        if leftover.is_file():
+                            leftover.unlink(missing_ok=True)
+            elif son.get("video_id"):
+                reason = f"{_SITE_NAMES[rip_source]} : morceau introuvable"
+        if son["id"] in found or (rip_source and son.get("video_id")):
+            if son["id"] not in found:
+                missing[son["id"]] = f"le morceau choisi n'a pas pu être téléchargé ({reason})"
+            job.update(found=len(found), missing=len(missing))
+            continue
         try:
             urls = ([f"https://www.youtube.com/watch?v={son['video_id']}"] if son.get("video_id")
                     else _search_son(son["query"]))
@@ -4373,16 +4482,22 @@ def _sons_sync(job: dict) -> None:
                 raise JobCancelled()
             reason = _humanize_error(exc)
         if son["id"] not in found:
-            missing[son["id"]] = reason
+            # Vidéo choisie à la main qui échoue : on le dit, sinon on croirait le choix ignoré
+            missing[son["id"]] = (f"la vidéo choisie n'a pas pu être téléchargée ({reason})"
+                                  if son.get("video_id") else reason)
         job.update(found=len(found), missing=len(missing))
 
     if job["_cancel"]:
         raise JobCancelled()
 
-    # Tous les sons restent dans la liste ; ceux qui manquent y gagnent la raison
+    # Tous les sons restent dans la liste ; ceux qui manquent y gagnent la raison. Un son choisi à la
+    # main pendant la recherche garde son choix, sans vieille raison (il sera pris la prochaine fois).
+    used_picks = {s["id"]: s.get("video_id") for s in sons}
     with SONS_LOCK:
         current = _load_sons()
         for son in current:
+            if (son.get("pick") or {}).get("id") != used_picks.get(son["id"]):
+                continue
             if son["id"] in missing:
                 son["note"] = missing[son["id"]]
             elif son["id"] in found:
