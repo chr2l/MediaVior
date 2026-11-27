@@ -87,6 +87,21 @@ GITHUB_URL = "https://github.com/chr2l/MediaVior"
 # contre les autres sites ouverts dans le navigateur.
 LOCAL_MODE = os.environ.get("MEDIAVIOR_LOCAL") == "1"
 QUIT_HOOK = None  # fourni par mediavior.py pour arrêter le serveur proprement
+TOOLS_REPAIR_HOOK = None  # fourni par mediavior.py : réinstalle streamrip / Votify si leur Python a disparu
+TOOLS_BROKEN_MSG = ("streamrip ou Votify ne trouve plus son Python (dossier effacé ou abîmé). "
+                    "MediaVior le réinstalle tout seul : réessaie dans quelques minutes.")
+
+
+def _tool_broken(text: str) -> bool:
+    """« No Python at … » : le Python de base de l'outil a disparu. Lance la réparation."""
+    if not re.search(r"No Python at|did not find executable at", text or "", re.IGNORECASE):
+        return False
+    if TOOLS_REPAIR_HOOK:
+        try:
+            TOOLS_REPAIR_HOOK()
+        except Exception:
+            pass
+    return True
 # Appli prête à installer (.exe, .dmg, AppImage) : nouvelle version publiée et installation
 APP_UPDATE: Optional[dict] = None
 APP_UPDATE_HOOK = None
@@ -1022,6 +1037,8 @@ def _ytdlp_waiting() -> bool:
 
 def _humanize_error(exc: Exception) -> str:
     raw = re.sub(r"\x1b\[[0-9;]*m", "", str(exc))
+    if _tool_broken(raw):
+        return TOOLS_BROKEN_MSG
     for pattern, message in ERROR_PATTERNS:
         if re.search(pattern, raw, re.IGNORECASE):
             if pattern.startswith("http error 403") and LOCAL_MODE and _ytdlp_waiting():
@@ -3332,6 +3349,8 @@ def _streamrip_write_config(folder: Path, deezer_quality: int = 2) -> Path:
     result = subprocess.run([str(python), "-c", _STREAMRIP_EDIT, str(STREAMRIP_CONFIG), json.dumps(values)],
                             capture_output=True, text=True, timeout=60)
     if result.returncode != 0:
+        if python != Path(sys.executable) and _tool_broken(result.stderr):
+            raise RuntimeError(TOOLS_BROKEN_MSG)
         raise RuntimeError(f"Config de streamrip impossible : {result.stderr.strip()[-200:]}")
     try:
         STREAMRIP_CONFIG.chmod(0o600)  # contient les identifiants
